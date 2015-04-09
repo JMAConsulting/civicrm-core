@@ -953,7 +953,13 @@ WHERE  id = %1";
     else {
       $feeBlock = &$form->_priceSet['fields'];
     }
-
+    foreach ($feeBlock as $key => $value) {
+      foreach ($value['options'] as $k => $options) {
+        if (!CRM_Core_Permission::check('add contributions of type ' . CRM_Contribute_PseudoConstant::financialType($options['financial_type_id']))) {
+          unset($feeBlock[$key]['options'][$k]);
+        }
+      }
+    }
     // call the hook.
     CRM_Utils_Hook::buildAmount($component, $form, $feeBlock);
 
