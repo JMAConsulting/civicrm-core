@@ -398,6 +398,13 @@ class CRM_Member_BAO_Query {
     $form->addSelect('membership_type_id',
       array('entity' => 'membership', 'multiple' => 'multiple', 'label' => ts('Memebership Type(s)'), 'option_url' => NULL, 'placeholder' => ts('- any -'))
     );
+    foreach (CRM_Financial_BAO_FinancialType::getAvailableMembershipTypes() as $id => $Name) {
+      $form->_membershipType = &$form->addElement('checkbox', "member_membership_type_id[$id]", NULL, $Name);
+    }
+
+    foreach (CRM_Member_PseudoConstant::membershipStatus(NULL, NULL, 'label') as $sId => $sName) {
+      $form->_membershipStatus = &$form->addElement('checkbox', "member_status_id[$sId]", NULL, $sName);
+    }
 
     $form->addElement('text', 'member_source', ts('Source'));
 
