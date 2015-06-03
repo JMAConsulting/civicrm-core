@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -170,7 +170,6 @@ class CRM_Core_BAO_Address extends CRM_Core_DAO_Address {
       }
       if (!empty($customFields)) {
         $addressCustom = CRM_Core_BAO_CustomField::postProcess($params,
-          $customFields,
           $address->id,
           'Address',
           TRUE
@@ -206,7 +205,7 @@ class CRM_Core_BAO_Address extends CRM_Core_DAO_Address {
    */
   public static function fixAddress(&$params) {
     if (!empty($params['billing_street_address'])) {
-      //Check address is comming from online contribution / registration page
+      //Check address is coming from online contribution / registration page
       //Fixed :CRM-5076
       $billing = array(
         'street_address' => 'billing_street_address',
@@ -1155,24 +1154,25 @@ SELECT is_primary,
       $relationshipType = 'Household Member of';
     }
 
-    $cid = array('contact' => $currentContactId);
-
     $relTypeId = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_RelationshipType', $relationshipType, 'id', 'name_a_b');
 
     if (!$relTypeId) {
       CRM_Core_Error::fatal(ts("You seem to have deleted the relationship type '%1'", array(1 => $relationshipType)));
     }
 
-    // create relationship
-    $relationshipParams = array(
-      'is_active' => TRUE,
-      'relationship_type_id' => $relTypeId . '_a_b',
-      'contact_check' => array($sharedContactId => TRUE),
-    );
-
-    list($valid, $invalid, $duplicate,
-      $saved, $relationshipIds
-      ) = CRM_Contact_BAO_Relationship::createMultiple($relationshipParams, $cid);
+    try {
+      // create relationship
+      civicrm_api3('relationship', 'create', array(
+        'is_active' => TRUE,
+        'relationship_type_id' => $relTypeId,
+        'contact_id_a' => $currentContactId,
+        'contact_id_b' => $sharedContactId,
+      ));
+    }
+    catch (CiviCRM_API3_Exception $e) {
+      // We catch and ignore here because this has historically been a best-effort relationship create call.
+      // presumably it could refuse due to duplication or similar and we would ignore that.
+    }
   }
 
   /**

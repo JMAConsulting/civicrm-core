@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -322,8 +322,11 @@ class WebTest_Member_OfflineMembershipAddPricesetTest extends CiviSeleniumTestCa
 
       $this->click('css=li#tab_member a');
       $this->waitForElementPresent('link=Add Membership');
+      if ($this->isTextPresent("No memberships have been recorded for this contact.")) {
+        $this->waitForTextPresent('No memberships have been recorded for this contact.');
+      }
 
-      $this->click('link=Add Membership');
+      $this->clickAjaxLink('link=Add Membership');
       $this->waitForElementPresent('_qf_Membership_cancel-bottom');
 
       $this->select('price_set_id', "value={$sid}");
@@ -410,8 +413,11 @@ class WebTest_Member_OfflineMembershipAddPricesetTest extends CiviSeleniumTestCa
 
     $this->click('css=li#tab_member a');
     $this->waitForElementPresent('link=Add Membership');
+    if ($this->isTextPresent("No memberships have been recorded for this contact.")) {
+      $this->waitForTextPresent('No memberships have been recorded for this contact.');
+    }
 
-    $this->click('link=Add Membership');
+    $this->clickAjaxLink('link=Add Membership');
     $this->waitForElementPresent('_qf_Membership_cancel-bottom');
 
     $this->select('price_set_id', "value={$sid}");

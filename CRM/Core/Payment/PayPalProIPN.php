@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -207,12 +207,12 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
     //List of Transaction Type
     /*
     recurring_payment_profile_created          RP Profile Created
-    recurring_payment           RP Sucessful Payment
+    recurring_payment           RP Successful Payment
     recurring_payment_failed                               RP Failed Payment
     recurring_payment_profile_cancel           RP Profile Cancelled
     recurring_payment_expired         RP Profile Expired
     recurring_payment_skipped        RP Profile Skipped
-    recurring_payment_outstanding_payment      RP Sucessful Outstanding Payment
+    recurring_payment_outstanding_payment      RP Successful Outstanding Payment
     recurring_payment_outstanding_payment_failed          RP Failed Outstanding Payment
     recurring_payment_suspended        RP Profile Suspended
     recurring_payment_suspended_due_to_max_failed_payment  RP Profile Suspended due to Max Failed Payment

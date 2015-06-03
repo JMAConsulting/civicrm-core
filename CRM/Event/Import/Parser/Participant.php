@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -352,7 +352,6 @@ class CRM_Event_Import_Parser_Participant extends CRM_Event_Import_Parser {
 
     if ($onDuplicate != CRM_Import_Parser::DUPLICATE_UPDATE) {
       $formatted['custom'] = CRM_Core_BAO_CustomField::postProcess($formatted,
-        CRM_Core_DAO::$_nullObject,
         NULL,
         'Participant'
       );
@@ -363,7 +362,6 @@ class CRM_Event_Import_Parser_Participant extends CRM_Event_Import_Parser {
         $dao->id = $formatValues['participant_id'];
 
         $formatted['custom'] = CRM_Core_BAO_CustomField::postProcess($formatted,
-          CRM_Core_DAO::$_nullObject,
           $formatValues['participant_id'],
           'Participant'
         );

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -124,6 +124,11 @@ class CRM_Event_Task {
           'title' => ts('Print Event Name Badges'),
           'class' => 'CRM_Event_Form_Task_Badge',
           'result' => FALSE,
+        ),
+        17 => array(
+          'title' => ts('Print PDF Letter for Participants'),
+          'class' => 'CRM_Event_Form_Task_PDF',
+          'result' => TRUE,
         ),
         20 => array(
           'title' => ts('Add Contacts to Group'),

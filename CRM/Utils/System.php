@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -642,7 +642,7 @@ class CRM_Utils_System {
   /**
    * Authenticate the user against the uf db.
    *
-   * In case of succesful authentication, returns an array consisting of
+   * In case of successful authentication, returns an array consisting of
    * (contactID, ufID, unique string). Returns FALSE if authentication is
    * unsuccessful.
    *

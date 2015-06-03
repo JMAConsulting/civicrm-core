@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2014                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -320,22 +320,17 @@ class CRM_Price_BAO_PriceField extends CRM_Price_DAO_PriceField {
           ));
 
         $extra = array();
-        if (!empty($qf->_quickConfig) && !empty($qf->_contributionAmount)) {
-          foreach ($fieldOptions as &$fieldOption) {
-            if ($fieldOption['name'] == 'other_amount') {
-              $fieldOption['label'] = $fieldOption['label'] . '  ' . $currencySymbol;
-            }
-          }
-          $qf->assign('priceset', $elementName);
-          $extra = array('onclick' => 'useAmountOther();');
-        }
-
         if (!empty($qf->_membershipBlock) && !empty($qf->_quickConfig) && $field->name == 'other_amount' && empty($qf->_contributionAmount)) {
           $useRequired = 0;
         }
         elseif (!empty($fieldOptions[$optionKey]['label'])) {
           //check for label.
           $label = $fieldOptions[$optionKey]['label'];
+          if (!empty($qf->_quickConfig) && !empty($qf->_contributionAmount) && strtolower($fieldOptions[$optionKey]['name']) == 'other_amount') {
+            $label .= '  ' . $currencySymbol;
+            $qf->assign('priceset', $elementName);
+            $extra = array('onclick' => 'useAmountOther();');
+          }
         }
 
         $element = &$qf->add('text', $elementName, $label,

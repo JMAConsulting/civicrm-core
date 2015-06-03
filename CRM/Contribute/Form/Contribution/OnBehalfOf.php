@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -171,7 +171,7 @@ class CRM_Contribute_Form_Contribution_OnBehalfOf {
           $field['is_required'] = 1;
         }
 
-        CRM_Core_BAO_UFGroup::buildProfile($form, $field, NULL, NULL, FALSE, TRUE);
+        CRM_Core_BAO_UFGroup::buildProfile($form, $field, NULL, NULL, FALSE, 'onbehalf');
       }
     }
 

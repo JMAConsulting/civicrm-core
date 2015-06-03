@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -96,7 +96,6 @@ class CRM_Contact_Form_Inline_CustomData extends CRM_Contact_Form_Inline {
     // Get the form values and groupTree
     $params = $this->controller->exportValues($this->_name);
     CRM_Core_BAO_CustomValueTable::postProcess($params,
-      $this->_groupTree[$this->_groupID]['fields'],
       'civicrm_contact',
       $this->_contactId,
       $this->_entityType

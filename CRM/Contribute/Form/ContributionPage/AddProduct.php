@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2015
  */
 
 /**
@@ -43,10 +41,7 @@ class CRM_Contribute_Form_ContributionPage_AddProduct extends CRM_Contribute_For
   protected $_pid;
 
   /**
-   * Pre  process the form.
-   *
-   *
-   * @return void
+   * Pre process the form.
    */
   public function preProcess() {
     parent::preProcess();

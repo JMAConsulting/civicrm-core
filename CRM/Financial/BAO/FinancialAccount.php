@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -125,11 +125,11 @@ class CRM_Financial_BAO_FinancialAccount extends CRM_Financial_DAO_FinancialAcco
     $check = FALSE;
 
     //check dependencies
-    $dependancy = array(
+    $dependency = array(
       array('Core', 'FinancialTrxn', 'to_financial_account_id'),
       array('Financial', 'FinancialTypeAccount', 'financial_account_id'),
     );
-    foreach ($dependancy as $name) {
+    foreach ($dependency as $name) {
       require_once str_replace('_', DIRECTORY_SEPARATOR, "CRM_" . $name[0] . "_BAO_" . $name[1]) . ".php";
       $className = "CRM_{$name[0]}_BAO_{$name[1]}";
       $bao = new $className();

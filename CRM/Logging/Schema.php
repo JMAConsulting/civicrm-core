@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -49,7 +49,7 @@ class CRM_Logging_Schema {
   //CRM-13028 / NYSS-6933 - table => array (cols) - to be excluded from the update statement
   private $exceptions = array(
     'civicrm_job' => array('last_run'),
-    'civicrm_group' => array('cache_date'),
+    'civicrm_group' => array('cache_date', 'refresh_date'),
   );
 
   /**
@@ -80,6 +80,9 @@ AND    TABLE_NAME LIKE 'civicrm_%'
 
     // do not log civicrm_mailing_event* tables, CRM-12300
     $this->tables = preg_grep('/^civicrm_mailing_event_/', $this->tables, PREG_GREP_INVERT);
+
+    // do not log civicrm_mailing_recipients table, CRM-16193
+    $this->tables = array_diff($this->tables, array('civicrm_mailing_recipients'));
 
     if (defined('CIVICRM_LOGGING_DSN')) {
       $dsn = DB::parseDSN(CIVICRM_LOGGING_DSN);
@@ -174,7 +177,7 @@ AND    TABLE_NAME LIKE 'log_civicrm_%'
       $triggers = $dao->executeQuery("SHOW TRIGGERS LIKE 'civicrm_%'");
 
       while ($triggers->fetch()) {
-        // note that drop trigger has a wierd syntax and hence we do not
+        // note that drop trigger has a weird syntax and hence we do not
         // send the trigger name as a string (i.e. its not quoted
         $dao->executeQuery("DROP TRIGGER IF EXISTS {$triggers->Trigger}");
       }

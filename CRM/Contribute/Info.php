@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -31,7 +31,7 @@
  * abstract class.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -75,6 +75,8 @@ class CRM_Contribute_Info extends CRM_Core_Component_Info {
    * implementation of $getAllUnconditionally is required.
    *
    * @param bool $getAllUnconditionally
+   * @param bool $descriptions
+   *   Whether to return permission descriptions
    *
    * @return array|null
    *   collection of permissions, null if none
@@ -84,13 +86,32 @@ class CRM_Contribute_Info extends CRM_Core_Component_Info {
    *
    * @return array|null
    */
-  public function getPermissions($getAllUnconditionally = FALSE) {
-    return array(
-      'access CiviContribute',
-      'edit contributions',
-      'make online contributions',
-      'delete in CiviContribute',
+  public function getPermissions($getAllUnconditionally = FALSE, $descriptions = FALSE) {
+    $permissions = array(
+      'access CiviContribute' => array(
+        ts('access CiviContribute'),
+        ts('Record backend contributions (with edit contributions) and view all contributions (for visible contacts)'),
+      ),
+      'edit contributions' => array(
+        ts('edit contributions'),
+        ts('Record and update contributions'),
+      ),
+      'make online contributions' => array(
+        ts('make online contributions'),
+      ),
+      'delete in CiviContribute' => array(
+        ts('delete in CiviContribute'),
+        ts('Delete contributions'),
+      ),
     );
+
+    if (!$descriptions) {
+      foreach ($permissions as $name => $attr) {
+        $permissions[$name] = array_shift($attr);
+      }
+    }
+
+    return $permissions;
   }
 
   /**

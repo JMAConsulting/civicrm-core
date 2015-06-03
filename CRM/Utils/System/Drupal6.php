@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -591,7 +591,7 @@ class CRM_Utils_System_Drupal6 extends CRM_Utils_System_DrupalBase {
       return $url;
     }
 
-    //upto d6 only, already we have code in place for d7
+    //up to d6 only, already we have code in place for d7
     $config = CRM_Core_Config::singleton();
     if (function_exists('variable_get') &&
       module_exists('locale')

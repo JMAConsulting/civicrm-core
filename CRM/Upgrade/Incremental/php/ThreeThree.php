@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,7 +27,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -248,7 +248,7 @@ WHERE id = %2
     CRM_Core_DAO::executeQuery($updatePriceField, array(), TRUE, NULL, FALSE, FALSE);
 
     // as the table 'civicrm_price_field' is localised and column 'count' is dropped
-    // after the views are rebuild, we need to rebuild views to avoid invalid refrence of table.
+    // after the views are rebuild, we need to rebuild views to avoid invalid reference of table.
     if ($upgrade->multilingual) {
       CRM_Core_I18n_Schema::rebuildMultilingualSchema($upgrade->locales, $rev);
     }

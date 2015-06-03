@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -403,7 +403,7 @@ INNER JOIN  civicrm_membership membership2 ON membership1.membership_type_id = m
 
       case 'civicrm_uf_match':
         // normal queries won't work for uf_match since that will lead to violation of unique constraint,
-        // failing to meet intended result. Therefore we introduce this additonal query:
+        // failing to meet intended result. Therefore we introduce this additional query:
         $sqls[] = "DELETE FROM civicrm_uf_match WHERE contact_id = {$mainId}";
         break;
     }

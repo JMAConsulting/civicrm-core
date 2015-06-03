@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  */
 class CRM_Contribute_BAO_Query {
@@ -318,7 +318,15 @@ class CRM_Contribute_BAO_Query {
         $query->_tables['civicrm_contribution'] = $query->_whereTables['civicrm_contribution'] = 1;
         return;
 
+      case 'financial_type':
+      case 'contribution_page':
+      case 'payment_instrument':
+      case 'contribution_payment_instrument':
+      case 'contribution_status':
+        $name .= '_id';
       case 'financial_type_id':
+      case 'payment_instrument_id':
+      case 'contribution_payment_instrument_id':
       case 'contribution_page_id':
       case 'contribution_status_id':
       case 'contribution_id':
@@ -327,8 +335,9 @@ class CRM_Contribute_BAO_Query {
       case 'contribution_source':
       case 'contribution_trxn_id':
       case 'contribution_check_number':
+      case 'contribution_contact_id':
       case (strpos($name, '_amount') !== FALSE):
-      case (strpos($name, '_date') !== FALSE):
+      case (strpos($name, '_date') !== FALSE && $name != 'contribution_fulfilled_date'):
         $qillName = $name;
         $pseudoExtraParam = NULL;
         if ((strpos($name, '_amount') !== FALSE) || (strpos($name, '_date') !== FALSE) || in_array($name,
@@ -338,11 +347,13 @@ class CRM_Contribute_BAO_Query {
               'contribution_source',
               'contribution_trxn_id',
               'contribution_check_number',
+              'contribution_payment_instrument_id',
+              'contribution_contact_id',
             )
           )
         ) {
           $name = str_replace('contribution_', '', $name);
-          if (!in_array($name, array('source', 'id'))) {
+          if (!in_array($name, array('source', 'id', 'contact_id'))) {
             $qillName = str_replace('contribution_', '', $qillName);
           }
         }
@@ -358,47 +369,6 @@ class CRM_Contribute_BAO_Query {
         $query->_qill[$grouping][] = ts('%1 %2 %3', array(1 => $fields[$qillName]['title'], 2 => $op, 3 => $value));
         $query->_tables['civicrm_contribution'] = $query->_whereTables['civicrm_contribution'] = 1;
         return;
-
-      case 'financial_type':
-        $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause($fields[$name]['where'], $op, $value, 'String');
-        list($op, $value) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Contribute_DAO_Contribution', $name, $value, $op);
-        $query->_qill[$grouping][] = ts('%1 %2 %3', array(1 => $fields[$name]['title'], 2 => $op, 3 => $value));
-        $query->_tables['civicrm_contribution'] = $query->_whereTables['civicrm_contribution'] = 1;
-        $query->_tables['civicrm_financial_type'] = $query->_whereTables['civicrm_financial_type'] = 1;
-        return;
-
-      case 'contribution_page':
-        $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause($fields[$name]['where'], $op, $value, 'String');
-        list($op, $value) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Contribute_DAO_Contribution', $name, $value, $op);
-        $query->_qill[$grouping][] = ts('%1 %2 %3', array(1 => $fields[$name]['title'], 2 => $op, 3 => $value));
-        $query->_tables['civicrm_contribution_page'] = $query->_whereTables['civicrm_contribution_page'] = 1;
-        $query->_tables['civicrm_contribution'] = $query->_whereTables['civicrm_contribution'] = 1;
-        return;
-
-      case 'contribution_payment_instrument':
-      case 'contribution_payment_instrument_id':
-        $name = str_replace('contribution_', '', $name);
-      case 'payment_instrument':
-      case 'payment_instrument_id':
-        if ($name == 'payment_instrument') {
-          $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("contribution_payment_instrument.label", $op, $value);
-        }
-        else {
-          $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("contribution_payment_instrument.value", $op, $value, 'Int');
-        }
-        list($op, $value) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Contribute_DAO_Contribution', 'payment_instrument_id', $value, $op);
-        $query->_qill[$grouping][] = ts('%1 %2 %3', array(1 => $fields['payment_instrument']['title'], 2 => $op, 3 => $value));
-        $query->_tables['civicrm_contribution'] = $query->_whereTables['civicrm_contribution'] = 1;
-        $query->_tables['contribution_payment_instrument'] = $query->_whereTables['contribution_payment_instrument'] = 1;
-        return;
-
-      case 'contribution_status':
-        $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("$name.label", $op, $value, 'String');
-        list($op, $value) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Contribute_DAO_Contribution', $name, $value, $op);
-        $query->_qill[$grouping][] = ts('%1 %2 %3', array(1 => $fields[$name]['title'], 2 => $op, 3 => $value));
-        $query->_tables['civicrm_contribution'] = $query->_whereTables['civicrm_contribution'] = 1;
-        $query->_tables[$name] = $query->_whereTables[$name] = 1;
-        break;
 
       case 'contribution_pcp_made_through_id':
       case 'contribution_soft_credit_type_id':
@@ -887,11 +857,8 @@ class CRM_Contribute_BAO_Query {
 
     $form->add('select', 'contribution_page_id',
       ts('Contribution Page'),
-      array(
-        '' => ts('- any -'),
-      ) +
       CRM_Contribute_PseudoConstant::contributionPage(),
-      FALSE, array('class' => 'crm-select2')
+      FALSE, array('class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('- any -'))
     );
 
     $form->addSelect('payment_instrument_id',

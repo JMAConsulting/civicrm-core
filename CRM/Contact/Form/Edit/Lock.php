@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,13 +28,13 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
 
 /**
- * Auxilary class to provide support for locking (and ignoring locks on)
+ * Auxiliary class to provide support for locking (and ignoring locks on)
  * contact records.
  */
 class CRM_Contact_Form_Edit_Lock {
@@ -48,7 +48,7 @@ class CRM_Contact_Form_Edit_Lock {
    * @return void
    */
   public static function buildQuickForm(&$form) {
-    $form->addElement('hidden', 'modified_date', '', array('id' => 'modified_date'));
+    $form->addField('modified_date', array('type' => 'hidden', 'id' => 'modified_date', 'label' => ''));
   }
 
   /**

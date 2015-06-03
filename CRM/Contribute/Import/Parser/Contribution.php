@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -355,7 +355,6 @@ class CRM_Contribute_Import_Parser_Contribution extends CRM_Contribute_Import_Pa
 
     if ($onDuplicate != CRM_Import_Parser::DUPLICATE_UPDATE) {
       $formatted['custom'] = CRM_Core_BAO_CustomField::postProcess($formatted,
-        CRM_Core_DAO::$_nullObject,
         NULL,
         'Contribution'
       );
@@ -375,7 +374,6 @@ class CRM_Contribute_Import_Parser_Contribution extends CRM_Contribute_Import_Pa
         if ($ids['contribution']) {
           $formatted['id'] = $ids['contribution'];
           $formatted['custom'] = CRM_Core_BAO_CustomField::postProcess($formatted,
-            CRM_Core_DAO::$_nullObject,
             $formatted['id'],
             'Contribution'
           );

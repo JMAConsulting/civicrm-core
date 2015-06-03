@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -395,6 +395,10 @@ class CRM_Contact_Form_Task_PDFLetterCommon {
     }
     if ($form->_cid) {
       $activity = CRM_Activity_BAO_Activity::create($activityParams);
+      if (!empty($form->_caseId)) {
+        $caseActivityParams = array('activity_id' => $activity->id, 'case_id' => $form->_caseId);
+        CRM_Case_BAO_Case::processCaseActivity($caseActivityParams);
+      }
     }
     else {
       // create  Print PDF activity for each selected contact. CRM-6886

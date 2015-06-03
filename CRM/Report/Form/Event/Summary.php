@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -162,7 +162,8 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
             }
           }
           if (!empty($this->_params['id_value'])) {
-            $this->_participantWhere = " AND civicrm_participant.event_id IN ( {$this->_params['id_value']} ) ";
+            $idValue = is_array($this->_params['id_value']) ? implode(',', $this->_params['id_value']) : $this->_params['id_value'];
+            $this->_participantWhere = " AND civicrm_participant.event_id IN ( $idValue ) ";
           }
 
           if (!empty($clause)) {

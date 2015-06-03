@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -149,6 +149,8 @@
         var $button = $(this),
           title = 'tr.crm-report-instanceForm-form-block-title',
           description = 'tr.crm-report-instanceForm-form-block-description';
+        $(title).find($("input[id='title']")).attr('value', $("input[id='title']").val());
+        $(description).find($("input[id='description']")).attr('value', $("input[id='description']").val());
         e.preventDefault();
         e.stopImmediatePropagation();
         CRM.confirm({
@@ -166,6 +168,12 @@
             $('[name=title]', '#' + formName).val($('[name=title]', this).val());
             $('[name=description]', '#' + formName).val($('[name=description]', this).val());
             $button.click();
+          })
+          .on('crmConfirm:no', function() {
+            $popUpTitle = $("div.crm-confirm-dialog input[id='title']")
+            $popUpDescription = $("div.crm-confirm-dialog input[id='description']")
+            $(title).find($("input[id='title']")).val($popUpTitle.val());
+            $(description).find($("input[id='description']")).val($popUpDescription.val());
           });
       }
     });

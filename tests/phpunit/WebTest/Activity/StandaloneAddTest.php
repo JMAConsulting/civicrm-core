@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -183,7 +183,7 @@ class WebTest_Activity_StandaloneAddTest extends CiviSeleniumTestCase {
   public function VerifyTabularData($expected, $xpathPrefix = NULL) {
     foreach ($expected as $label => $value) {
       $this->waitForElementPresent("xpath=//table/tbody/tr/td{$xpathPrefix}[text()='{$label}']/../following-sibling::td/span");
-      $this->verifyText("xpath=//table/tbody/tr/td{$xpathPrefix}[text()='{$label}']/../following-sibling::td/span", preg_quote($value), 'In line ' . __LINE__);
+      $this->verifyText("xpath=//table/tbody/tr/td{$xpathPrefix}[text()='{$label}']/../following-sibling::td/span", preg_quote($value));
     }
   }
 

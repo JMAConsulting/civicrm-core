@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -498,7 +498,6 @@ WHERE {$clause}
 
     //format custom fields.
     $customParams = CRM_Core_BAO_CustomField::postProcess($params,
-      $surveyFields,
       $activityId,
       'Activity'
     );
@@ -625,7 +624,7 @@ WHERE {$clause}
 
         //create temporary table to store voter ids.
         $tempTableName = CRM_Core_DAO::createTempTableName('civicrm_survey_respondent');
-        CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$tempTableName}");
+        CRM_Core_DAO::executeQuery("DROP TEMPORARY TABLE IF EXISTS {$tempTableName}");
         $query = "
      CREATE TEMPORARY TABLE {$tempTableName} (
             id int unsigned NOT NULL AUTO_INCREMENT,

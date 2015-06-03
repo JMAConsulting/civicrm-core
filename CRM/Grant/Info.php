@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -31,7 +31,7 @@
  * abstract class.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -61,15 +61,34 @@ class CRM_Grant_Info extends CRM_Core_Component_Info {
   /**
    * @inheritDoc
    * @param bool $getAllUnconditionally
+   * @param bool $descriptions
+   *   Whether to return permission descriptions
    *
    * @return array
    */
-  public function getPermissions($getAllUnconditionally = FALSE) {
-    return array(
-      'access CiviGrant',
-      'edit grants',
-      'delete in CiviGrant',
+  public function getPermissions($getAllUnconditionally = FALSE, $descriptions = FALSE) {
+    $permissions = array(
+      'access CiviGrant' => array(
+        ts('access CiviGrant'),
+        ts('View all grants'),
+      ),
+      'edit grants' => array(
+        ts('edit grants'),
+        ts('Create and update grants'),
+      ),
+      'delete in CiviGrant' => array(
+        ts('delete in CiviGrant'),
+        ts('Delete grants'),
+      ),
     );
+
+    if (!$descriptions) {
+      foreach ($permissions as $name => $attr) {
+        $permissions[$name] = array_shift($attr);
+      }
+    }
+
+    return $permissions;
   }
 
   /**

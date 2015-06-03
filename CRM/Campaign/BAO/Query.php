@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -527,7 +527,7 @@ INNER JOIN  civicrm_custom_group grp on fld.custom_group_id = grp.id
 
         //create temporary table to store voter ids.
         $tempTableName = CRM_Core_DAO::createTempTableName('civicrm_survey_respondent');
-        CRM_Core_DAO::executeQuery("DROP TABLE IF EXISTS {$tempTableName}");
+        CRM_Core_DAO::executeQuery("DROP TEMPORARY TABLE IF EXISTS {$tempTableName}");
 
         $query = "
      CREATE TEMPORARY TABLE {$tempTableName} (

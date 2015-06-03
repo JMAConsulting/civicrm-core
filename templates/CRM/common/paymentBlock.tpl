@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,7 +26,7 @@
 {literal}
 <script type="text/javascript">
 
-function buildPaymentBlock( type ) {
+function buildPaymentBlock(type) {
   {/literal}{if !$isBillingAddressRequiredForPayLater}{literal}
   if (type == 0) {
     if (cj("#billing-payment-block").length) {

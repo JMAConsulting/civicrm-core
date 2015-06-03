@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -59,20 +59,17 @@ class WebTest_Event_AddRecurringEventTest extends CiviSeleniumTestCase {
     if (!$occurrences) {
       $occurrences = 3;
     }
-    $this->type('start_action_offset', $occurrences);
-    $this->webtestFillDate("exclude_date", "11/05/2015");
-    $this->click('add_to_exclude_list');
-    $this->webtestFillDate("exclude_date", "12/05/2015");
-    $this->click('add_to_exclude_list');
+    $this->select('start_action_offset', $occurrences);
+    $this->multiselect2('exclude_date_list', array('05/11/2015', '05/12/2015'), TRUE);
     $this->click('_qf_Repeat_submit-bottom');
-    $this->waitForTextPresent('Based on your repeat configuration, here is the list of dates. Do you wish to create a recurring set with these dates?');
-    $this->click("xpath=//div[@class='ui-dialog-buttonset']/button/span[text()='Ok']");
+    $this->waitForTextPresent('A repeating set will be created with the following dates.');
+    $this->click("xpath=//button//span[text()='Continue']");
     $this->waitForAjaxContent();
     $this->checkCRMAlert('Repeat Configuration has been saved');
 
     //Check if assertions are correct
-    $count = $this->getXpathCount("xpath=//div[@id='event_status_id']/div[@class='crm-accordion-body']/div/table/tbody/tr");
-    $count = $count - 1;
+    $this->waitForElementPresent("xpath=//div[@id='recurring-entity-block']/following-sibling::div//div[@class='crm-accordion-body']/div/table/tbody/tr");
+    $count = $this->getXpathCount("xpath=//div[@id='recurring-entity-block']/following-sibling::div//div[@class='crm-accordion-body']/div/table/tbody/tr");
     $this->assertEquals($occurrences, $count);
 
     //Lets go to find participant page and see our repetitive events there
@@ -80,18 +77,18 @@ class WebTest_Event_AddRecurringEventTest extends CiviSeleniumTestCase {
     $eventTitle = "Fall Fundraiser Dinner";
     $this->type("title", $eventTitle);
     $this->click("_qf_SearchEvent_refresh");
-    $this->assertTrue($this->isTextPresent("Recurring Event - (Child)"));
-    $this->assertTrue($this->isTextPresent("Recurring Event - (Parent)"));
+    $this->assertTrue($this->isTextPresent("Repeating"));
 
     //Update Mode Cascade Changes
     $this->click('event-configure-1');
     $this->waitForElementPresent("xpath=//span[@id='event-configure-1']/ul[@class='panel']/li/a[text()='Info and Settings']");
     $this->click("xpath=//span[@id='event-configure-1']/ul[@class='panel']/li/a[text()='Info and Settings']");
-    $this->waitForElementPresent('_qf_EventInfo_cancel-bottom');
+    $this->waitForTextPresent("Event Title");
     $this->type('title', 'CiviCon');
     $this->click('_qf_EventInfo_upload_done-top');
     $this->waitForElementPresent("xpath=//div[@class='ui-dialog-buttonset']/button/span[text()='Cancel']");
-    $this->click("xpath=//div[@id='recurring-dialog']/div[@class='show-block']/div[@class='recurring-dialog-inner-wrapper']/div[@class='recurring-dialog-inner-left']/button[text()='All the entities']");
+    $this->click("recur-all-entity");
+    $this->click("xpath=//button//span[text()='Continue']");
     $this->waitForAjaxContent();
     $this->openCiviPage("event/manage", "reset=1");
     $newEventTitle = "CiviCon";

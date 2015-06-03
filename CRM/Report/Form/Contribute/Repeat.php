@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,17 +28,20 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
 class CRM_Report_Form_Contribute_Repeat extends CRM_Report_Form {
   protected $_amountClauseWithAND = NULL;
 
+  protected $_customGroupExtends = array(
+    'Contact',
+    'Individual',
+  );
+
   public $_drilldownReport = array('contribute/detail' => 'Link to Detail Report');
 
-  /**
-   */
   /**
    */
   public function __construct() {
@@ -98,6 +101,31 @@ class CRM_Report_Form_Contribute_Repeat extends CRM_Report_Form {
           ),
         ),
         'grouping' => 'contact-fields',
+        'order_bys' => array(
+          'sort_name' => array(
+            'title' => ts('Last Name, First Name'),
+            'default' => '1',
+            'default_weight' => '0',
+            'default_order' => 'ASC',
+          ),
+          'first_name' => array(
+            'title' => ts('First Name'),
+          ),
+          'gender_id' => array(
+            'name' => 'gender_id',
+            'title' => ts('Gender'),
+          ),
+          'birth_date' => array(
+            'name' => 'birth_date',
+            'title' => ts('Birth Date'),
+          ),
+          'contact_type' => array(
+            'title' => ts('Contact Type'),
+          ),
+          'contact_sub_type' => array(
+            'title' => ts('Contact Subtype'),
+          ),
+        ),
       ),
       'civicrm_phone' => array(
         'dao' => 'CRM_Core_DAO_Phone',

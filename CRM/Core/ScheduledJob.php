@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +30,7 @@
  * by every scheduled job (cron task) in CiviCRM.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -67,7 +67,7 @@ class CRM_Core_ScheduledJob {
 
       foreach ($lines as $line) {
         $pair = explode("=", $line);
-        if (empty($pair[0]) || empty($pair[1])) {
+        if ($pair === FALSE || count($pair) != 2 || trim($pair[0]) == '' || trim($pair[1]) == '') {
           $this->remarks[] .= 'Malformed parameters!';
           break;
         }
@@ -101,23 +101,19 @@ class CRM_Core_ScheduledJob {
         return TRUE;
 
       case 'Hourly':
-        $now = CRM_Utils_Date::currentDBDate();
-        $hourAgo = strtotime('-1 hour', strtotime($now));
-        $lastRun = strtotime($this->last_run);
-        if ($lastRun < $hourAgo) {
-          return TRUE;
-        }
+        $format = 'YmdH';
+        break;
 
       case 'Daily':
-        $now = CRM_Utils_Date::currentDBDate();
-        $dayAgo = strtotime('-1 day', strtotime($now));
-        $lastRun = strtotime($this->last_run);
-        if ($lastRun < $dayAgo) {
-          return TRUE;
-        }
+        $format = 'Ymd';
+        break;
     }
 
-    return FALSE;
+    $now = CRM_Utils_Date::currentDBDate();
+    $lastTime = date($format, strtotime($this->last_run));
+    $thisTime = date($format, strtotime($now));
+
+    return ($lastTime <> $thisTime);
   }
 
   public function __destruct() {

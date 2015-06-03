@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2014                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -94,6 +94,26 @@ class CRM_Core_BAO_Location extends CRM_Core_DAO {
     return $location;
   }
 
+  /**
+   * Get the ID of the database billing location.
+   *
+   * @return int
+   *   Billing location type id.
+   *
+   * @throws \CRM_Core_Exception
+   */
+  public static function getBillingLocationId() {
+    static $billingTypeID = NULL;
+    if ($billingTypeID) {
+      return $billingTypeID;
+    }
+    $locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id', array(), 'validate');
+    $billingTypeID = array_search('Billing', $locationTypes);
+    if (!$billingTypeID) {
+      throw new CRM_Core_Exception(ts('Please set a location type of %1', array(1 => 'Billing')));
+    }
+    return $billingTypeID;
+  }
   /**
    * Creates the entry in the civicrm_loc_block.
    */

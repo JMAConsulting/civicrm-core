@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -63,7 +63,7 @@ class WebTest_Contact_TagAddTest extends CiviSeleniumTestCase {
     $this->assertTrue($this->isTextPresent("The tag '$tagName' has been saved."));
 
     // sort by ID desc
-    $this->click("xpath=//table//tr/th[text()=\"ID\"]");
+    $this->click("xpath=//div[@id='cat']/div/table/thead/tr/th[2]/div[text()='ID']");
     $this->waitForElementPresent("css=table.display tbody tr td");
 
     // verify text
@@ -101,7 +101,7 @@ class WebTest_Contact_TagAddTest extends CiviSeleniumTestCase {
     $this->assertTrue($this->isTextPresent("The tag '$tagSetName' has been saved."));
 
     // sort by ID desc
-    $this->click("xpath=//table//tr/th[text()=\"ID\"]");
+    $this->click("xpath=//div[@id='cat']/div/table/thead/tr/th[2]/div[text()='ID']");
     $this->waitForElementPresent("css=table.display tbody tr td");
 
     // verify text

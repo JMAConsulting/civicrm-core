@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -73,7 +73,7 @@ class WebTest_Contact_AdvancedSearchTest extends CiviSeleniumTestCase {
     $this->waitForElementPresent("receipt_text");
     $this->multiselect2("role_id", array('Volunteer'));
     // Select $100 fee
-    $this->click("css=input[data-amount=100]");
+    $this->click("xpath=//input[@data-amount='100']");
     $this->check("record_contribution");
     $this->waitForElementPresent("contribution_status_id");
     $this->select("payment_instrument_id", "Check");
@@ -201,7 +201,7 @@ class WebTest_Contact_AdvancedSearchTest extends CiviSeleniumTestCase {
 
         //go to next page
         $this->click("xpath=//div[@class='crm-search-results']/div[@class='crm-pager']/span[@class='crm-pager-nav']/a[@title='next page']");
-        $this->waitForElementPresent("task");
+        $this->waitForElementPresent("xpath=//a[@title='first page']");
         $j = $j + $subTotal;
       }
 
@@ -222,7 +222,7 @@ class WebTest_Contact_AdvancedSearchTest extends CiviSeleniumTestCase {
     $this->clickLink("_qf_Advanced_refresh");
     // verify unique name
     $this->waitForAjaxContent();
-    $this->waitForText("xpath=//div[@class='crm-search-results']/table/tbody", preg_quote("adv$firstName, $firstName"));
+    $this->waitForElementPresent("xpath=//div[@class='crm-search-results']/table/tbody/tr//td/a[text()='adv$firstName, $firstName']");
     // should give 1 result only as we are searching with unique name
     $this->waitForText("xpath=//div[@id='search-status']/table/tbody/tr/td", preg_quote("1 Contact"));
     // click to edit search
@@ -255,6 +255,8 @@ class WebTest_Contact_AdvancedSearchTest extends CiviSeleniumTestCase {
     $stateBeforeSort = $this->getText("xpath=//div[@class='crm-search-results']//table/tbody/tr[1]/td[6]");
     $this->clickAjaxLink("xpath=//div[@class='crm-search-results']//table/thead/tr//th/a[contains(text(),'State')]");
     $this->waitForElementPresent("xpath=//div[@class='crm-search-results']//table/thead/tr//th/a[contains(text(),'State')]");
+    $this->clickAjaxLink("xpath=//div[@class='crm-search-results']//table/thead/tr//th/a[contains(text(), 'State')]");
+    $this->waitForElementPresent("xpath=//div[@class='crm-search-results']//table/thead/tr//th/a[contains(text(), 'State')]");
     $this->assertElementNotContainsText("xpath=//div[@class='crm-search-results']//table/tbody/tr[1]/td[6]", $stateBeforeSort);
   }
 
@@ -273,7 +275,7 @@ class WebTest_Contact_AdvancedSearchTest extends CiviSeleniumTestCase {
     $this->select("group", "label=$groupName");
     // select tag
     $this->select("contact_tags", "label=$tagName");
-    // select prefered language
+    // select preferred language
     $this->select("preferred_language", "value=en_US");
     // select privacy
     $this->select("privacy_options", "value=do_not_email");

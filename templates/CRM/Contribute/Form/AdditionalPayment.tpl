@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -61,12 +61,6 @@
 {else}
 
 <div class="crm-block crm-form-block crm-payment-form-block">
-
-  {if $contributionMode == 'test'}
-    {assign var=contribMode value="TEST"}
-    {elseif $contributionMode == 'live'}
-    {assign var=contribMode value="LIVE"}
-  {/if}
 
   {if !$email}
   <div class="messages status no-popup">

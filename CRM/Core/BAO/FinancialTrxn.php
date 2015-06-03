@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -108,9 +108,12 @@ class CRM_Core_BAO_FinancialTrxn extends CRM_Financial_DAO_FinancialTrxn {
 
     $balanceAmtDAO = CRM_Core_DAO::executeQuery($q, $p);
     $ret = array();
+    if ($balanceAmtDAO->N) {
+      $ret['total_amount'] = 0;
+    }
     while ($balanceAmtDAO->fetch()) {
       $ret['trxn_id'] = $balanceAmtDAO->id;
-      $ret['total_amount'] = $balanceAmtDAO->total_amount;
+      $ret['total_amount'] += $balanceAmtDAO->total_amount;
     }
 
     return $ret;
@@ -190,7 +193,7 @@ LIMIT 1;";
    *   Id of the entity usually the contactID.
    *
    * @return array
-   *   array of catagory id's the contact belongs to.
+   *   array of category id's the contact belongs to.
    *
    */
   public static function getFinancialTrxnTotal($entity_id) {
@@ -266,7 +269,7 @@ WHERE  ef2.financial_trxn_id =%1
    *   Name of the entity table usually 'civicrm_contact'.
    *
    * @return array
-   *   array of catagory id's the contact belongs to.
+   *   array of category id's the contact belongs to.
    *
    */
   public static function getFinancialTrxnLineTotal($entity_id, $entity_table = 'civicrm_contribution') {
@@ -311,6 +314,13 @@ WHERE ceft.entity_id = %1";
   /**
    * Create financial transaction for premium.
    *
+   * @param array $params
+   *   - oldPremium
+   *   - financial_type_id
+   *   - contributionId
+   *   - isDeleted
+   *   - cost
+   *   - currency
    */
   public static function createPremiumTrxn($params) {
     if ((empty($params['financial_type_id']) || empty($params['contributionId'])) && empty($params['oldPremium'])) {

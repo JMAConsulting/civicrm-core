@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -78,7 +78,7 @@ class api_v3_PaymentProcessorTypeTest extends CiviUnitTestCase {
       'is_recur' => 0,
     );
     $result = $this->callAPIAndDocument('payment_processor_type', 'create', $params, __FUNCTION__, __FILE__);
-    $this->assertNotNull($result['values'][0]['id'], 'in line ' . __LINE__);
+    $this->assertNotNull($result['values'][0]['id']);
 
     // mutate $params to match expected return value
     unset($params['sequential']);

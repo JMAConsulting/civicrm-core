@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
  * Provides a collection of static methods for array manipulation.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  */
 class CRM_Utils_Array {
 
@@ -639,6 +639,10 @@ class CRM_Utils_Array {
     if (is_array($values)) {
       return $values;
     }
+    // Empty string -> empty array
+    if ($values === '') {
+      return array();
+    }
     return explode($delim, trim((string) $values, $delim));
   }
 
@@ -829,6 +833,37 @@ class CRM_Utils_Array {
       $output[] = array($keyName => $key, $valueName => $val);
     }
     return $output;
+  }
+
+  /**
+   * Diff multidimensional arrays
+   * ( array_diff does not support multidimensional array)
+   *
+   * @param array $array1
+   * @param array $array2
+   * @return array
+   */
+  public static function multiArrayDiff($array1, $array2) {
+    $arrayDiff = array();
+    foreach ($array1 as $mKey => $mValue) {
+      if (array_key_exists($mKey, $array2)) {
+        if (is_array($mValue)) {
+          $recursiveDiff = self::multiArrayDiff($mValue, $array2[$mKey]);
+          if (count($recursiveDiff)) {
+            $arrayDiff[$mKey] = $recursiveDiff;
+          }
+        }
+        else {
+          if ($mValue != $array2[$mKey]) {
+            $arrayDiff[$mKey] = $mValue;
+          }
+        }
+      }
+      else {
+        $arrayDiff[$mKey] = $mValue;
+      }
+    }
+    return $arrayDiff;
   }
 
 }

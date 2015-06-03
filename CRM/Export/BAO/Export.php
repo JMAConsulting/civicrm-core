@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -160,7 +160,7 @@ class CRM_Export_BAO_Export {
         if (!$fieldName) {
           continue;
         }
-        // get phoneType id and IM service provider id seperately
+        // get phoneType id and IM service provider id separately
         if ($fieldName == 'phone') {
           $phoneTypeId = CRM_Utils_Array::value(3, $value);
         }
@@ -1394,7 +1394,7 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
     else {
       if (substr($fieldName, -3, 3) == '_id') {
         // for trxn_id and its variants use a longer buffer
-        // to accomodate different systems - CRM-13739
+        // to accommodate different systems - CRM-13739
         static $notRealIDFields = NULL;
         if ($notRealIDFields == NULL) {
           $notRealIDFields = array('trxn_id', 'componentpaymentfield_transaction_id');

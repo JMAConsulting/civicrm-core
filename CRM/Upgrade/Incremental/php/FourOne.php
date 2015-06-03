@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,12 +27,12 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
 class CRM_Upgrade_Incremental_php_FourOne {
-  // This was changed in 4.3 so we define it locally for compatability with older dbs
+  // This was changed in 4.3 so we define it locally for compatibility with older dbs
   const NAVIGATION_NAME = "Navigation Menu";
 
   /**

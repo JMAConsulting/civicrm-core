@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -50,7 +50,7 @@
              <table id="options" class="display">
                <thead>
                <tr>
-                 <th id="sortable">{ts}Title{/ts}</th>
+                 <th>{ts}Title{/ts}</th>
                <th>{ts}ID{/ts}</th>
                <th>{ts}Enabled?{/ts}</th>
              {if call_user_func(array('CRM_Campaign_BAO_Campaign','isCampaignEnable'))}

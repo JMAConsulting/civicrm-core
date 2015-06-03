@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -275,6 +275,7 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
         'contribution_status_id',
         'contribution_source',
         'contribution_trxn_id',
+        'contribution_page_id',
       );
       foreach ($specialParams as $element) {
         $value = CRM_Utils_Array::value($element, $this->_formValues);

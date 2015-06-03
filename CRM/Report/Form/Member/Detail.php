@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -156,6 +156,12 @@ class CRM_Report_Form_Member_Detail extends CRM_Report_Form {
           ),
         ),
         'grouping' => 'member-fields',
+        'group_bys' => array(
+          'id' => array(
+            'title' => ts('Membership'),
+            'default' => TRUE,
+          ),
+        ),
       ),
       'civicrm_membership_status' => array(
         'dao' => 'CRM_Member_DAO_MembershipStatus',

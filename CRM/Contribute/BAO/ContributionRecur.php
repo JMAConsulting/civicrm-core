@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -453,6 +453,25 @@ INNER JOIN civicrm_contribution       con ON ( con.id = mp.contribution_id )
       }
       if ($url) {
         $session->pushUserContext($url);
+      }
+    }
+  }
+
+  /**
+   * CRM-16285 - Function to handle validation errors on form, for recurring contribution field.
+   * @param array $fields
+   *   The input form values.
+   * @param array $files
+   *   The uploaded files if any.
+   * @param $self
+   */
+  public static function validateRecurContribution($fields, $files, $self, &$errors) {
+    if (!empty($fields['is_recur'])) {
+      if ($fields['frequency_interval'] <= 0) {
+        $errors['frequency_interval'] = ts('Please enter a number for how often you want to make this recurring contribution (EXAMPLE: Every 3 months).');
+      }
+      if ($fields['frequency_unit'] == '0') {
+        $errors['frequency_unit'] = ts('Please select a period (e.g. months, years ...) for how often you want to make this recurring contribution (EXAMPLE: Every 3 MONTHS).');
       }
     }
   }

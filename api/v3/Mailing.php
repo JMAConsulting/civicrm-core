@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -159,6 +159,54 @@ function _civicrm_api3_mailing_create_spec(&$params) {
       $params['from_name']['api.default'] = $match[1];
     }
   }
+}
+
+function _civicrm_api3_mailing_clone_spec(&$spec) {
+  $mailingFields = CRM_Mailing_DAO_Mailing::fields();
+  $spec['id'] = $mailingFields['id'];
+  $spec['id']['api.required'] = 1;
+}
+
+function civicrm_api3_mailing_clone($params) {
+  $BLACKLIST = array(
+    'id',
+    'is_completed',
+    'created_id',
+    'created_date',
+    'scheduled_id',
+    'scheduled_date',
+    'approver_id',
+    'approval_date',
+    'approval_status_id',
+    'approval_note',
+    'is_archived',
+    'hash',
+  );
+
+  $get = civicrm_api3('Mailing', 'getsingle', array('id' => $params['id']));
+
+  $newParams = array();
+  $newParams['debug'] = CRM_Utils_Array::value('debug', $params);
+  $newParams['groups']['include'] = array();
+  $newParams['groups']['exclude'] = array();
+  $newParams['mailings']['include'] = array();
+  $newParams['mailings']['exclude'] = array();
+  foreach ($get as $field => $value) {
+    if (!in_array($field, $BLACKLIST)) {
+      $newParams[$field] = $value;
+    }
+  }
+
+  $dao = new CRM_Mailing_DAO_MailingGroup();
+  $dao->mailing_id = $params['id'];
+  $dao->find();
+  while ($dao->fetch()) {
+    // CRM-11431; account for multi-lingual
+    $entity = (substr($dao->entity_table, 0, 15) == 'civicrm_mailing') ? 'mailings' : 'groups';
+    $newParams[$entity][strtolower($dao->group_type)][] = $dao->entity_id;
+  }
+
+  return civicrm_api3('Mailing', 'create', $newParams);
 }
 
 /**

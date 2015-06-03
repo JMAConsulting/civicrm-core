@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -115,17 +115,18 @@ class CRM_Admin_Form_Options extends CRM_Admin_Form {
 
   /**
    * Set default values for the form.
-   * the default values are retrieved from the database
-   *
    *
    * @return void
    */
   public function setDefaultValues() {
     $defaults = parent::setDefaultValues();
 
-    if (!isset($defaults['weight']) || !$defaults['weight']) {
-      $fieldValues = array('option_group_id' => $this->_gid);
-      $defaults['weight'] = CRM_Utils_Weight::getDefaultWeight('CRM_Core_DAO_OptionValue', $fieldValues);
+    // Default weight & value
+    $fieldValues = array('option_group_id' => $this->_gid);
+    foreach (array('weight', 'value') as $field) {
+      if (empty($defaults[$field])) {
+        $defaults[$field] = CRM_Utils_Weight::getDefaultWeight('CRM_Core_DAO_OptionValue', $fieldValues, $field);
+      }
     }
 
     //setDefault of contact types for email greeting, postal greeting, addressee, CRM-4575
@@ -169,6 +170,15 @@ class CRM_Admin_Form_Options extends CRM_Admin_Form {
       CRM_Core_DAO::getAttribute('CRM_Core_DAO_OptionValue', 'label'),
       TRUE
     );
+
+    if ($this->_gName != 'activity_type') {
+      $this->add('text',
+        'value',
+        ts('Value'),
+        CRM_Core_DAO::getAttribute('CRM_Core_DAO_OptionValue', 'value'),
+        TRUE
+      );
+    }
 
     if (!in_array($this->_gName, array(
         'email_greeting',
@@ -214,12 +224,6 @@ class CRM_Admin_Form_Options extends CRM_Admin_Form {
       $required = TRUE;
     }
     elseif ($this->_gName == 'redaction_rule' || $this->_gName == 'engagement_index') {
-      $this->add('text',
-        'value',
-        ts('Value'),
-        CRM_Core_DAO::getAttribute('CRM_Core_DAO_OptionValue', 'value'),
-        TRUE
-      );
       if ($this->_gName == 'redaction_rule') {
         $this->add('checkbox',
           'filter',
@@ -236,7 +240,7 @@ class CRM_Admin_Form_Options extends CRM_Admin_Form {
     }
     else {
       // Hard-coding attributes here since description is still stored as varchar and not text in the schema. dgg
-      $this->addWysiwyg('description',
+      $this->add('wysiwyg', 'description',
         ts('Description'),
         array('rows' => 4, 'cols' => 80),
         $required

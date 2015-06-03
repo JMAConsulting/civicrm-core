@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -1388,6 +1388,81 @@ class api_v3_ContributionTest extends CiviUnitTestCase {
     unset($lineItem1['values'][0]['id'], $lineItem1['values'][0]['entity_id']);
     unset($lineItem2['values'][0]['id'], $lineItem2['values'][0]['entity_id']);
     $this->assertEquals($lineItem1['values'][0], $lineItem2['values'][0]);
+
+    $this->quickCleanUpFinancialEntities();
+  }
+
+  /**
+   * CRM-16397 test appropriate action if total amount has changed for single line items.
+   */
+  public function testRepeatTransactionAlteredAmount() {
+    $paymentProcessorID = $this->paymentProcessorCreate();
+    $campaignID = $this->campaignCreate();
+    $campaignID2 = $this->campaignCreate();
+    $contributionRecur = $this->callAPISuccess('contribution_recur', 'create', array(
+      'contact_id' => $this->_individualId,
+      'installments' => '12',
+      'frequency_interval' => '1',
+      'amount' => '500',
+      'contribution_status_id' => 1,
+      'start_date' => '2012-01-01 00:00:00',
+      'currency' => 'USD',
+      'frequency_unit' => 'month',
+      'payment_processor_id' => $paymentProcessorID,
+    ));
+    $originalContribution = $this->callAPISuccess('contribution', 'create', array_merge(
+        $this->_params,
+        array(
+          'contribution_recur_id' => $contributionRecur['id'],
+          'campaign_id' => $campaignID,
+        ))
+    );
+
+    $this->callAPISuccess('contribution', 'repeattransaction', array(
+      'original_contribution_id' => $originalContribution['id'],
+      'contribution_status_id' => 'Completed',
+      'trxn_id' => uniqid(),
+      'total_amount' => '400',
+      'fee_amount' => 50,
+      'campaign_id' => $campaignID2,
+    ));
+    $lineItemParams = array(
+      'entity_id' => $originalContribution['id'],
+      'sequential' => 1,
+      'return' => array(
+        'entity_table',
+        'qty',
+        'unit_price',
+        'line_total',
+        'label',
+        'financial_type_id',
+        'deductible_amount',
+        'price_field_value_id',
+        'price_field_id',
+      ),
+    );
+    $this->callAPISuccessGetSingle('contribution', array(
+      'total_amount' => 400,
+      'campaign_id' => $campaignID2,
+      'fee_amount' => 50,
+      'net_amount' => 350,
+    ));
+    $lineItem1 = $this->callAPISuccess('line_item', 'get', array_merge($lineItemParams, array(
+      'entity_id' => $originalContribution['id'],
+    )));
+    $expectedLineItem = array_merge(
+      $lineItem1['values'][0], array(
+        'line_total' => '400.00',
+        'unit_price' => '400.00',
+      )
+    );
+
+    $lineItem2 = $this->callAPISuccess('line_item', 'get', array_merge($lineItemParams, array(
+      'entity_id' => $originalContribution['id'] + 1,
+    )));
+    unset($expectedLineItem['id'], $expectedLineItem['entity_id']);
+    unset($lineItem2['values'][0]['id'], $lineItem2['values'][0]['entity_id']);
+    $this->assertEquals($expectedLineItem, $lineItem2['values'][0]);
 
     $this->quickCleanUpFinancialEntities();
   }

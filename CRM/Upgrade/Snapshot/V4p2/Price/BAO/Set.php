@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -86,7 +86,7 @@ class CRM_Upgrade_Snapshot_V4p2_Price_BAO_Set extends CRM_Upgrade_Snapshot_V4p2_
    *   Value we want to set the is_active field.
    *
    * @return Object
-   *   DAO object on sucess, null otherwise
+   *   DAO object on success, null otherwise
    */
   public static function setIsActive($id, $isActive) {
     return CRM_Core_DAO::setFieldValue('CRM_Upgrade_Snapshot_V4p2_Price_DAO_Set', $id, 'is_active', $isActive);

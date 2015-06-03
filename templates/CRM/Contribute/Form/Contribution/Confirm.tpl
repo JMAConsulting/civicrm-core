@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -91,7 +91,7 @@
                 {/if}
 
             {if $is_recur}
-                {if $membershipBlock} {* Auto-renew membership confirmation *}
+                {if !empty($auto_renew)} {* Auto-renew membership confirmation *}
 {crmRegion name="contribution-confirm-recur-membership"}
                     <br />
                     <strong>{ts 1=$frequency_interval 2=$frequency_unit}I want this membership to be renewed automatically every %1 %2(s).{/ts}</strong></p>

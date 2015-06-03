@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +30,7 @@
  * PEAR_ErrorStack and use that framework
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -654,7 +654,7 @@ class CRM_Core_Error extends PEAR_ErrorStack {
         ($fileSize < 0)
       ) {
         rename($fileName,
-          $fileName . '.' . date('Ymdhs', mktime(0, 0, 0, date("m") - 1, date("d"), date("Y")))
+          $fileName . '.' . date('YmdHi')
         );
       }
     }

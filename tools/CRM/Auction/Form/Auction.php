@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
  *
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -114,7 +114,7 @@ class CRM_Auction_Form_Auction extends CRM_Core_Form {
       TRUE
     );
 
-    $this->addWysiwyg('description',
+    $this->add('wysiwyg', 'description',
       ts('Complete Description'),
       $attributes['description']
     );
@@ -155,7 +155,7 @@ class CRM_Auction_Form_Auction extends CRM_Core_Form {
         $attributes[$name]
       );
       $this->addRule($name,
-        ts('%1 should be a postive number',
+        ts('%1 should be a positive number',
           array(1 => $title)
         ),
         'positiveInteger'

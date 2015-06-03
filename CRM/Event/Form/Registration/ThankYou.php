@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
  *
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -60,6 +60,7 @@ class CRM_Event_Form_Registration_ThankYou extends CRM_Event_Form_Registration {
     $this->assign('participantInfo', $participantInfo);
     $customGroup = $this->get('customProfile');
     $this->assign('customProfile', $customGroup);
+    $this->assign('individual', $this->get('individual'));
 
     CRM_Event_Form_Registration_Confirm::assignProfiles($this);
 

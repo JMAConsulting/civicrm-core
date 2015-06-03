@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -56,6 +56,15 @@ class CRM_Core_Permission_WordPress extends CRM_Core_Permission_Base {
     }
     if ($str == CRM_Core_Permission::ALWAYS_ALLOW_PERMISSION) {
       return TRUE;
+    }
+
+    // CRM-15629
+    // During some extern/* calls we don't bootstrap CMS hence
+    // below constants are not set. In such cases, we don't need to
+    // check permission, hence directly return TRUE
+    if (!defined('ABSPATH') || !defined('WPINC')) {
+      require_once 'CRM/Utils/System.php';
+      CRM_Utils_System::loadBootStrap();
     }
 
     require_once ABSPATH . WPINC . '/pluggable.php';

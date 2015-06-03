@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -752,6 +752,9 @@ SET    version = '$version'
     // Rebuild all triggers and re-enable logging if needed
     $logging = new CRM_Logging_Schema();
     $logging->fixSchemaDifferences();
+
+    //CRM-16257 update Config.IDS.ini might be an old copy
+    CRM_Core_IDS::createConfigFile(TRUE);
   }
 
   /**

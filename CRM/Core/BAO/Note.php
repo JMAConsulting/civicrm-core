@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -139,7 +139,7 @@ class CRM_Core_BAO_Note extends CRM_Core_DAO_Note {
    * @return object
    *   $note CRM_Core_BAO_Note object
    */
-  public static function &add(&$params, $ids = array()) {
+  public static function add(&$params, $ids = array()) {
     $dataExists = self::dataExists($params);
     if (!$dataExists) {
       return CRM_Core_DAO::$_nullObject;

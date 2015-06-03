@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
  * This file contains the various menus of the CiviCRM module
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -502,7 +502,7 @@ class CRM_Core_Menu {
     while ($newPath = array_shift($pathElements)) {
       $currentPath = $currentPath ? ($currentPath . '/' . $newPath) : $newPath;
 
-      // when we come accross breadcrumb which involves ids,
+      // when we come across breadcrumb which involves ids,
       // we should skip now and later on append dynamically.
       if (isset($menu[$currentPath]['skipBreadcrumb'])) {
         continue;

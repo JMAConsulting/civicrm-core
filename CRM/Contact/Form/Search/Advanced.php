@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@ s | under the terms of the GNU Affero General Public License           |
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -214,6 +214,7 @@ class CRM_Contact_Form_Search_Advanced extends CRM_Contact_Form_Search {
     }
 
     $defaults['privacy_toggle'] = 1;
+    $defaults['operator'] = 'AND';
 
     return $defaults;
   }
@@ -373,6 +374,7 @@ class CRM_Contact_Form_Search_Advanced extends CRM_Contact_Form_Search {
       'activity_type_id',
       'status_id',
       'activity_subject',
+      'contribution_page_id',
     );
     foreach ($specialParams as $element) {
       $value = CRM_Utils_Array::value($element, $this->_formValues);

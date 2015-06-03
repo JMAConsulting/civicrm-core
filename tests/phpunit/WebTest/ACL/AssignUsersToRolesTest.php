@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -52,6 +52,7 @@ class WebTest_ACL_AssignUsersToRolesTest extends CiviSeleniumTestCase {
 
     $label = "TestAclRole" . substr(sha1(rand()), 0, 4);
     $this->type("label", $label);
+    $this->type("value", "Acl value" . $label);
     $this->click("_qf_Options_next-bottom");
 
     $this->waitForText('crm-notification-container', "The ACL Role '{$label}' has been saved.");
@@ -147,6 +148,7 @@ class WebTest_ACL_AssignUsersToRolesTest extends CiviSeleniumTestCase {
     $this->openCiviPage("admin/options/acl_role", "action=add&reset=1", "_qf_Options_cancel-bottom");
     $label = "TestAclRole" . substr(sha1(rand()), 0, 4);
     $this->type("label", $label);
+    $this->type("value", "Acl value" . $label);
     $this->click("_qf_Options_next-bottom");
     $this->waitForText('crm-notification-container', "The ACL Role '{$label}' has been saved.");
 

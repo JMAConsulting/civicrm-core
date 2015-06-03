@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -279,7 +279,7 @@ class CRM_Dedupe_Finder {
       if (substr_count($key, '.')) {
         $last = explode('.', $key);
         $last = array_pop($last);
-        // make sure the first occurence is kept, not the last
+        // make sure the first occurrence is kept, not the last
         if (!isset($flat[$last])) {
           $flat[$last] = $value;
         }

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -206,7 +206,7 @@ class CRM_Contact_Form_Edit_TagsAndGroups {
         'id' => "tag_{$tagID}",
       );
 
-      $elements[$tagID] = $form->createElement('checkbox', $tagID, '', '', $tagAttribute);
+      $elements[$tagID] = $form->createElement('checkbox', $tagID, '', $varValue['name'], $tagAttribute);
 
       if (array_key_exists('children', $varValue)) {
         self::climbtree($form, $varValue['children'], $elements);

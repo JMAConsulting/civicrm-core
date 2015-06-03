@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -83,7 +83,7 @@ class CRM_Mailing_Form_ForwardMailing extends CRM_Core_Form {
 
     //insert message Text by selecting "Select Template option"
     $this->add('textarea', 'forward_comment', ts('Comment'), array('cols' => '80', 'rows' => '8'));
-    $this->addWysiwyg('html_comment',
+    $this->add('wysiwyg', 'html_comment',
       ts('HTML Message'),
       array('cols' => '80', 'rows' => '8')
     );

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,7 +26,7 @@
  */
 
 /**
- * A task is an item that can be enqueued and later exectued
+ * A task is an item that can be enqueued and later executed
  */
 class CRM_Queue_Task {
 

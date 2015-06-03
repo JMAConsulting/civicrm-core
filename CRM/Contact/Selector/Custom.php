@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id: Selector.php 11510 2007-09-18 09:21:34Z lobo $
  */
 
@@ -183,7 +183,8 @@ class CRM_Contact_Selector_Custom extends CRM_Contact_Selector {
       );
 
       $config = CRM_Core_Config::singleton();
-      if ($config->mapAPIKey && $config->mapProvider) {
+      //CRM-16552: mapAPIKey is not mandatory as google no longer requires an API Key
+      if ($config->mapProvider && ($config->mapAPIKey || $config->mapProvider == 'Google')) {
         self::$_links[CRM_Core_Action::MAP] = array(
           'name' => ts('Map'),
           'url' => 'civicrm/contact/map',

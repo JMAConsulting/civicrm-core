@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -113,7 +113,7 @@ class CRM_Import_DataSource_CSV extends CRM_Import_DataSource {
    * @param string $table
    *   Name of table from which data imported.
    * @param string $fieldSeparator
-   *   Character that seperates the various columns in the file.
+   *   Character that separates the various columns in the file.
    *
    * @return string
    *   name of the created table

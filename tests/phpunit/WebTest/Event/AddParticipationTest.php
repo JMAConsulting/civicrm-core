@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -313,7 +313,7 @@ class WebTest_Event_AddParticipationTest extends CiviSeleniumTestCase {
         'Check Number' => '1044',
       )
     );
-    $this->verifyText("xpath=//table/tbody/tr/td[text()='Total Amount']/following-sibling::td/strong", preg_quote('$ 800.00'), 'In line ' . __LINE__);
+    $this->verifyText("xpath=//table/tbody/tr/td[text()='Total Amount']/following-sibling::td/strong", preg_quote('$ 800.00'));
   }
 
   public function testEventAddMultipleParticipants() {

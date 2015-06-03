@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2014                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -81,12 +81,18 @@ class CRM_Report_Form_Event_ParticipantListing extends CRM_Report_Form_Event {
           'first_name' => array(
             'title' => ts('First Name'),
           ),
+          'middle_name' => array(
+            'title' => ts('Middle Name'),
+          ),
           'last_name' => array(
             'title' => ts('Last Name'),
           ),
           'id' => array(
             'no_display' => TRUE,
             'required' => TRUE,
+          ),
+          'employer_id' => array(
+            'title' => ts('Organization'),
           ),
           'gender_id' => array(
             'title' => ts('Gender'),
@@ -102,8 +108,11 @@ class CRM_Report_Form_Event_ParticipantListing extends CRM_Report_Form_Event {
             'title' => ts('Age at Event'),
             'dbAlias' => 'TIMESTAMPDIFF(YEAR, contact_civireport.birth_date, event_civireport.start_date)',
           ),
-          'employer_id' => array(
-            'title' => ts('Organization'),
+          'contact_type' => array(
+            'title' => ts('Contact Type'),
+          ),
+          'contact_sub_type' => array(
+            'title' => ts('Contact Subtype'),
           ),
         ),
         'grouping' => 'contact-fields',
@@ -113,6 +122,10 @@ class CRM_Report_Form_Event_ParticipantListing extends CRM_Report_Form_Event {
             'default' => '1',
             'default_weight' => '0',
             'default_order' => 'ASC',
+          ),
+          'first_name' => array(
+            'name' => 'first_name',
+            'title' => ts('First Name'),
           ),
           'gender_id' => array(
             'name' => 'gender_id',
@@ -126,6 +139,12 @@ class CRM_Report_Form_Event_ParticipantListing extends CRM_Report_Form_Event {
             'name' => 'age_at_event',
             'title' => ts('Age at Event'),
           ),
+          'contact_type' => array(
+            'title' => ts('Contact Type'),
+          ),
+          'contact_sub_type' => array(
+            'title' => ts('Contact Subtype'),
+          ),
         ),
         'filters' => array(
           'sort_name' => array(
@@ -138,9 +157,14 @@ class CRM_Report_Form_Event_ParticipantListing extends CRM_Report_Form_Event {
             'options' => CRM_Core_PseudoConstant::get('CRM_Contact_DAO_Contact', 'gender_id'),
           ),
           'birth_date' => array(
-            'title' => 'Birth Date',
+            'title' => ts('Birth Date'),
             'operatorType' => CRM_Report_Form::OP_DATE,
-            'type' => CRM_Utils_Type::T_DATE,
+          ),
+          'contact_type' => array(
+            'title' => ts('Contact Type'),
+          ),
+          'contact_sub_type' => array(
+            'title' => ts('Contact Subtype'),
           ),
         ),
       ),
@@ -532,17 +556,19 @@ ORDER BY  cv.label
       $this->_from .= "
             LEFT JOIN civicrm_line_item line_item_civireport
                   ON line_item_civireport.entity_table = 'civicrm_participant' AND
-                     line_item_civireport.entity_id = {$this->_aliases['civicrm_participant']}.id
+                     line_item_civireport.entity_id = {$this->_aliases['civicrm_participant']}.id AND
+                     line_item_civireport.qty > 0
       ";
     }
     if ($this->_balance) {
       $this->_from .= "
             LEFT JOIN civicrm_entity_financial_trxn eft
-                  ON (eft.entity_id = contribution_civireport.id)
+                  ON (eft.entity_id = {$this->_aliases['civicrm_contribution']}.id)
             LEFT JOIN civicrm_financial_account fa
                   ON (fa.account_type_code = 'AR')
             LEFT JOIN civicrm_financial_trxn ft
-                  ON (ft.id = eft.financial_trxn_id AND eft.entity_table = 'civicrm_contribution') AND (ft.from_financial_account_id = fa.id)
+                  ON (ft.id = eft.financial_trxn_id AND eft.entity_table = 'civicrm_contribution') AND
+                     (ft.to_financial_account_id != fa.id)
       ";
     }
   }

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -114,6 +114,14 @@ function _civicrm_api3_permissions($entity, $action, &$params) {
   $permissions['loc_block'] = $permissions['address'];
   $permissions['entity_tag'] = $permissions['address'];
   $permissions['note'] = $permissions['address'];
+
+  // Allow non-admins to get and create tags to support tagset widget
+  // Delete is still reserved for admins
+  $permissions['tag'] = array(
+    'get' => array('access CiviCRM'),
+    'create' => array('access CiviCRM'),
+    'update' => array('access CiviCRM'),
+  );
 
   //relationship permissions
   $permissions['relationship'] = array(
@@ -233,9 +241,20 @@ function _civicrm_api3_permissions($entity, $action, &$params) {
       'edit groups',
     ),
   );
-  $permissions['group_contact'] = $permissions['group'];
+
   $permissions['group_nesting'] = $permissions['group'];
   $permissions['group_organization'] = $permissions['group'];
+
+  //Group Contact permission
+  $permissions['group_contact'] = array(
+    'get' => array(
+      'access CiviCRM',
+    ),
+    'default' => array(
+      'access CiviCRM',
+      'edit all contacts',
+    ),
+  );
 
   // CiviMail Permissions
   $civiMailBasePerms = array(

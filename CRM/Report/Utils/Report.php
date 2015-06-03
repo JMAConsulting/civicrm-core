@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -54,7 +54,7 @@ class CRM_Report_Utils_Report {
       array_shift($args);
       array_shift($args);
 
-      // put rest of arguement back in the form of url, which is how value
+      // put rest of argument back in the form of url, which is how value
       // is stored in option value table
       $optionVal = implode('/', $args);
     }
@@ -272,12 +272,16 @@ WHERE  inst.report_id = %1";
             elseif (CRM_Utils_Array::value('group_by', $form->_columnHeaders[$v]) == 'YEAR') {
               $value = CRM_Utils_Date::customFormat($value, $config->dateformatYear);
             }
+            elseif ($form->_columnHeaders[$v]['type'] == 12) {
+              // This is a datetime format
+              $value = CRM_Utils_Date::customFormat($value, '%Y-%m-%d %H:%i');
+            }
             else {
               $value = CRM_Utils_Date::customFormat($value, '%Y-%m-%d');
             }
           }
           elseif (CRM_Utils_Array::value('type', $form->_columnHeaders[$v]) == 1024) {
-            $value = CRM_Utils_Money::format($value);
+            $value = CRM_Utils_Money::format($value, $row['civicrm_contribution_currency']);
           }
           $displayRows[$v] = '"' . $value . '"';
         }

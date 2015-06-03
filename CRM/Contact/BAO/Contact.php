@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  */
 class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
@@ -327,7 +327,7 @@ class CRM_Contact_BAO_Contact extends CRM_Contact_DAO_Contact {
 
     $contact = self::add($params);
     if (!$contact) {
-      // Not dying here is stupid, since we get into wierd situation and into a bug that
+      // Not dying here is stupid, since we get into weird situation and into a bug that
       // is impossible to figure out for the user or for us
       // CRM-7925
       CRM_Core_Error::fatal();
@@ -815,15 +815,21 @@ WHERE     civicrm_contact.id = " . CRM_Utils_Type::escape($id, 'Integer');
     }
 
     $contactType = $contact->contact_type;
+    // currently we only clear employer cache.
+    // we are now deleting inherited membership if any.
+    if ($contact->contact_type == 'Organization') {
+      $action = $restore ? CRM_Core_Action::ENABLE : CRM_Core_Action::DISABLE;
+      $relationshipDtls = CRM_Contact_BAO_Relationship::getRelationship($id);
+      if (!empty($relationshipDtls)) {
+        foreach ($relationshipDtls as $rId => $details) {
+          CRM_Contact_BAO_Relationship::disableEnableRelationship($rId, $action);
+        }
+      }
+      CRM_Contact_BAO_Contact_Utils::clearAllEmployee($id);
+    }
 
     if ($restore) {
       return self::contactTrashRestore($contact, TRUE);
-    }
-
-    // currently we only clear employer cache.
-    // we are not deleting inherited membership if any.
-    if ($contact->contact_type == 'Organization') {
-      CRM_Contact_BAO_Contact_Utils::clearAllEmployee($id);
     }
 
     // start a new transaction
@@ -1997,7 +2003,11 @@ ORDER BY civicrm_email.is_primary DESC";
       !empty($params['contact_sub_type_hidden'])
     ) {
       // if profile was used, and had any subtype, we obtain it from there
-      $data['contact_sub_type'] = CRM_Core_DAO::VALUE_SEPARATOR . implode(CRM_Core_DAO::VALUE_SEPARATOR, (array) $params['contact_sub_type_hidden']) . CRM_Core_DAO::VALUE_SEPARATOR;
+      //CRM-13596 - add to existing contact types, rather than overwriting
+      $data_contact_sub_type_arr = explode(CRM_Core_DAO::VALUE_SEPARATOR, trim($data['contact_sub_type'], CRM_Core_DAO::VALUE_SEPARATOR));
+      if (!in_array($params['contact_sub_type_hidden'], $data_contact_sub_type_arr)) {
+        $data['contact_sub_type'] = $data['contact_sub_type'] . implode(CRM_Core_DAO::VALUE_SEPARATOR, (array) $params['contact_sub_type_hidden']) . CRM_Core_DAO::VALUE_SEPARATOR;
+      }
     }
 
     if ($ctype == 'Organization') {
@@ -2219,14 +2229,20 @@ ORDER BY civicrm_email.is_primary DESC";
             }
           }
 
-          $type = $data['contact_type'];
-          if (!empty($data['contact_sub_type'])) {
-            $type = $data['contact_sub_type'];
-            $type = explode(CRM_Core_DAO::VALUE_SEPARATOR, trim($type, CRM_Core_DAO::VALUE_SEPARATOR));
-            // generally a contact even if, has multiple subtypes the parent-type is going to be one only
-            // and since formatCustomField() would be interested in parent type, lets consider only one subtype
-            // as the results going to be same.
-            $type = $type[0];
+          //CRM-13596 - check for contact_sub_type_hidden first
+          if (array_key_exists('contact_sub_type_hidden', $params)) {
+            $type = $params['contact_sub_type_hidden'];
+          }
+          else {
+            $type = $data['contact_type'];
+            if (!empty($data['contact_sub_type'])) {
+              $type = $data['contact_sub_type'];
+              $type = explode(CRM_Core_DAO::VALUE_SEPARATOR, trim($type, CRM_Core_DAO::VALUE_SEPARATOR));
+              // generally a contact even if, has multiple subtypes the parent-type is going to be one only
+              // and since formatCustomField() would be interested in parent type, lets consider only one subtype
+              // as the results going to be same.
+              $type = $type[0];
+            }
           }
 
           CRM_Core_BAO_CustomField::formatCustomField($customFieldId,

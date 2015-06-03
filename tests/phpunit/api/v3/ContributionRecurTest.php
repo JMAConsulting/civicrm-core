@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -72,6 +72,22 @@ class api_v3_ContributionRecurTest extends CiviUnitTestCase {
     );
     $result = $this->callAPIAndDocument($this->_entity, 'get', $getParams, __FUNCTION__, __FILE__);
     $this->assertEquals(1, $result['count']);
+  }
+
+  public function testCreateContributionRecurWithToken() {
+    // create token
+    $this->createLoggedInUser();
+    $paymentProcessor = $this->processorCreate();
+    $token = $this->callAPISuccess('PaymentToken', 'create', array(
+      'payment_processor_id' => $paymentProcessor->id,
+      'token' => 'hhh',
+      'contact_id' => $this->individualCreate(),
+    ));
+    $params['payment_token_id'] = $token['id'];
+    $result = $this->callAPISuccess($this->_entity, 'create', $this->params);
+    $this->assertEquals(1, $result['count']);
+    $this->assertNotNull($result['values'][$result['id']]['id']);
+    $this->getAndCheck($this->params, $result['id'], $this->_entity);
   }
 
   public function testDeleteContributionRecur() {

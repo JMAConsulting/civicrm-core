@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -256,9 +256,20 @@ class CRM_Core_Permission_Base {
    * @return array
    *   Array of permissions, in the same format as CRM_Core_Permission::getCorePermissions().
    */
-  public function getAllModulePermissions() {
+  public function getAllModulePermissions($descriptions = FALSE) {
     $permissions = array();
     CRM_Utils_Hook::permission($permissions);
+
+    if ($descriptions) {
+      foreach ($permissions as $permission => $label) {
+        $permissions[$permission] = (is_array($label)) ? $label : array($label);
+      }
+    }
+    else {
+      foreach ($permissions as $permission => $label) {
+        $permissions[$permission] = (is_array($label)) ? array_shift($label) : $label;
+      }
+    }
     return $permissions;
   }
 

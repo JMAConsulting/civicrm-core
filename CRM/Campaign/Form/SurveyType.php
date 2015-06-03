@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -124,7 +124,7 @@ class CRM_Campaign_Form_SurveyType extends CRM_Admin_Form {
     $this->applyFilter('__ALL__', 'trim');
     $this->add('text', 'label', ts('Title'), CRM_Core_DAO::getAttribute('CRM_Core_DAO_OptionValue', 'label'), TRUE);
 
-    $this->addWysiwyg('description',
+    $this->add('wysiwyg', 'description',
       ts('Description'),
       CRM_Core_DAO::getAttribute('CRM_Core_DAO_OptionValue', 'description')
     );

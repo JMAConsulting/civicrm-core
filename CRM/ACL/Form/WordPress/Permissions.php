@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2014                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -49,6 +49,7 @@ class CRM_ACL_Form_WordPress_Permissions extends CRM_Core_Form {
 
     // Get the core permissions array
     $permissionsArray = self::getPermissionArray();
+    $permissionsDesc = self::getPermissionArray(TRUE);
 
     // Get the wordpress roles, default capabilities and assign to the form
     // TODO: Create a new wordpress role (Anonymous user) and define capabilities in Wordpress Access Control
@@ -81,6 +82,13 @@ class CRM_ACL_Form_WordPress_Permissions extends CRM_Core_Form {
 
     $this->setDefaults($defaults);
 
+    $descArray = array();
+    foreach ($permissionsDesc as $perm => $attr) {
+      if (count($attr) > 1) {
+        $descArray[$perm] = $attr[1];
+      }
+    }
+    $this->assign('permDesc', $descArray);
     $this->assign('rolePerms', $rolePerms);
     $this->assign('roles', $roles);
 
@@ -173,13 +181,16 @@ class CRM_ACL_Form_WordPress_Permissions extends CRM_Core_Form {
    * This function should be shared from a similar one in
    * distmaker/utils/joomlaxml.php
    *
+   * @param bool $descriptions
+   *   Whether to return permission descriptions
+   *
    * @return array
    *   civicrm permissions
    */
-  public static function getPermissionArray() {
+  public static function getPermissionArray($descriptions = FALSE) {
     global $civicrm_root;
 
-    $permissions = CRM_Core_Permission::basicPermissions();
+    $permissions = CRM_Core_Permission::basicPermissions(FALSE, $descriptions);
 
     $perms_array = array();
     foreach ($permissions as $perm => $title) {

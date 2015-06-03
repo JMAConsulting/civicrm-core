@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -42,8 +42,8 @@ class CRM_Contact_Form_Edit_Notes {
    */
   public static function buildQuickForm(&$form) {
     $form->applyFilter('__ALL__', 'trim');
-    $form->add('text', 'subject', ts('Subject'), array('size' => 60, 'maxlength' => 254));
-    $form->add('textarea', 'note', ts('Notes'), array('cols' => '60', 'rows' => '3'));
+    $form->addField('subject', array('entity' => 'note', 'size' => '60'));
+    $form->addField('note', array('entity' => 'note', 'rows' => 3));
   }
 
 }

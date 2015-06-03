@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -61,7 +61,7 @@
 
       function cascadeChangesDialog() {
         CRM.confirm({
-          title: "{/literal}{ts escape='js' 1=$entity_type}Update recurring %1{/ts}{literal}",
+          title: "{/literal}{ts escape='js' 1=$entity_type}Update repeating %1{/ts}{literal}",
           message: $('#recurring-dialog-tpl').html()
         })
           .on('crmConfirm:yes', updateMode)

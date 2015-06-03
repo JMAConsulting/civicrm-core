@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
  *
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -113,7 +113,7 @@ class CRM_Core_BAO_ConfigSetting {
       }
     }
 
-    //keep user preferred language upto date, CRM-7746
+    //keep user preferred language up to date, CRM-7746
     $session = CRM_Core_Session::singleton();
     $lcMessages = CRM_Utils_Array::value('lcMessages', $params);
     if ($lcMessages && $session->get('userID')) {

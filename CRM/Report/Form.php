@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2014                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -1003,13 +1003,16 @@ class CRM_Report_Form extends CRM_Core_Form {
 
             if (!$groupTitle && isset($table['group_title'])) {
               $groupTitle = $table['group_title'];
+              // Having a group_title is secret code for being a custom group
+              // which cryptically translates to needing an accordion.
+              // here we make that explicit.
+              $colGroups[$tableName]['use_accordian_for_field_selection'] = TRUE;
             }
 
             $colGroups[$tableName]['fields'][$fieldName] = CRM_Utils_Array::value('title', $field);
             if ($groupTitle && empty($colGroups[$tableName]['group_title'])) {
               $colGroups[$tableName]['group_title'] = $groupTitle;
             }
-
             $options[$fieldName] = CRM_Utils_Array::value('title', $field);
           }
         }
@@ -1038,9 +1041,20 @@ class CRM_Report_Form extends CRM_Core_Form {
    * Add filters to report.
    */
   public function addFilters() {
-    $filters = array();
+    $filters = $filterGroups = array();
     $count = 1;
+
     foreach ($this->_filters as $table => $attributes) {
+      if (isset($this->_columns[$table]['group_title'])) {
+        // The presence of 'group_title' is secret code for 'is_a_custom_table'
+        // which magically means to 'display in an accordian'
+        // here we make this explicit.
+        $filterGroups[$table] = array(
+          'group_title' => $this->_columns[$table]['group_title'],
+          'use_accordian_for_field_selection' => TRUE,
+
+        );
+      }
       foreach ($attributes as $fieldName => $field) {
         // get ready with option value pair
         // @ todo being able to specific options for a field (e.g a date field) in the field spec as an array rather than an override
@@ -1156,6 +1170,7 @@ class CRM_Report_Form extends CRM_Core_Form {
       );
     }
     $this->assign('filters', $filters);
+    $this->assign('filterGroups', $filterGroups);
   }
 
   /**
@@ -1190,8 +1205,9 @@ class CRM_Report_Form extends CRM_Core_Form {
       // FIXME: For now lets build all elements as checkboxes.
       // Once we clear with the format we can build elements based on type
 
-      $options = array();
       foreach ($this->_options as $fieldName => $field) {
+        $options = array();
+
         if ($field['type'] == 'select') {
           $this->addElement('select', "{$fieldName}", $field['title'], $field['options']);
         }
@@ -1844,6 +1860,8 @@ class CRM_Report_Form extends CRM_Core_Form {
   }
 
   /**
+   * Possibly unused function.
+   *
    * @todo - could not find any instances where this is called
    *
    * @param bool $relative
@@ -1877,6 +1895,8 @@ class CRM_Report_Form extends CRM_Core_Form {
   }
 
   /**
+   * Get values for from and to for date ranges.
+   *
    * @param bool $relative
    * @param string $from
    * @param string $to
@@ -1915,7 +1935,9 @@ class CRM_Report_Form extends CRM_Core_Form {
   }
 
   /**
-   * @param $rows
+   * Alter the way in which custom data fields are displayed.
+   *
+   * @param array $rows
    */
   public function alterCustomDataDisplay(&$rows) {
     // custom code to alter rows having custom values
@@ -4190,6 +4212,7 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
       $select = str_ireplace('SELECT SQL_CALC_FOUND_ROWS ', $select, $this->_select);
 
       $sql = "{$select} {$this->_from} {$this->_where} {$this->_groupBy} {$this->_having} {$this->_orderBy}";
+      $sql = str_replace('WITH ROLLUP', '', $sql);
       $dao = CRM_Core_DAO::executeQuery($sql);
 
       $contact_ids = array();

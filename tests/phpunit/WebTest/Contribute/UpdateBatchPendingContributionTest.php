@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -117,7 +117,7 @@ class WebTest_Contribute_UpdateBatchPendingContributionTest extends CiviSelenium
     $this->waitForElementPresent("contribution_date_low");
 
     $this->type("sort_name", "Anderson");
-    $this->click('contribution_status_id');
+    $this->multiselect2('contribution_status_id', array("Completed"));
     $this->click("_qf_Search_refresh");
 
     $this->waitForPageToLoad($this->getTimeoutMsec());

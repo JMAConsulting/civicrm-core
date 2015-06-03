@@ -216,7 +216,7 @@ CRM.strings = CRM.strings || {};
 
   // Workaround for https://github.com/ivaynberg/select2/issues/1246
   $.ui.dialog.prototype._allowInteraction = function(e) {
-    return !!$(e.target).closest('.ui-dialog, .ui-datepicker, .select2-drop, .cke_dialog').length;
+    return !!$(e.target).closest('.ui-dialog, .ui-datepicker, .select2-drop, .cke_dialog, #civicrm-menu').length;
   };
 
   // Implements jQuery hook.prop
@@ -281,8 +281,8 @@ CRM.strings = CRM.strings || {};
     _.each(options, function(option) {
       if (option.children) {
         rendered += '<optgroup label="' + esc(option.value) + '">' +
-          CRM.utils.renderOptions(option.children, val) +
-          '</optgroup>';
+        CRM.utils.renderOptions(option.children, val) +
+        '</optgroup>';
       } else {
         var selected = ($.inArray('' + option.key, val) > -1) ? 'selected="selected"' : '';
         rendered += '<option value="' + esc(option.key) + '"' + selected + '>' + esc(option.value) + '</option>';
@@ -311,11 +311,11 @@ CRM.strings = CRM.strings || {};
     }
   }
 
-/**
- * Compare Form Input values against cached initial value.
- *
- * @return {Boolean} true if changes have been made.
- */
+  /**
+   * Compare Form Input values against cached initial value.
+   *
+   * @return {Boolean} true if changes have been made.
+   */
   CRM.utils.initialValueChanged = function(el) {
     var isDirty = false;
     $(':input:visible, .select2-container:visible+:input:hidden', el).not('[type=submit], [type=button], .crm-action-menu, :disabled').each(function () {
@@ -329,7 +329,7 @@ CRM.strings = CRM.strings || {};
     });
     return isDirty;
   };
-  
+
   /**
    * This provides defaults for ui.dialog which either need to be calculated or are different from global defaults
    *
@@ -356,7 +356,7 @@ CRM.strings = CRM.strings || {};
     }
     return settings;
   };
-  
+
   /**
    * Wrapper for select2 initialization function; supplies defaults
    * @param options object
@@ -429,7 +429,7 @@ CRM.strings = CRM.strings || {};
         minimumInputLength: 1,
         formatResult: CRM.utils.formatSelect2Result,
         formatSelection: function(row) {
-          return row.label;
+          return (row.prefix !== undefined ? row.prefix + ' ' : '') + row.label + (row.suffix !== undefined ? ' ' + row.suffix : '');
         },
         escapeMarkup: function (m) {return m;},
         initSelection: function($el, callback) {
@@ -503,7 +503,7 @@ CRM.strings = CRM.strings || {};
             .on('click.crmEntity', 'a.crm-add-entity', function(e) {
               $el.select2('close');
               CRM.loadForm($(this).attr('href'), {
-                dialog: {width: 500, height: 'auto'}
+                dialog: {width: 500, height: 220}
               }).on('crmFormSuccess', function(e, data) {
                 if (data.status === 'success' && data.id) {
                   CRM.status(ts('%1 Created', {1: data.label}));
@@ -662,6 +662,38 @@ CRM.strings = CRM.strings || {};
     });
   };
 
+  $.fn.crmAjaxTable = function() {
+    return $(this).each(function() {
+      //Declare the defaults for DataTables
+      var defaults = {
+        "processing": true,
+        "serverSide": true,
+        "dom": '<"crm-datatable-pager-top"lfp>rt<"crm-datatable-pager-bottom"ip>',
+        "pageLength": 25,
+        "drawCallback": function(settings) {
+          //Add data attributes to cells
+          $('thead th', settings.nTable).each( function( index ) {
+            $.each(this.attributes, function() {
+              if(this.name.match("^cell-")) {
+                var cellAttr = this.name.substring(5);
+                var cellValue = this.value;
+                $('tbody tr', settings.nTable).each( function() {
+                  $('td:eq('+ index +')', this).attr( cellAttr, cellValue );
+                });
+              }
+            });
+          });
+          //Reload table after draw
+          $(settings.nTable).trigger('crmLoad');
+        }
+      };
+      //Include any table specific data
+      var settings = $.extend(true, defaults, $(this).data('table'));
+      //Make the DataTables call
+      $(this).DataTable(settings);
+    });
+  };
+
   CRM.utils.formatSelect2Result = function (row) {
     var markup = '<div class="crm-select2-row">';
     if (row.image !== undefined) {
@@ -670,8 +702,10 @@ CRM.strings = CRM.strings || {};
     else if (row.icon_class) {
       markup += '<div class="crm-select2-icon"><div class="crm-icon ' + row.icon_class + '-icon"></div></div>';
     }
-    markup += '<div><div class="crm-select2-row-label '+(row.label_class || '')+'">' + row.label + '</div>';
-    markup += '<div class="crm-select2-row-description">';
+    markup += '<div><div class="crm-select2-row-label '+(row.label_class || '')+'">' +
+      (row.prefix !== undefined ? row.prefix + ' ' : '') + row.label + (row.suffix !== undefined ? ' ' + row.suffix : '') +
+      '</div>' +
+      '<div class="crm-select2-row-description">';
     $.each(row.description || [], function(k, text) {
       markup += '<p>' + text + '</p>';
     });
@@ -732,11 +766,11 @@ CRM.strings = CRM.strings || {};
     }
     var markup = '<div class="crm-entityref-filters">' +
       '<select class="crm-entityref-filter-key' + (filter.key ? ' active' : '') + '">' +
-        '<option value="">' + ts('Refine search...') + '</option>' +
-        CRM.utils.renderOptions(filters, filter.key) +
+      '<option value="">' + ts('Refine search...') + '</option>' +
+      CRM.utils.renderOptions(filters, filter.key) +
       '</select> &nbsp; ' +
       '<select class="crm-entityref-filter-value' + (filter.key ? ' active"' : '"') + (filter.key ? '' : ' style="display:none;"') + '>' +
-        '<option value="">' + ts('- select -') + '</option>';
+      '<option value="">' + ts('- select -') + '</option>';
     if (filterSpec && filterSpec.options) {
       markup += CRM.utils.renderOptions(filterSpec.options, filter.value);
     }
@@ -822,6 +856,8 @@ CRM.strings = CRM.strings || {};
           }
         })
         .find('input.select-row:checked').parents('tr').addClass('crm-row-selected');
+      $('table.crm-sortable', e.target).DataTable();
+      $('table.crm-ajax-table', e.target).crmAjaxTable();
       if ($("input:radio[name=radio_ts]").size() == 1) {
         $("input:radio[name=radio_ts]").prop("checked", true);
       }
@@ -832,6 +868,16 @@ CRM.strings = CRM.strings || {};
       $('form[data-warn-changes] :input', e.target).each(function() {
         $(this).data('crm-initial-value', $(this).is(':checkbox, :radio') ? $(this).prop('checked') : $(this).val());
       });
+      $('textarea.crm-form-wysiwyg', e.target)
+        .not('.crm-wysiwyg-enabled')
+        .addClass('crm-wysiwyg-enabled')
+        .each(function() {
+          if ($(this).hasClass("collapsed")) {
+            CRM.wysiwyg.createCollapsed(this);
+          } else {
+            CRM.wysiwyg.create(this);
+          }
+        });
     })
     .on('dialogopen', function(e) {
       var $el = $(e.target);
@@ -870,72 +916,14 @@ CRM.strings = CRM.strings || {};
     .on('submit', function(e) {
       // CRM-14353 - disable changes warn when submitting a form
       $('[data-warn-changes]').attr('data-warn-changes', 'false');
-    })
-   ;
+    });
 
   // CRM-14353 - Warn of unsaved changes for forms which have opted in
   window.onbeforeunload = function() {
     if (CRM.utils.initialValueChanged($('form[data-warn-changes=true]:visible'))) {
       return ts('You have unsaved changes.');
-     }
+    }
   };
-
-  /**
-   * Function to make multiselect boxes behave as fields in small screens
-   */
-  function advmultiselectResize() {
-    var amswidth = $("#crm-container form:has(table.advmultiselect)").width();
-    if (amswidth < 700) {
-      $("form table.advmultiselect td").css('display', 'block');
-    }
-    else {
-      $("form table.advmultiselect td").css('display', 'table-cell');
-    }
-    var contactwidth = $('#crm-container #mainTabContainer').width();
-    if (contactwidth < 600) {
-      $('#crm-container #mainTabContainer').addClass('narrowpage');
-      $('#crm-container #mainTabContainer.narrowpage #contactTopBar td').each(function (index) {
-        if (index > 1) {
-          if (index % 2 === 0) {
-            $(this).parent().after('<tr class="narrowadded"></tr>');
-          }
-          var item = $(this);
-          $(this).parent().next().append(item);
-        }
-      });
-    }
-    else {
-      $('#crm-container #mainTabContainer.narrowpage').removeClass('narrowpage');
-      $('#crm-container #mainTabContainer #contactTopBar tr.narrowadded td').each(function () {
-        var nitem = $(this);
-        var parent = $(this).parent();
-        $(this).parent().prev().append(nitem);
-        if (parent.children().size() === 0) {
-          parent.remove();
-        }
-      });
-      $('#crm-container #mainTabContainer.narrowpage #contactTopBar tr.added').detach();
-    }
-    var cformwidth = $('#crm-container #Contact .contact_basic_information-section').width();
-
-    if (cformwidth < 720) {
-      $('#crm-container .contact_basic_information-section').addClass('narrowform');
-      $('#crm-container .contact_basic_information-section table.form-layout-compressed td .helpicon').parent().addClass('hashelpicon');
-      if (cformwidth < 480) {
-        $('#crm-container .contact_basic_information-section').addClass('xnarrowform');
-      }
-      else {
-        $('#crm-container .contact_basic_information-section.xnarrowform').removeClass('xnarrowform');
-      }
-    }
-    else {
-      $('#crm-container .contact_basic_information-section.narrowform').removeClass('narrowform');
-      $('#crm-container .contact_basic_information-section.xnarrowform').removeClass('xnarrowform');
-    }
-  }
-
-  advmultiselectResize();
-  $(window).resize(advmultiselectResize);
 
   $.fn.crmtooltip = function () {
     $(document)
@@ -1366,12 +1354,7 @@ CRM.strings = CRM.strings || {};
 
     $().crmtooltip();
   });
-  /**
-   * @deprecated
-   */
-  $.fn.crmAccordions = function () {
-    CRM.console('warn', 'Warning: $.crmAccordions was called. This function is deprecated and should not be used.');
-  };
+
   /**
    * Collapse or expand an accordion
    * @param speed
@@ -1391,11 +1374,12 @@ CRM.strings = CRM.strings || {};
   /**
    * Clientside currency formatting
    * @param number value
+   * @param [optional] boolean onlyNumber - if true, we return formatted amount without currency sign
    * @param [optional] string format - currency representation of the number 1234.56
    * @return string
    */
   var currencyTemplate;
-  CRM.formatMoney = function(value, format) {
+  CRM.formatMoney = function(value, onlyNumber, format) {
     var decimal, separator, sign, i, j, result;
     if (value === 'init' && format) {
       currencyTemplate = format;
@@ -1413,6 +1397,9 @@ CRM.strings = CRM.strings || {};
     i = parseInt(value = Math.abs(value).toFixed(2)) + '';
     j = ((j = i.length) > 3) ? j % 3 : 0;
     result = sign + (j ? i.substr(0, j) + separator : '') + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + separator) + (2 ? decimal + Math.abs(value - i).toFixed(2).slice(2) : '');
+    if ( onlyNumber ) {
+      return result;
+    }
     return format.replace(/1.*234.*56/, result);
   };
 
@@ -1431,5 +1418,12 @@ CRM.strings = CRM.strings || {};
   // @see CRM_Core_Resources::addPermissions
   CRM.checkPerm = function(perm) {
     return CRM.permissions[perm];
+  };
+
+  // Round while preserving sigfigs
+  CRM.utils.sigfig = function(n, digits) {
+    var len = ("" + n).length;
+    var scale = Math.pow(10.0, len-digits);
+    return Math.round(n / scale) * scale;
   };
 })(jQuery, _);

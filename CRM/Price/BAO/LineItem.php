@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -74,10 +74,10 @@ class CRM_Price_BAO_LineItem extends CRM_Price_DAO_LineItem {
     $return = $lineItemBAO->save();
 
     if ($id) {
-      CRM_Utils_Hook::post('edit', 'LineItem', $id, $params);
+      CRM_Utils_Hook::post('edit', 'LineItem', $id, $lineItemBAO);
     }
     else {
-      CRM_Utils_Hook::post('create', 'LineItem', $params['entity_id'], $params);
+      CRM_Utils_Hook::post('create', 'LineItem', $lineItemBAO->id, $lineItemBAO);
     }
 
     return $return;
@@ -186,6 +186,13 @@ AND li.entity_id = {$entityId}
       LEFT JOIN civicrm_price_field pf ON (pf.id = li.price_field_id )";
     $whereClause = "
       WHERE     %2.id = %1";
+
+    if ($entity == 'participant') {
+      $additionalParticipantIDs = CRM_Event_BAO_Participant::getAdditionalParticipantIds($entityId);
+      if (!empty($additionalParticipantIDs)) {
+        $whereClause = "WHERE %2.id IN (%1, " . implode(', ', $additionalParticipantIDs) . ")";
+      }
+    }
 
     $orderByClause = " ORDER BY pf.weight, pfv.weight";
 
@@ -542,10 +549,10 @@ AND li.entity_id = {$entityId}
       return FALSE;
     }
     if ($lineItemId['html_type'] == 'Text') {
-      $tax = $lineItemId['tax_amount'] / ($lineItemId['unit_price'] * $lineItemId['qty']) * 100;
+      $tax = round($lineItemId['tax_amount'] / ($lineItemId['unit_price'] * $lineItemId['qty']) * 100, 2);
     }
     else {
-      $tax = ($lineItemId['tax_amount'] / $lineItemId['unit_price']) * 100;
+      $tax = round(($lineItemId['tax_amount'] / $lineItemId['unit_price']) * 100, 2);
     }
     return $tax;
   }

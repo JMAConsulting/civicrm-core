@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,6 +26,7 @@
  */
 
 use Civi\Payment\System;
+use Civi\Payment\Exception\PaymentProcessorException;
 
 /**
  * Class CRM_Core_Payment.
@@ -89,7 +90,7 @@ abstract class CRM_Core_Payment {
    * @return CRM_Core_Payment
    * @throws \CRM_Core_Exception
    */
-  public static function &singleton($mode = 'test', &$paymentProcessor, &$paymentForm = NULL, $force = FALSE) {
+  public static function singleton($mode = 'test', &$paymentProcessor, &$paymentForm = NULL, $force = FALSE) {
     // make sure paymentProcessor is not empty
     // CRM-7424
     if (empty($paymentProcessor)) {
@@ -163,6 +164,24 @@ abstract class CRM_Core_Payment {
   }
 
   /**
+   * Can more than one transaction be processed at once?
+   *
+   * In general processors that process payment by server to server communication support this while others do not.
+   *
+   * In future we are likely to hit an issue where this depends on whether a token already exists.
+   *
+   * @return bool
+   */
+  protected function supportsMultipleConcurrentPayments() {
+    if ($this->_paymentProcessor['billing_mode'] == 4 || $this->_paymentProcessor['payment_type'] != 1) {
+      return FALSE;
+    }
+    else {
+      return TRUE;
+    }
+  }
+
+  /**
    * Are live payments supported - e.g dummy doesn't support this.
    *
    * @return bool
@@ -207,6 +226,27 @@ abstract class CRM_Core_Payment {
   }
 
   /**
+   * Getter for the payment processor.
+   *
+   * The payment processor array is based on the civicrm_payment_processor table entry.
+   *
+   * @return array
+   *   Payment processor array.
+   */
+  public function getPaymentProcessor() {
+    return $this->_paymentProcessor;
+  }
+
+  /**
+   * Setter for the payment processor.
+   *
+   * @param array $processor
+   */
+  public function setPaymentProcessor($processor) {
+    $this->_paymentProcessor = $processor;
+  }
+
+  /**
    * Setter for the payment form that wants to use the processor.
    *
    * @deprecated
@@ -229,7 +269,9 @@ abstract class CRM_Core_Payment {
 
   /**
    * Getter for accessing member vars.
+   *
    * @todo believe this is unused
+   *
    * @param string $name
    *
    * @return null
@@ -453,28 +495,50 @@ abstract class CRM_Core_Payment {
   abstract protected function doDirectPayment(&$params);
 
   /**
-   * Process payment - this function wraps around both doTransferPayment and doDirectPayment
-   * it ensures an exception is thrown & moves some of this logic out of the form layer and makes the forms more agnostic
+   * Process payment - this function wraps around both doTransferPayment and doDirectPayment.
+   *
+   * The function ensures an exception is thrown & moves some of this logic out of the form layer and makes the forms
+   * more agnostic.
+   *
+   * Payment processors should set contribution_status_id. This function adds some historical defaults ie. the
+   * assumption that if a 'doDirectPayment' processors comes back it completed the transaction & in fact
+   * doTransferCheckout would not traditionally come back.
+   *
+   * doDirectPayment does not do an immediate payment for Authorize.net or Paypal so the default is assumed
+   * to be Pending.
    *
    * @param array $params
    *
-   * @param $component
+   * @param string $component
    *
    * @return array
-   *   (modified)
-   * @throws CRM_Core_Exception
+   *   Result array
+   *
+   * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public function doPayment(&$params, $component = 'contribute') {
+    $statuses = CRM_Contribute_BAO_Contribution::buildOptions('contribution_status_id');
     if ($this->_paymentProcessor['billing_mode'] == 4) {
       $result = $this->doTransferCheckout($params, $component);
+      if (is_array($result) && !isset($result['contribution_status_id'])) {
+        $result['contribution_status_id'] = array_search('Pending', $statuses);
+      }
     }
     else {
       $result = $this->doDirectPayment($params, $component);
+      if (is_array($result) && !isset($result['contribution_status_id'])) {
+        if (!empty($params['is_recur'])) {
+          // See comment block.
+          $paymentParams['contribution_status_id'] = array_search('Pending', $statuses);
+        }
+        else {
+          $result['contribution_status_id'] = array_search('Completed', $statuses);
+        }
+      }
     }
     if (is_a($result, 'CRM_Core_Error')) {
-      throw new CRM_Core_Exception(CRM_Core_Error::getMessages($result));
+      throw new PaymentProcessorException(CRM_Core_Error::getMessages($result));
     }
-    //CRM-15767 - Submit Credit Card Contribution not being saved
     return $result;
   }
 
@@ -487,8 +551,12 @@ abstract class CRM_Core_Payment {
   abstract protected function checkConfig();
 
   /**
+   * Redirect for paypal.
+   *
+   * @todo move to paypal class or remove
+   *
    * @param $paymentProcessor
-   * @todo move to paypal class or remover
+   *
    * @return bool
    */
   public static function paypalRedirect(&$paymentProcessor) {
@@ -508,6 +576,10 @@ abstract class CRM_Core_Payment {
   }
 
   /**
+   * Handle incoming payment notification.
+   *
+   * IPNs, also called silent posts are notifications of payment outcomes or activity on an external site.
+   *
    * @todo move to0 \Civi\Payment\System factory method
    * Page callback for civicrm/payment/ipn
    */
@@ -518,6 +590,7 @@ abstract class CRM_Core_Payment {
         'processor_name' => @$_GET['processor_name'],
         'processor_id' => @$_GET['processor_id'],
         'mode' => @$_GET['mode'],
+        'q' => @$_GET['q'],
       )
     );
     CRM_Utils_System::civiExit();
@@ -539,8 +612,16 @@ abstract class CRM_Core_Payment {
    */
   public static function handlePaymentMethod($method, $params = array()) {
     if (!isset($params['processor_id']) && !isset($params['processor_name'])) {
-      CRM_Core_Error::fatal("Either 'processor_id' or 'processor_name' param is required for payment callback");
+      $q = explode('/', CRM_Utils_Array::value('q', $params, ''));
+      $lastParam = array_pop($q);
+      if (is_numeric($lastParam)) {
+        $params['processor_id'] = $_GET['processor_id'] = $lastParam;
+      }
+      else {
+        throw new CRM_Core_Exception("Either 'processor_id' or 'processor_name' param is required for payment callback");
+      }
     }
+
     self::logPaymentNotification($params);
 
     $sql = "SELECT ppt.class_name, ppt.name as processor_name, pp.id AS processor_id
@@ -557,7 +638,10 @@ abstract class CRM_Core_Payment {
     else {
       // This is called when processor_name is passed - passing processor_id instead is recommended.
       $sql .= " WHERE ppt.name = %2 AND pp.is_test = %1";
-      $args[1] = array((CRM_Utils_Array::value('mode', $params) == 'test') ? 1 : 0, 'Integer');
+      $args[1] = array(
+        (CRM_Utils_Array::value('mode', $params) == 'test') ? 1 : 0,
+        'Integer',
+      );
       $args[2] = array($params['processor_name'], 'String');
       $notFound = "No active instances of the '{$params['processor_name']}' payment processor were found.";
     }
@@ -584,10 +668,7 @@ abstract class CRM_Core_Payment {
       }
       else {
         // Legacy or extension as module instance
-        if (empty($paymentClass)) {
-          $paymentClass = 'CRM_Core_' . $dao->class_name;
-
-        }
+        $paymentClass = 'CRM_Core_' . $dao->class_name;
       }
 
       $processorInstance = Civi\Payment\System::singleton()->getById($dao->processor_id);

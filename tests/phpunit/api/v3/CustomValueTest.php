@@ -3,7 +3,7 @@
  * +--------------------------------------------------------------------+
  * | CiviCRM version 4.6                                                |
  * +--------------------------------------------------------------------+
- * | Copyright CiviCRM LLC (c) 2004-2014                                |
+ * | Copyright CiviCRM LLC (c) 2004-2015                                |
  * +--------------------------------------------------------------------+
  * | This file is a part of CiviCRM.                                    |
  * |                                                                    |
@@ -67,7 +67,7 @@ class api_v3_CustomValueTest extends CiviUnitTestCase {
     ) + $this->params;
 
     $result = $this->callAPIAndDocument('custom_value', 'create', $params, __FUNCTION__, __FILE__);
-    $this->assertEquals(1, $result['count'], 'In line ' . __LINE__);
+    $this->assertEquals(1, $result['count']);
     $result = $this->callAPISuccess('custom_value', 'get', $params);
   }
 

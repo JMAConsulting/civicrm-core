@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -142,9 +142,7 @@ class CRM_Core_Page_AJAX_Attachment {
       }
     }
 
-    header('Content-Type: text/javascript');
-    echo json_encode(array_merge($result));
-    CRM_Utils_System::civiExit();
+    CRM_Utils_JSON::output(array_merge($result));
   }
 
   /**

@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2014                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -100,7 +100,7 @@ class CRM_Price_BAO_PriceSet extends CRM_Price_DAO_PriceSet {
    * @internal param bool $is_active value we want to set the is_active field
    *
    * @return Object
-   *   DAO object on sucess, null otherwise
+   *   DAO object on success, null otherwise
    */
   public static function setIsActive($id, $isActive) {
     return CRM_Core_DAO::setFieldValue('CRM_Price_DAO_PriceSet', $id, 'is_active', $isActive);
@@ -481,11 +481,14 @@ WHERE     ct.id = cp.financial_type_id AND
    * An array containing price set details (including price fields) is returned
    *
    * @param int $setID
+   *   Price Set ID.
    * @param bool $required
+   *   Appears to have no effect based on reading the code.
    * @param bool $validOnly
+   *   Should only fields where today's date falls within the valid range be returned?
    *
    * @return array
-   *   array consisting of field details
+   *   Array consisting of field details
    */
   public static function getSetDetail($setID, $required = TRUE, $validOnly = FALSE) {
     // create a new tree
@@ -575,7 +578,9 @@ WHERE  id = %1";
   }
 
   /**
-   * Get the Price Field ID. We call this function when more than one being present would represent an error
+   * Get the Price Field ID.
+   *
+   * We call this function when more than one being present would represent an error
    * starting format derived from current(CRM_Price_BAO_PriceSet::getSetDetail($priceSetId))
    * @param array $priceSet
    *
@@ -607,11 +612,17 @@ WHERE  id = %1";
 
 
   /**
+   * Initiate price set such that various non-BAO things are set on the form.
+   *
+   * This function is not really a BAO function so the location is misleading.
+   *
    * @param CRM_Core_Form $form
    * @param int $id
+   *   Form entity id.
    * @param string $entityTable
    * @param bool $validOnly
    * @param int $priceSetId
+   *   Price Set ID
    *
    * @return bool|false|int|null
    */
@@ -708,12 +719,23 @@ WHERE  id = %1";
   }
 
   /**
+   * Get line item purchase information.
+   *
+   * This function takes the input parameters and interprets out of it what has been purchased.
+   *
    * @param $fields
+   *   This is the output of the function CRM_Price_BAO_PriceSet::getSetDetail($priceSetID, FALSE, FALSE);
+   *   And, it would make sense to introduce caching into that function and call it from here rather than
+   *   require the $fields array which is passed from pillar to post around the form in order to pass it in here.
    * @param array $params
+   *   Params reflecting form input e.g with fields 'price_5' => 7, 'price_8' => array(7, 8)
    * @param $lineItem
+   *   Line item array to be altered.
    * @param string $component
+   *   This parameter appears to only be relevant to determining whether memberships should be auto-renewed.
+   *   (and is effectively a boolean for 'is_membership' which could be calculated from the line items.)
    */
-  public static function processAmount(&$fields, &$params, &$lineItem, $component = '') {
+  public static function processAmount($fields, &$params, &$lineItem, $component = '') {
     // using price set
     $totalPrice = $totalTax = 0;
     $radioLevel = $checkboxLevel = $selectLevel = $textLevel = array();
@@ -857,11 +879,7 @@ WHERE  id = %1";
     if (is_array($lineItem)) {
       foreach ($lineItem as $values) {
         $totalParticipant += $values['participant_count'];
-        if ($values['html_type'] == 'Text') {
-          $amount_level[] = $values['label'] . ' - ' . $values['qty'];
-          continue;
-        }
-        $amount_level[] = $values['label'];
+        $amount_level[] = $values['label'] . ' - ' . (float) $values['qty'];
       }
     }
 
@@ -870,7 +888,7 @@ WHERE  id = %1";
       $displayParticipantCount = ' Participant Count -' . $totalParticipant;
     }
     $params['amount_level'] = CRM_Core_DAO::VALUE_SEPARATOR . implode(CRM_Core_DAO::VALUE_SEPARATOR, $amount_level) . $displayParticipantCount . CRM_Core_DAO::VALUE_SEPARATOR;
-    $params['amount'] = $totalPrice;
+    $params['amount'] = CRM_Utils_Money::format($totalPrice, NULL, NULL, TRUE);
     $params['tax_amount'] = $totalTax;
     if ($component) {
       foreach ($autoRenew as $dontCare => $eachAmount) {
@@ -973,15 +991,20 @@ WHERE  id = %1";
   }
 
   /**
-   * Check the current Membership
-   * having end date null.
+   * Check the current Membership having end date null.
+   *
+   * @param array $options
+   * @param int $userid
+   *   Probably actually contact ID.
+   *
+   * @return bool
    */
   public static function checkCurrentMembership(&$options, $userid) {
     if (!$userid || empty($options)) {
-      return;
+      return FALSE;
     }
     static $_contact_memberships = array();
-    $checklifetime = FALSE;
+    $checkLifetime = FALSE;
     foreach ($options as $key => $value) {
       if (!empty($value['membership_type_id'])) {
         if (!isset($_contact_memberships[$userid][$value['membership_type_id']])) {
@@ -990,11 +1013,11 @@ WHERE  id = %1";
         $currentMembership = $_contact_memberships[$userid][$value['membership_type_id']];
         if (!empty($currentMembership) && empty($currentMembership['end_date'])) {
           unset($options[$key]);
-          $checklifetime = TRUE;
+          $checkLifetime = TRUE;
         }
       }
     }
-    if ($checklifetime) {
+    if ($checkLifetime) {
       return TRUE;
     }
     else {
@@ -1312,7 +1335,7 @@ GROUP BY     mt.member_of_contact_id";
    *   Value we want to set the is_quick_config field.
    *
    * @return Object
-   *   DAO object on sucess, null otherwise
+   *   DAO object on success, null otherwise
    */
   public static function setIsQuickConfig($id, $isQuickConfig) {
     return CRM_Core_DAO::setFieldValue('CRM_Price_DAO_PriceSet', $id, 'is_quick_config', $isQuickConfig);
@@ -1322,6 +1345,9 @@ GROUP BY     mt.member_of_contact_id";
    * Check if price set id provides option for
    * user to select both auto-renew and non-auto-renew memberships
    *
+   * @param int $id
+   *
+   * @return bool
    */
   public static function checkMembershipPriceSet($id) {
     $query

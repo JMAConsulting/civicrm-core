@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -150,6 +150,7 @@ class CRM_Dedupe_BAO_Rule extends CRM_Dedupe_DAO_Rule {
       if ($this->rule_length) {
         $where[] = "SUBSTR(t1.{$this->rule_field}, 1, {$this->rule_length}) = SUBSTR('$str', 1, {$this->rule_length})";
         $where[] = "t1.{$this->rule_field} IS NOT NULL";
+        $where[] = "t1.{$this->rule_field} <> ''";
       }
       else {
         $where[] = "t1.{$this->rule_field} = '$str'";
@@ -168,6 +169,7 @@ class CRM_Dedupe_BAO_Rule extends CRM_Dedupe_DAO_Rule {
     if (!$this->params) {
       $where[] = "t1.$id < t2.$id";
       $where[] = "t1.{$this->rule_field} IS NOT NULL";
+      $where[] = "t1.{$this->rule_field} <> ''";
     }
     if ($this->contactIds) {
       $cids = array();

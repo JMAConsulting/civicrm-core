@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -31,7 +31,7 @@
  * abstract class.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -75,17 +75,39 @@ class CRM_Report_Info extends CRM_Core_Component_Info {
    * implementation of $getAllUnconditionally is required.
    *
    * @param bool $getAllUnconditionally
+   * @param bool $descriptions
+   *   Whether to return permission descriptions
    *
    * @return array|null
    *   collection of permissions, null if none
    */
-  /**
-   * @param bool $getAllUnconditionally
-   *
-   * @return array|null
-   */
-  public function getPermissions($getAllUnconditionally = FALSE) {
-    return array('access CiviReport', 'access Report Criteria', 'administer reserved reports', 'administer Reports');
+  public function getPermissions($getAllUnconditionally = FALSE, $descriptions = FALSE) {
+    $permissions = array(
+      'access CiviReport' => array(
+        ts('access CiviReport'),
+        ts('View reports'),
+      ),
+      'access Report Criteria' => array(
+        ts('access Report Criteria'),
+        ts('Change report search criteria'),
+      ),
+      'administer reserved reports' => array(
+        ts('administer reserved reports'),
+        ts('Edit all reports that have been marked as reserved'),
+      ),
+      'administer Reports' => array(
+        ts('administer Reports'),
+        ts('Manage report templates'),
+      ),
+    );
+
+    if (!$descriptions) {
+      foreach ($permissions as $name => $attr) {
+        $permissions[$name] = array_shift($attr);
+      }
+    }
+
+    return $permissions;
   }
 
 

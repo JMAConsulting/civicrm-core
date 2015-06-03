@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -106,7 +106,7 @@ class WebTest_Event_ParticipantCountTest extends CiviSeleniumTestCase {
     $this->waitForPageToLoad($this->getTimeoutMsec());
 
     // verify number of registered participants
-    $this->assertElementContainsText("xpath=//div[@id='search-status']/table/tbody/tr[1]/td", '2 Results');
+    $this->assertElementContainsText("xpath=//div[@class='crm-results-block']//div/table/tbody/tr/td", '2 Results');
   }
 
   public function testParticipantCountWithPriceset() {

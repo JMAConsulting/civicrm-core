@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -152,7 +152,7 @@ class CRM_Core_Lock {
    */
   public function hackyHandleBrokenCode($jobLog) {
     if (stristr($this->_name, 'job')) {
-      throw new CRM_Core_Exception('lock aquisition for ' . $this->_name . 'attempted when ' . $jobLog . 'is not released');
+      throw new CRM_Core_Exception('lock acquisition for ' . $this->_name . 'attempted when ' . $jobLog . 'is not released');
     }
     if (defined('CIVICRM_LOCK_DEBUG')) {
       CRM_Core_Error::debug_log_message('(CRM-12856) faking lock for ' . $this->_name);

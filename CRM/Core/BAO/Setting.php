@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -245,7 +245,7 @@ class CRM_Core_BAO_Setting extends CRM_Core_DAO_Setting {
 
     if ($group && !isset($name) && $cacheKey) {
       // check value against the cache, and unset key if values are different
-      $valueDifference = array_diff($overrideGroup, self::$_cache[$cacheKey]);
+      $valueDifference = CRM_Utils_Array::multiArrayDiff($overrideGroup, self::$_cache[$cacheKey]);
       if (!empty($valueDifference)) {
         $cacheKey = '';
       }

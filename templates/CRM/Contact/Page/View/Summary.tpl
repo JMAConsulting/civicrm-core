@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,8 +27,6 @@
 {if $action eq 2}
   {include file="CRM/Contact/Form/Contact.tpl"}
 {else}
-
-  {include file="CRM/common/wysiwyg.tpl" includeWysiwygEditor=true}
 
   <div class="crm-summary-contactname-block crm-inline-edit-container">
     <div class="crm-summary-block" id="contactname-block">

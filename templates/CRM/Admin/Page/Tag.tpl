@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -144,7 +144,7 @@ CRM.$(function($) {
       .on('crmConfirm:yes', function() {
         var toId = $("input[name=select_merge_tag]", this).val();
         if (!toId) {
-          $("input[name=select_merge_tag]", this).crmError(ts('Select a tag'));
+          $("input[name=select_merge_tag]", this).crmError('{/literal}{ts escape='js'}Select a tag{/ts}{literal}');
           return false;
         }
         var postUrl = {/literal}"{crmURL p='civicrm/ajax/mergeTags' h=0 }"{literal};

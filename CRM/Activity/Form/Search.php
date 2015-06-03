@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,7 +27,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -297,8 +297,8 @@ class CRM_Activity_Form_Search extends CRM_Core_Form_Search {
 
     $status = CRM_Utils_Request::retrieve('status', 'String', $this);
     if ($status) {
-      $this->_formValues['activity_status'] = $status;
-      $this->_defaults['activity_status'] = $status;
+      $this->_formValues['activity_status_id'] = $status;
+      $this->_defaults['activity_status_id'] = $status;
     }
 
     $survey = CRM_Utils_Request::retrieve('survey', 'Positive', CRM_Core_DAO::$_nullObject);

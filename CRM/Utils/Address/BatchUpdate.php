@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -216,7 +216,7 @@ class CRM_Utils_Address_BatchUpdate {
           $addressParams['geo_code_1'] = $params['geo_code_1'];
           $addressParams['geo_code_2'] = $params['geo_code_2'];
           $addressParams['postal_code'] = $params['postal_code'];
-          $addressParams['postal_code_suffix'] = $params['postal_code_suffix'];
+          $addressParams['postal_code_suffix'] = CRM_Utils_Array::value('postal_code_suffix', $params);
         }
       }
 

@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -48,7 +48,7 @@
 {/if}
 
 <h3>
-  {ts}A recurring set will be created with the following dates.{/ts}
+  {ts}A repeating set will be created with the following dates.{/ts}
 </h3>
 <table class="display row-highlight">
   <thead><tr>

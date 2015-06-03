@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -110,6 +110,12 @@ class CRM_Profile_Form extends CRM_Core_Form {
    * @var int
    */
   public $_isUpdateDupe = 0;
+
+  /**
+   * Dedupe using a specific rule (CRM-6131).
+   * Not currently exposed in profile settings, but can be set in a buildForm hook.
+   */
+  public $_ruleGroupID = NULL;
 
   public $_isAddCaptcha = FALSE;
 
@@ -321,7 +327,7 @@ class CRM_Profile_Form extends CRM_Core_Form {
             $this->_recordId = NULL;
             $this->set('recordId', NULL);
           }
-          //record id is neccessary for _multiRecord view and update/edit action
+          //record id is necessary for _multiRecord view and update/edit action
           if (!$this->_recordId
             && ($this->_multiRecord == CRM_Core_Action::UPDATE || $this->_multiRecord == CRM_Core_Action::DELETE)
           ) {
@@ -953,7 +959,8 @@ class CRM_Profile_Form extends CRM_Core_Form {
       $ids = CRM_Dedupe_Finder::dupesByParams($dedupeParams,
         $ctype,
         $ruleType,
-        $exceptions
+        $exceptions,
+        $form->_ruleGroupID
       );
       if ($ids) {
         if ($form->_isUpdateDupe == 2) {

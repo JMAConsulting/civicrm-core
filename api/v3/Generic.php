@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -48,10 +48,13 @@
  *   - function: callback (mixed)
  *   - params: array, varies
  *
+ * @param bool $unique
+ *   Determines whether to key by unique field names (only affects get-type) actions
+ *
  * @return array
  *   API success object
  */
-function civicrm_api3_generic_getfields($apiRequest) {
+function civicrm_api3_generic_getfields($apiRequest, $unique = TRUE) {
   static $results = array();
   if ((CRM_Utils_Array::value('cache_clear', $apiRequest['params']))) {
     $results = array();
@@ -82,8 +85,6 @@ function civicrm_api3_generic_getfields($apiRequest) {
   if (!$action || $action == 'getvalue' || $action == 'getcount') {
     $action = 'get';
   }
-  // determines whether to use unique field names - see comment block above
-  $unique = TRUE;
   // If no options, return results from cache
   if (!$apiRequest['params']['options'] && isset($results[$entity . $subentity]) && isset($action, $results[$entity . $subentity])
     && isset($action, $results[$entity . $subentity][$sequential])) {
@@ -191,7 +192,7 @@ function civicrm_api3_generic_getfields($apiRequest) {
     if (!isset($fieldSpec['name'])) {
       $metadata[$fieldname]['name'] = $fieldname;
     }
-    _civicrm_api3_generic_get_metadata_options($metadata, $apiRequest, $fieldname, $fieldSpec, $optionsToResolve);
+    _civicrm_api3_generic_get_metadata_options($metadata, $apiRequest, $fieldname, $fieldSpec);
 
     // Convert options to "sequential" format
     if ($sequential && !empty($metadata[$fieldname]['options'])) {
@@ -201,6 +202,69 @@ function civicrm_api3_generic_getfields($apiRequest) {
 
   $results[$entity][$action][$sequential] = civicrm_api3_create_success($metadata, $apiRequest['params'], $entity, 'getfields');
   return $results[$entity][$action][$sequential];
+}
+
+/**
+ * Get metadata for a field
+ *
+ * @param array $apiRequest
+ *
+ * @return array
+ *   API success object
+ */
+function civicrm_api3_generic_getfield($apiRequest) {
+  $params = $apiRequest['params'];
+  $sequential = !empty($params['sequential']);
+  $fieldName = _civicrm_api3_api_resolve_alias($apiRequest['entity'], $params['name'], $params['action']);
+  if (!$fieldName) {
+    return civicrm_api3_create_error("The field '{$params['name']}' doesn't exist.");
+  }
+  // Turn off sequential to make the field easier to find
+  $apiRequest['params']['sequential'] = 0;
+  if (isset($params['get_options'])) {
+    $apiRequest['params']['options']['get_options_context'] = $params['get_options'];
+    $apiRequest['params']['options']['get_options'] = $fieldName;
+  }
+  $result = civicrm_api3_generic_getfields($apiRequest, FALSE);
+  $result = $result['values'][$fieldName];
+  // Fix sequential options since we forced it off
+  if ($sequential && !empty($result['options'])) {
+    $result['options'] = CRM_Utils_Array::makeNonAssociative($result['options']);
+  }
+  return civicrm_api3_create_success($result, $apiRequest['params'], $apiRequest['entity'], 'getfield');
+}
+
+
+function _civicrm_api3_generic_getfield_spec(&$params, $apiRequest) {
+  $params = array(
+    'name' => array(
+      'title' => 'Field name',
+      'description' => 'Name or alias of field to lookup',
+      'api.required' => 1,
+      'type' => CRM_Utils_Type::T_STRING,
+    ),
+    'action' => array(
+      'title' => 'API Action',
+      'api.required' => 1,
+      'type' => CRM_Utils_Type::T_STRING,
+      'api.aliases' => array('api_action'),
+    ),
+    'get_options' => array(
+      'title' => 'Get Options',
+      'description' => 'Context for which to get field options, or null to skip fetching options.',
+      'type' => CRM_Utils_Type::T_STRING,
+      'options' => CRM_Core_DAO::buildOptionsContext(),
+      'api.aliases' => array('context'),
+    ),
+  );
+  // Add available options to these params if requested
+  if (array_intersect(array('all', 'action'), $apiRequest['params']['options']['get_options'])) {
+    $actions = civicrm_api3($apiRequest['entity'], 'getactions');
+    $actions = array_combine($actions['values'], $actions['values']);
+    // Let's not go meta-crazy
+    CRM_Utils_Array::remove($actions, 'getactions', 'getoptions', 'getfields', 'getfield', 'getcount', 'getrefcount', 'getsingle', 'getlist', 'getvalue', 'setvalue', 'update');
+    $params['action']['options'] = $actions;
+  }
 }
 
 /**
@@ -382,13 +446,11 @@ function _civicrm_api3_generic_getoptions_spec(&$params, $apiRequest) {
     'context' => array(
       'title' => 'Context',
       'type' => CRM_Utils_Type::T_STRING,
+      'options' => CRM_Core_DAO::buildOptionsContext(),
     ),
   );
 
-  // Add available options to these params if requested
-  if (array_intersect(array('all', 'context'), $apiRequest['params']['options']['get_options'])) {
-    $params['context']['options'] = array_combine(array_keys(CRM_Core_DAO::buildOptionsContext()), array_keys(CRM_Core_DAO::buildOptionsContext()));
-  }
+  // Add available fields if requested
   if (array_intersect(array('all', 'field'), $apiRequest['params']['options']['get_options'])) {
     $fields = civicrm_api3_generic_getfields(array('entity' => $apiRequest['entity'], array('params' => array('action' => 'create'))));
     $params['field']['options'] = array();
@@ -420,19 +482,30 @@ function _civicrm_api3_generic_getoptions_spec(&$params, $apiRequest) {
  *   Field currently being processed.
  * @param array $fieldSpec
  *   Metadata for that field.
- * @param array $fieldsToResolve
- *   Any field resolutions specifically requested.
  */
-function _civicrm_api3_generic_get_metadata_options(&$metadata, $apiRequest, $fieldname, $fieldSpec, $fieldsToResolve) {
+function _civicrm_api3_generic_get_metadata_options(&$metadata, $apiRequest, $fieldname, $fieldSpec) {
   if (empty($fieldSpec['pseudoconstant']) && empty($fieldSpec['option_group_id'])) {
     return;
   }
+
+  $fieldsToResolve = $apiRequest['params']['options']['get_options'];
 
   if (!empty($metadata[$fieldname]['options']) || (!in_array($fieldname, $fieldsToResolve) && !in_array('all', $fieldsToResolve))) {
     return;
   }
 
-  $options = civicrm_api($apiRequest['entity'], 'getoptions', array('version' => 3, 'field' => $fieldname));
+  // Allow caller to specify context
+  $context = CRM_Utils_Array::value('get_options_context', $apiRequest['params']['options']);
+  // Default to api action if it is a supported context.
+  if (!$context) {
+    $action = CRM_Utils_Array::value('action', $apiRequest['params']);
+    $contexts = CRM_Core_DAO::buildOptionsContext();
+    if (isset($contexts[$action])) {
+      $context = $action;
+    }
+  }
+
+  $options = civicrm_api($apiRequest['entity'], 'getoptions', array('version' => 3, 'field' => $fieldname, 'context' => $context));
   if (is_array(CRM_Utils_Array::value('values', $options))) {
     $metadata[$fieldname]['options'] = $options['values'];
   }

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -234,7 +234,7 @@ class CRM_PCP_Page_PCP extends CRM_Core_Page_Basic {
     }
 
     // get all event pages. pcp campaign start and end dates for event related pcp's use the online registration start and end dates,
-    // altho if target is contribution page this might not be correct. fixme? dgg
+    // although if target is contribution page this might not be correct. fixme? dgg
     $query = "SELECT id, title, start_date, end_date, registration_start_date, registration_end_date
                   FROM civicrm_event
                   WHERE is_template IS NULL OR is_template != 1";

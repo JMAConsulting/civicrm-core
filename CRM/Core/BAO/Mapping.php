@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -414,7 +414,6 @@ class CRM_Core_BAO_Mapping extends CRM_Core_DAO_Mapping {
         $fields['Participant'] = CRM_Event_BAO_Participant::exportableFields();
         //get the component payment fields
         if ($exportMode == CRM_Export_Form_Select::EVENT_EXPORT) {
-          require_once 'CRM/Export/BAO/Export.php';
           $componentPaymentFields = array();
           foreach (CRM_Export_BAO_Export::componentPaymentFields() as $payField => $payTitle) {
             $componentPaymentFields[$payField] = array('title' => $payTitle);
@@ -564,7 +563,7 @@ class CRM_Core_BAO_Mapping extends CRM_Core_DAO_Mapping {
 
     foreach ($sel1 as $key => $sel) {
       if ($key) {
-        // sort everything BUT the contactType which is sorted seperately by
+        // sort everything BUT the contactType which is sorted separately by
         // an initial commit of CRM-13278 (check ksort above)
         if (!in_array($key, $contactType)) {
           asort($mapperFields[$key]);
@@ -1045,7 +1044,7 @@ class CRM_Core_BAO_Mapping extends CRM_Core_DAO_Mapping {
 
           // CRM-14563: we store checkbox, multi-select and adv-multi select custom field using separator, hence it
           // needs special handling.
-          if ($cfID = CRM_Core_BAO_CustomField::getKeyID($v[1])) {
+          if ($cfID = CRM_Core_BAO_CustomField::getKeyID(CRM_Utils_Array::value(1, $v))) {
             $isCustomField = TRUE;
             $customFieldType = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomField', $cfID, 'html_type');
             $specialHTMLType = array(

@@ -7,7 +7,6 @@
     actions = {values: ['get']},
     fields = [],
     getFieldData = {},
-    options = {},
     params = {},
     smartyStub,
     entityDoc,
@@ -18,13 +17,14 @@
     docCodeTpl = _.template($('#doc-code-tpl').html()),
 
     // These types of entityRef don't require any input to open
+    // FIXME: ought to be in getfields metadata
     OPEN_IMMEDIATELY = ['RelationshipType', 'Event', 'Group', 'Tag'],
 
     // Actions that don't support fancy operators
     NO_OPERATORS = ['create', 'update', 'delete', 'setvalue', 'getoptions', 'getactions', 'getfields'],
 
     // Actions that don't support multiple values
-    NO_MULTI = ['delete', 'getoptions', 'getactions', 'getfields', 'setvalue'],
+    NO_MULTI = ['delete', 'getoptions', 'getactions', 'getfields',  'getfield', 'setvalue'],
 
     // Operators with special properties
     BOOL = ['IS NULL', 'IS NOT NULL'],
@@ -127,24 +127,24 @@
   function getFields(changedElement) {
     var required = [];
     fields = [];
-    options = getFieldData = {};
+    getFieldData = {};
     // Special case for getfields
     if (action === 'getfields') {
       fields.push({
         id: 'api_action',
-        text: 'Action'
+        text: 'Action',
+        options: _.reduce(actions.values, function(ret, item) {
+          ret[item] = item;
+          return ret;
+        }, {})
       });
-      options.api_action = _.reduce(actions.values, function(ret, item) {
-        ret[item] = item;
-        return ret;
-      }, {});
       showFields(['api_action']);
       return;
     }
-    CRM.api3(entity, 'getFields', {'api_action': action, options: {get_options: 'all'}}).done(function(data) {
-      getFieldData = data.values;
+    CRM.api3(entity, 'getfields', {'api_action': action, options: {get_options: 'all', get_options_context: 'match'}}).done(function(data) {
       _.each(data.values, function(field) {
         if (field.name) {
+          getFieldData[field.name] = field;
           fields.push({
             id: field.name,
             text: field.title || field.name,
@@ -154,9 +154,6 @@
           });
           if (field['api.required'] && field['api.required'] !== '0') {
             required.push(field.name);
-          }
-          if (field.options) {
-            options[field.name] = field.options;
           }
         }
       });
@@ -280,7 +277,8 @@
    * @returns boolean
    */
   function isSelect(fieldName, operator) {
-    return (isYesNo(fieldName) || options[fieldName] || (getFieldData[fieldName] && getFieldData[fieldName].FKApiName)) && !_.includes(TEXT, operator);
+    var fieldSpec = getFieldData[fieldName] || {};
+    return (isYesNo(fieldName) || fieldSpec.options || fieldSpec.FKApiName) && !_.includes(TEXT, operator);
   }
 
   /**
@@ -348,10 +346,10 @@
         });
       }
       // Select options
-      else if (options[name]) {
+      else if (getFieldData[name].options) {
         $valField.select2({
           multiple: multiSelect,
-          data: _.map(options[name], function (value, key) {
+          data: _.map(getFieldData[name].options, function (value, key) {
             return {id: key, text: value};
           })
         });

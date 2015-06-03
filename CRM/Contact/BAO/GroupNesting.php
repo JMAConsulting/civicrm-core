@@ -51,6 +51,9 @@ class CRM_Contact_BAO_GroupNesting extends CRM_Contact_DAO_GroupNesting implemen
 
   /**
    * Class constructor.
+   *
+   * @param bool $styleLabels
+   * @param string $styleIndent
    */
   public function __construct($styleLabels = FALSE, $styleIndent = "&nbsp;--&nbsp;") {
     parent::__construct();
@@ -159,7 +162,7 @@ class CRM_Contact_BAO_GroupNesting extends CRM_Contact_DAO_GroupNesting implemen
       if (!$nextGroup) {
         // no sibling, find an ancestor w/ a sibling
         for (;;) {
-          // since we pop this array everytime, we should be
+          // since we pop this array every time, we should be
           // reasonably safe from infinite loops, I think :)
           $ancestor = array_pop($this->_parentStack);
           $this->_current = &$ancestor;

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -167,7 +167,7 @@ class CRM_Utils_System_Drupal extends CRM_Utils_System_DrupalBase {
    */
   public function getLoginURL($destination = '') {
     $query = $destination ? array('destination' => $destination) : array();
-    return url('user', array('query' => $query));
+    return url('user', array('query' => $query), TRUE);
   }
 
   /**

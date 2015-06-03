@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +30,7 @@
  * system.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -51,6 +51,13 @@ class CRM_Extension_System {
    * @var string|FALSE
    */
   private $_repoUrl = NULL;
+
+  /**
+   * @var array
+   *   Construction parameters. These are primarily retained so
+   *   that they can influence the cache name.
+   */
+  protected $parameters;
 
   /**
    * @param bool $fresh
@@ -101,6 +108,9 @@ class CRM_Extension_System {
     }
     if (!array_key_exists('cmsRootPath', $parameters)) {
       $parameters['cmsRootPath'] = $config->userSystem->cmsRootPath();
+    }
+    if (!array_key_exists('domain_id', $parameters)) {
+      $parameters['domain_id'] = CRM_Core_Config::domainID();
     }
     ksort($parameters); // guaranteed ordering - useful for md5(serialize($parameters))
 

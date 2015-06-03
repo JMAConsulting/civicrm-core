@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -151,7 +151,7 @@ class CRM_Contribute_Form_UpdateSubscription extends CRM_Core_Form {
       array(
         'size' => 20,
       ), TRUE,
-      'currency', NULL, TRUE
+      'currency', $this->_subscriptionDetails->currency, TRUE
     );
 
     $this->add('text', 'installments', ts('Number of Installments'), array('size' => 20), TRUE);

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
  * This class stores logic for managing CiviCRM extensions.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -186,7 +186,7 @@ class CRM_Extension_Manager_Payment extends CRM_Extension_Manager_Base {
    *   The method to call in the payment processor class.
    */
   private function _runPaymentHook(CRM_Extension_Info $info, $method) {
-    // Not concerned about performance at this stage, as these are seldomly performed tasks
+    // Not concerned about performance at this stage, as these are seldom performed tasks
     // (payment processor enable/disable/install/uninstall). May wish to implement some
     // kind of registry/caching system if more hooks are added.
 

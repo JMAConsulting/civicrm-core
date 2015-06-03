@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -189,7 +189,7 @@ class CRM_Case_Form_Activity_OpenCase {
     // calling this field activity_location to prevent conflict with contact location fields
     $form->add('text', 'activity_location', ts('Location'), CRM_Core_DAO::getAttribute('CRM_Activity_DAO_Activity', 'location'));
 
-    $form->addWysiwyg('activity_details', ts('Details'), array('rows' => 4, 'cols' => 60), FALSE);
+    $form->add('wysiwyg', 'activity_details', ts('Details'), array('rows' => 4, 'cols' => 60), FALSE);
 
     $form->addButtons(array(
         array(

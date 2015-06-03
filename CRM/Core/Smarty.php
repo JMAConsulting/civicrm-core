@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -140,20 +140,6 @@ class CRM_Core_Smarty extends Smarty {
 
     $this->assign_by_ref('config', $config);
     $this->assign_by_ref('session', $session);
-
-    // check default editor and assign to template
-    $defaultWysiwygEditor = $session->get('defaultWysiwygEditor');
-    if (!$defaultWysiwygEditor && !CRM_Core_Config::isUpgradeMode()) {
-      $defaultWysiwygEditor = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
-        'editor_id'
-      );
-      // For logged-in users, store it in session to reduce db calls
-      if ($session->get('userID')) {
-        $session->set('defaultWysiwygEditor', $defaultWysiwygEditor);
-      }
-    }
-
-    $this->assign('defaultWysiwygEditor', $defaultWysiwygEditor);
 
     global $tsLocale;
     $this->assign('tsLocale', $tsLocale);

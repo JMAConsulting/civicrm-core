@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -171,7 +171,7 @@ WHERE lt.log_conn_id = %1 AND
       3 => array($id, 'Integer'),
     );
 
-    // look for all the changes in the given connection that happended less than {$this->interval} s later than log_date to the given id to catch multi-query changes
+    // look for all the changes in the given connection that happened less than {$this->interval} s later than log_date to the given id to catch multi-query changes
     $changedSQL = "SELECT * FROM `{$this->db}`.`log_$table` WHERE log_conn_id = %1 AND log_date >= %2 AND log_date < DATE_ADD(%2, INTERVAL {$this->interval}) AND id = %3 ORDER BY log_date DESC LIMIT 1";
 
     $changedDAO = CRM_Core_DAO::executeQuery($changedSQL, $params);

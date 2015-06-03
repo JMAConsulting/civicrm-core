@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -278,7 +278,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
    *
    * Mailing Contact Just doesn't support id. We have always insisted on finding a way to
    * support id in API but in this case the underlying tables are crying out for a restructure
-   * & it just doesn't make sense, on the otherhand Event need id to be existant as pseudo property
+   * & it just doesn't make sense, on the otherhand Event need id to be existent as pseudo property
    * is been associated with it, so we need to bypass for get api otherwise it will through pseudo_match validation
    *
    * @param bool $sequential
@@ -615,7 +615,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
    */
   public function testNotImplemented_get($Entity) {
     $result = civicrm_api($Entity, 'Get', array('version' => 3));
-    $this->assertEquals(1, $result['is_error'], 'In line ' . __LINE__);
+    $this->assertEquals(1, $result['is_error']);
     // $this->assertContains("API ($Entity, Get) does not exist", $result['error_message']);
     $this->assertRegExp('/API (.*) does not exist/', $result['error_message']);
   }
@@ -657,7 +657,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
       return;
     }
     $result = civicrm_api($Entity, 'Get', array());
-    $this->assertEquals(1, $result['is_error'], 'In line ' . __LINE__);
+    $this->assertEquals(1, $result['is_error']);
     $this->assertContains("Mandatory key(s) missing from params array", $result['error_message']);
   }
 
@@ -998,7 +998,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
    */
   public function testNotImplemented_create($Entity) {
     $result = civicrm_api($Entity, 'Create', array('version' => 3));
-    $this->assertEquals(1, $result['is_error'], 'In line ' . __LINE__);
+    $this->assertEquals(1, $result['is_error']);
     $this->assertContains(strtolower("API ($Entity, Create) does not exist"), strtolower($result['error_message']));
   }
 
@@ -1018,7 +1018,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
    * @throws \PHPUnit_Framework_IncompleteTestError
    */
   public function testEmptyParam_create($Entity) {
-    $this->markTestIncomplete("fixing this test to test the api functions fails on numberous tests
+    $this->markTestIncomplete("fixing this test to test the api functions fails on numerous tests
       which will either create a completely blank entity (batch, participant status) or
       have a damn good crack at it (e.g mailing job). Marking this as incomplete beats false success");
     return;
@@ -1053,7 +1053,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
    */
   public function testCreateWrongTypeParamTag_create() {
     $result = civicrm_api("Tag", 'Create', 'this is not a string');
-    $this->assertEquals(1, $result['is_error'], 'In line ' . __LINE__);
+    $this->assertEquals(1, $result['is_error']);
     $this->assertEquals("Input variable `params` is not an array", $result['error_message']);
   }
 
@@ -1074,9 +1074,9 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
     $baoString = _civicrm_api3_get_BAO($entityName);
     $this->assertNotEmpty($baoString, $entityName);
     $this->assertNotEmpty($entityName, $entityName);
-    $fieldsGet = $fields = $this->callAPISuccess($entityName, 'getfields', array('action' => 'get'));
+    $fieldsGet = $fields = $this->callAPISuccess($entityName, 'getfields', array('action' => 'get', 'options' => array('get_options' => 'all')));
     if ($entityName != 'Pledge') {
-      $fields = $this->callAPISuccess($entityName, 'getfields', array('action' => 'create'));
+      $fields = $this->callAPISuccess($entityName, 'getfields', array('action' => 'create', 'options' => array('get_options' => 'all')));
     }
     $fields = $fields['values'];
     $return = array_keys($fieldsGet['values']);
@@ -1121,12 +1121,10 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
       $this->assertArrayHasKey('type', $specs, "the _spec function for $entityName field $field does not specify the type");
       switch ($specs['type']) {
         case CRM_Utils_Type::T_DATE:
-        case CRM_Utils_Type::T_TIMESTAMP:
           $entity[$fieldName] = '2012-05-20';
           break;
 
-        //case CRM_Utils_Type::T_DATETIME:
-
+        case CRM_Utils_Type::T_TIMESTAMP:
         case 12:
           $entity[$fieldName] = '2012-05-20 03:05:20';
           break;
@@ -1179,23 +1177,27 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
         case CRM_Utils_Type::T_URL:
           $entity[$field] = 'warm.beer.com';
       }
-      if (!empty($specs['pseudoconstant'])) {
-        $options = $this->callAPISuccess($entityName, 'getoptions', array('context' => 'create', 'field' => $field));
-        if (empty($options['values'])) {
+      if (empty($specs['FKClassName']) && (!empty($specs['pseudoconstant']) || !empty($specs['options']))) {
+        $options = CRM_Utils_Array::value('options', $specs, array());
+        if (!$options) {
           //eg. pdf_format id doesn't ship with any
           if (isset($specs['pseudoconstant']['optionGroupName'])) {
-            $optionGroupID = $this->callAPISuccess('option_group', 'getvalue', array(
-                'name' => 'pdf_format',
-                'return' => 'id',
-              ));
             $optionValue = $this->callAPISuccess('option_value', 'create', array(
-                'option_group_id' => $optionGroupID,
+                'option_group_id' => $specs['pseudoconstant']['optionGroupName'],
                 'label' => 'new option value',
+                'sequential' => 1,
               ));
-            $options['values'][] = $optionValue['id'];
+            $optionValue = $optionValue['values'];
+            $options[$optionValue[0]['value']] = 'new option value';
           }
         }
-        $entity[$field] = array_rand($options['values']);
+        $entity[$field] = array_rand($options);
+      }
+      if (!empty($specs['FKClassName']) && !empty($specs['pseudoconstant'])) {
+        // in the weird situation where a field has both an fk and pseudoconstant defined,
+        // e.g. campaign_id field, need to flush caches.
+        // FIXME: Why doesn't creating a campaign clear caches?
+        civicrm_api3($entityName, 'getfields', array('cache_clear' => 1));
       }
       $updateParams = array(
         'id' => $entity['id'],
@@ -1251,7 +1253,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
   public function testNotImplemented_delete($Entity) {
     $nonExistantID = 151416349;
     $result = civicrm_api($Entity, 'Delete', array('version' => 3, 'id' => $nonExistantID));
-    $this->assertEquals(1, $result['is_error'], 'In line ' . __LINE__);
+    $this->assertEquals(1, $result['is_error']);
     $this->assertContains(strtolower("API ($Entity, Delete) does not exist"), strtolower($result['error_message']));
   }
 
@@ -1275,7 +1277,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
       return;
     }
     $result = civicrm_api($Entity, 'Delete', array());
-    $this->assertEquals(1, $result['is_error'], 'In line ' . __LINE__);
+    $this->assertEquals(1, $result['is_error']);
     $this->assertContains("Mandatory key(s) missing from params array", $result['error_message']);
   }
 
@@ -1300,7 +1302,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
    */
   public function testDeleteWrongTypeParamTag_delete() {
     $result = civicrm_api("Tag", 'Delete', 'this is not a string');
-    $this->assertEquals(1, $result['is_error'], 'In line ' . __LINE__);
+    $this->assertEquals(1, $result['is_error']);
     $this->assertEquals("Input variable `params` is not an array", $result['error_message']);
   }
 

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
  * This is a part of CiviCRM extension management functionality.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -212,7 +212,7 @@ class CRM_Admin_Page_Extensions extends CRM_Core_Page_Basic {
     }
     $this->assign('localExtensionRows', $localExtensionRows);
 
-    // build list of availabe downloads
+    // build list of available downloads
     $remoteExtensionRows = array();
     foreach (CRM_Extension_System::singleton()->getBrowser()->getExtensions() as $info) {
       $row = (array) $info;

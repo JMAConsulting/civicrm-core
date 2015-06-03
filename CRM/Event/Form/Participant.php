@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
  *
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -329,7 +329,7 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
           $this->_action = CRM_Core_Action::COPY;
           break;
       }
-      parent::preProcess();
+      CRM_Contact_Form_Task::preProcessCommon($this);
 
       $this->_single = FALSE;
       $this->_contactId = NULL;
@@ -1050,7 +1050,7 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
       unset($params['amount']);
     }
     $params['register_date'] = CRM_Utils_Date::processDate($params['register_date'], $params['register_date_time']);
-    $params['receive_date'] = CRM_Utils_Date::processDate(CRM_Utils_Array::value('receive_date', $params));
+    $params['receive_date'] = CRM_Utils_Date::processDate(CRM_Utils_Array::value('receive_date', $params), CRM_Utils_Array::value('receive_date_time', $params));
     $params['contact_id'] = $this->_contactId;
 
     // overwrite actual payment amount if entered
@@ -1164,7 +1164,6 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
       $customFields = CRM_Utils_Array::crmArrayMerge($customFieldsEvent, $customFields);
       $customFields = CRM_Utils_Array::crmArrayMerge($customFieldsEventType, $customFields);
       $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
-        $customFields,
         $this->_id,
         'Participant'
       );
@@ -1196,13 +1195,20 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
       if (!empty($this->_params['send_receipt'])) {
         $paymentParams['email'] = $this->_contributorEmail;
       }
-      CRM_Core_Payment_Form::mapParams($this->_bltID, $this->_params, $paymentParams, TRUE);
+
+      // The only reason for merging in the 'contact_id' rather than ensuring it is set
+      // is that this patch is being done around the time of the stable release
+      // so more conservative approach is called for.
+      // In fact the use of $params and $this->_params & $this->_contactId vs $contactID
+      // needs rationalising.
+      $mapParams = array_merge(array('contact_id' => $contactID), $this->_params);
+      CRM_Core_Payment_Form::mapParams($this->_bltID, $mapParams, $paymentParams, TRUE);
 
       $payment = CRM_Core_Payment::singleton($this->_mode, $this->_paymentProcessor, $this);
 
       // CRM-15622: fix for incorrect contribution.fee_amount
       $paymentParams['fee_amount'] = NULL;
-      $result = $payment->doDirectPayment($paymentParams);
+      $result = $payment->doPayment($paymentParams);
 
       if (is_a($result, 'CRM_Core_Error')) {
         CRM_Core_Error::displaySessionError($result);
@@ -1235,7 +1241,7 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
         = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Event', $params['event_id'], 'financial_type_id');
       $this->_params['mode'] = $this->_mode;
 
-      //add contribution reocord
+      //add contribution record
       $contributions[] = $contribution = CRM_Event_Form_Registration_Confirm::processContribution($this, $this->_params, $result, $contactID, FALSE);
 
       // add participant record
@@ -1253,7 +1259,6 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
 
       //add custom data for participant
       CRM_Core_BAO_CustomValueTable::postProcess($this->_params,
-        CRM_Core_DAO::$_nullArray,
         'civicrm_participant',
         $participants[0]->id,
         'Participant'

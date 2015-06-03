@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -230,6 +230,10 @@ WHERE  email = %2
     if (!empty($base_group_ids)) {
       $baseGroupClause = "OR  $group.id IN(" . implode(', ', $base_group_ids) . ")";
     }
+    $groupIdClause = '';
+    if ($group_ids || $base_group_ids) {
+      $groupIdClause = "AND $group.id IN (" . implode(', ', array_merge($group_ids, $base_group_ids)) . ")";
+    }
     $do->query("
             SELECT      $group.id as group_id,
                         $group.title as title,
@@ -237,8 +241,8 @@ WHERE  email = %2
             FROM        $group
             LEFT JOIN   $gc
                 ON      $gc.group_id = $group.id
-            WHERE       $group.id IN (" . implode(', ', array_merge($group_ids, $base_group_ids)) . ")
-                AND     $group.is_hidden = 0
+            WHERE       $group.is_hidden = 0
+                        $groupIdClause
                 AND     ($group.saved_search_id is not null
                             OR  ($gc.contact_id = $contact_id
                                 AND $gc.status = 'Added')
@@ -288,7 +292,7 @@ WHERE  email = %2
   }
 
   /**
-   * Send a reponse email informing the contact of the groups from which he.
+   * Send a response email informing the contact of the groups from which he.
    * has been unsubscribed.
    *
    * @param string $queue_id

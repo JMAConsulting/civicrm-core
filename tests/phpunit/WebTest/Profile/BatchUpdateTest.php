@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -702,7 +702,7 @@ class WebTest_Profile_BatchUpdateTest extends CiviSeleniumTestCase {
     // enter years prior to current date
     $this->type('start_date_years', 3);
 
-    // enter years upto the end year
+    // enter years up to the end year
     $this->type('end_date_years', 3);
 
     // select the date and time format

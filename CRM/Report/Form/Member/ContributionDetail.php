@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.6                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2014                                |
+  | Copyright CiviCRM LLC (c) 2004-2015                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -534,7 +534,7 @@ class CRM_Report_Form_Member_ContributionDetail extends CRM_Report_Form {
    */
   public function tempTable($applyLimit = TRUE) {
     // create temp table with contact ids,contribtuion id,membership id
-    $dropTempTable = 'DROP TABLE IF EXISTS civireport_membership_contribution_detail';
+    $dropTempTable = 'DROP TEMPORARY TABLE IF EXISTS civireport_membership_contribution_detail';
     CRM_Core_DAO::executeQuery($dropTempTable);
 
     $sql = 'CREATE TEMPORARY TABLE civireport_membership_contribution_detail

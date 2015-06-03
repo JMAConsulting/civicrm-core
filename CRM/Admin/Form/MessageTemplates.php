@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -173,7 +173,7 @@ class CRM_Admin_Form_MessageTemplates extends CRM_Admin_Form {
       );
     }
     else {
-      $this->addWysiwyg('msg_html', ts('HTML Message'),
+      $this->add('wysiwyg', 'msg_html', ts('HTML Message'),
         array(
           'cols' => '80',
           'rows' => '8',

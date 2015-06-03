@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -86,9 +86,6 @@
 {/if}
 
 {if $rows and $action ne 2 and $action ne 4}
-
-  {* include wysiwyg related files*}
-  {include file="CRM/common/wysiwyg.tpl" includeWysiwygEditor=true}
 
   <div id='mainTabContainer'>
     <ul>

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -568,7 +568,6 @@ class CRM_Contact_Import_Parser_Contact extends CRM_Contact_Import_Parser {
                   $this->_retCode = CRM_Import_Parser::NO_MATCH;
                 }
                 else {
-                  $newContact = $this->createContact($formatted, $contactFields, $onDuplicate, $contactId, FALSE, $this->_dedupeRuleGroupID);
                   $updateflag = FALSE;
                   $this->_retCode = CRM_Import_Parser::VALID;
                 }
@@ -918,7 +917,7 @@ class CRM_Contact_Import_Parser_Contact extends CRM_Contact_Import_Parser {
                 'contact' => $primaryContactId,
               );
 
-              list($valid, $invalid, $duplicate, $saved, $relationshipIds) = CRM_Contact_BAO_Relationship::createMultiple($relationParams, $relationIds);
+              list($valid, $invalid, $duplicate, $saved, $relationshipIds) = CRM_Contact_BAO_Relationship::legacyCreateMultiple($relationParams, $relationIds);
 
               if ($valid || $duplicate) {
                 $relationIds['contactTarget'] = $relContactId;

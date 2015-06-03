@@ -3,7 +3,7 @@
    +--------------------------------------------------------------------+
    | CiviCRM version 4.6                                                |
    +--------------------------------------------------------------------+
-   | Copyright CiviCRM LLC (c) 2004-2014                                |
+   | Copyright CiviCRM LLC (c) 2004-2015                                |
    +--------------------------------------------------------------------+
    | This file is a part of CiviCRM.                                    |
    |                                                                    |
@@ -29,7 +29,7 @@
  * This class handles all REST client requests.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  *
  */
 class CRM_Utils_REST {
@@ -187,7 +187,7 @@ class CRM_Utils_REST {
   public static function jsonFormated($data) {
     // If php is 5.4+ we can use the native method
     if (defined('JSON_PRETTY_PRINT')) {
-      return json_encode($data, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES);
+      return json_encode($data, JSON_PRETTY_PRINT + JSON_UNESCAPED_SLASHES + JSON_UNESCAPED_UNICODE);
     }
 
     // PHP 5.3 shim
@@ -512,7 +512,7 @@ class CRM_Utils_REST {
 
     }
     else {
-      $content = "<!-- .tpl file embeded: $tpl -->\n";
+      $content = "<!-- .tpl file embedded: $tpl -->\n";
       CRM_Utils_System::appendTPLFile($tpl, $content);
       echo $content . $smarty->fetch($tpl);
       CRM_Utils_System::civiExit();

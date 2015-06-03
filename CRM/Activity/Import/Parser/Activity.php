@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -298,7 +298,6 @@ class CRM_Activity_Import_Parser_Activity extends CRM_Activity_Import_Parser {
     }
 
     $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
-      CRM_Core_DAO::$_nullObject,
       NULL,
       'Activity'
     );

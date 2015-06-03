@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -31,7 +31,7 @@
  * Serves as a wrapper between the UserFrameWork and Core CRM
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -401,6 +401,9 @@ class CRM_Core_Invoke {
     }
     CRM_Core_DAO_AllCoreTables::reinitializeCache(TRUE);
     CRM_Core_ManagedEntities::singleton(TRUE)->reconcile();
+
+    //CRM-16257 update Config.IDS.ini might be an old copy
+    CRM_Core_IDS::createConfigFile(TRUE);
   }
 
 }

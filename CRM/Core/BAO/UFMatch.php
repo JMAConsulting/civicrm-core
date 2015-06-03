@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -39,7 +39,7 @@
 class CRM_Core_BAO_UFMatch extends CRM_Core_DAO_UFMatch {
 
   /**
-   * Create UF Match, Note that thsi function is here in it's simplest form @ the moment
+   * Create UF Match, Note that this function is here in it's simplest form @ the moment
    *
    * @param $params
    *
@@ -53,7 +53,9 @@ class CRM_Core_BAO_UFMatch extends CRM_Core_DAO_UFMatch {
     }
     $dao = new CRM_Core_DAO_UFMatch();
     $dao->copyValues($params);
-    $dao->save();
+    if (!$dao->find(TRUE)) {
+      $dao->save();
+    }
     CRM_Utils_Hook::post($hook, 'UFMatch', $dao->id, $dao);
     return $dao;
   }

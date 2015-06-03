@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -133,7 +133,7 @@
 
         {* Recurring contribution / pledge information *}
         {if $is_recur}
-          {if $membershipBlock} {* Auto-renew membership confirmation *}
+          {if !empty($auto_renew)} {* Auto-renew membership confirmation *}
             {crmRegion name="contribution-thankyou-recur-membership"}
               <br />
               {if $frequency_interval > 1}

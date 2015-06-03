@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CiviCRM_Hook
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id: $
  *
  */
@@ -424,7 +424,7 @@ abstract class CRM_Utils_Hook {
   }
 
   /**
-   * This hook is called before a db write on a custom table.
+   * This hook is called after a db write on a custom table.
    *
    * @param string $op
    *   The type of operation being performed.
@@ -587,7 +587,9 @@ abstract class CRM_Utils_Hook {
    *   - name: string, eg "sql:civicrm_email:contact_id"
    *   - type: string, eg "sql"
    *   - count: int, eg "5" if there are 5 email addresses that refer to $dao
-   * @return void
+   *
+   * @return mixed
+   *   Return is not really intended to be used.
    */
   public static function referenceCounts($dao, &$refCounts) {
     return self::singleton()->invoke(2, $dao, $refCounts,
@@ -925,17 +927,22 @@ abstract class CRM_Utils_Hook {
    *
    * Definition will look like this:
    *
-   *   function hook_civicrm_alterPaymentProcessorParams($paymentObj,
-   *                                                     &$rawParams, &$cookedParams);
+   *   function hook_civicrm_alterPaymentProcessorParams(
+   *     $paymentObj,
+   *     &$rawParams,
+   *     &$cookedParams
+   *   );
    *
-   * @param string $paymentObj
-   *    instance of payment class of the payment processor invoked (e.g., 'CRM_Core_Payment_Dummy')
+   * @param CRM_Core_Payment $paymentObj
+   *   Instance of payment class of the payment processor invoked (e.g., 'CRM_Core_Payment_Dummy')
+   *   See discussion in CRM-16224 as to whether $paymentObj should be passed by reference.
    * @param array &$rawParams
    *    array of params as passed to to the processor
    * @param array &$cookedParams
    *     params after the processor code has translated them into its own key/value pairs
    *
    * @return mixed
+   *   This return is not really intended to be used.
    */
   public static function alterPaymentProcessorParams(
     $paymentObj,
@@ -1333,7 +1340,7 @@ abstract class CRM_Utils_Hook {
    *   float $x x position in user units
    *   float $y y position in user units
    *   boolean $reseth if true reset the last cell height (default true).
-   *   int $stretch stretch carachter mode: <ul><li>0 = disabled</li><li>1 = horizontal scaling only if
+   *   int $stretch stretch character mode: <ul><li>0 = disabled</li><li>1 = horizontal scaling only if
    *                necessary</li><li>2 = forced horizontal scaling</li><li>3 = character spacing only if
    *                necessary</li><li>4 = forced character spacing</li></ul>
    *   boolean $ishtml set to true if $txt is HTML content (default = false).
@@ -1832,7 +1839,7 @@ abstract class CRM_Utils_Hook {
    *
    * @return mixed
    */
-  public static function alterDisplayName($displayName, $contactId, $dao) {
+  public static function alterDisplayName(&$displayName, $contactId, $dao) {
     return self::singleton()->invoke(3,
       $displayName, $contactId, $dao, self::$_nullObject, self::$_nullObject,
       self::$_nullObject, 'civicrm_contact_get_displayname'
@@ -1918,6 +1925,18 @@ abstract class CRM_Utils_Hook {
       self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject,
       'civicrm_fileSearches'
     );
+  }
+
+  /**
+   * Check system status.
+   *
+   * @param array $messages
+   *   Array<CRM_Utils_Check_Message>. A list of messages regarding system status.
+   * @return mixed
+   */
+  public static function check(&$messages) {
+    return self::singleton()
+      ->invoke(1, $messages, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, 'civicrm_check');
   }
 
 }

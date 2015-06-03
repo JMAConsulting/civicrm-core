@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -59,7 +59,7 @@ class CRM_Contact_Import_Form_DataSource extends CRM_Core_Form {
     $daoTestPrivilege = new CRM_Core_DAO();
     $daoTestPrivilege->query("CREATE TEMPORARY TABLE import_job_permission_one(test int) ENGINE=InnoDB");
     $daoTestPrivilege->query("CREATE TEMPORARY TABLE import_job_permission_two(test int) ENGINE=InnoDB");
-    $daoTestPrivilege->query("DROP TABLE IF EXISTS import_job_permission_one, import_job_permission_two");
+    $daoTestPrivilege->query("DROP TEMPORARY TABLE IF EXISTS import_job_permission_one, import_job_permission_two");
     unset($errorScope);
 
     if ($daoTestPrivilege->_lastError) {

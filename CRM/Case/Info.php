@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -31,7 +31,7 @@
  * abstract class.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -64,9 +64,9 @@ class CRM_Case_Info extends CRM_Core_Component_Info {
     $result = array();
     $result['crmCaseType'] = array(
       'ext' => 'civicrm',
-      'js' => array('js/angular-crmCaseType.js'),
-      'css' => array('css/angular-crmCaseType.css'),
-      'partials' => array('partials/crmCaseType'),
+      'js' => array('ang/crmCaseType.js'),
+      'css' => array('ang/crmCaseType.css'),
+      'partials' => array('ang/crmCaseType'),
     );
 
     CRM_Core_Resources::singleton()->addSetting(array(
@@ -94,17 +94,38 @@ class CRM_Case_Info extends CRM_Core_Component_Info {
   /**
    * @inheritDoc
    * @param bool $getAllUnconditionally
+   * @param bool $descriptions
+   *   Whether to return permission descriptions
    *
    * @return array
    */
-  public function getPermissions($getAllUnconditionally = FALSE) {
-    return array(
-      'delete in CiviCase',
-      'administer CiviCase',
-      'access my cases and activities',
-      'access all cases and activities',
-      'add cases',
+  public function getPermissions($getAllUnconditionally = FALSE, $descriptions = FALSE) {
+    $permissions = array(
+      'delete in CiviCase' => array(
+        ts('delete in CiviCase'),
+        ts('Delete Cases'),
+      ),
+      'administer CiviCase' => array(
+        ts('administer CiviCase'),
+      ),
+      'access my cases and activities' => array(
+        ts('access my cases and activities'),
+      ),
+      'access all cases and activities' => array(
+        ts('access all cases and activities'),
+      ),
+      'add cases' => array(
+        ts('add cases'),
+      ),
     );
+
+    if (!$descriptions) {
+      foreach ($permissions as $name => $attr) {
+        $permissions[$name] = array_shift($attr);
+      }
+    }
+
+    return $permissions;
   }
 
   /**

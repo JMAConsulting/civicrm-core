@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -349,6 +349,7 @@ class api_v3_ContributionPageTest extends CiviUnitTestCase {
       'is_recur' => 1,
       'frequency_interval' => 1,
       'frequency_unit' => 'month',
+      'is_pay_later' => 1,
     );
 
     $this->callAPIAndDocument('contribution_page', 'submit', $submitParams, __FUNCTION__, __FILE__, 'submit contribution page', NULL);

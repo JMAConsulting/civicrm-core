@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -490,7 +490,7 @@ class CRM_Core_I18n {
         }
       }
       catch (CRM_Extension_Exception $e) {
-        // Intentionally not translating this string to avoid possible infinit loops
+        // Intentionally not translating this string to avoid possible infinite loops
         // Only developers should see this string, if they made a mistake in their ts() usage.
         CRM_Core_Session::setStatus('Unknown extension key in a translation string: ' . $key, '', 'error');
         $this->_extensioncache[$key] = FALSE;

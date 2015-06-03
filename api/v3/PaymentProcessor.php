@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -79,4 +79,27 @@ function civicrm_api3_payment_processor_delete($params) {
  */
 function civicrm_api3_payment_processor_get($params) {
   return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+}
+
+
+/**
+ * Set default getlist parameters.
+ *
+ * @see _civicrm_api3_generic_getlist_defaults
+ *
+ * @param array $request
+ *
+ * @return array
+ */
+function _civicrm_api3_payment_processor_getlist_defaults(&$request) {
+  return array(
+    'description_field' => array(
+      'payment_processor_type_id',
+      'description',
+    ),
+    'params' => array(
+      'is_test' => 0,
+      'is_active' => 1,
+    ),
+  );
 }
