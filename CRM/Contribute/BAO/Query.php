@@ -520,6 +520,19 @@ class CRM_Contribute_BAO_Query {
         $query->_tables['contribution_batch'] = $query->_whereTables['contribution_batch'] = 1;
         return;
 
+      case 'contribution_product_id':
+        // CRM-16713 - contribution search by premiums on 'Find Contribution' form.
+        $qillName = $name;
+        list($operator, $productValue) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Contribute_DAO_Product', $name, $value, $op);
+        $query->_qill[$grouping][] = ts('%1 %2 %3', array(1 => $fields[$qillName]['title'], 2 => $operator, 3 => $productValue));
+        $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("civicrm_product.id", $op, $value);
+        $query->_tables['civicrm_product'] = $query->_whereTables['civicrm_product'] = 1;
+
+      case 'contribution_is_payment':
+        $query->_where[$grouping][] = " civicrm_financial_trxn.is_payment $op $value";
+        $query->_tables['contribution_financial_trxn'] = $query->_whereTables['contribution_financial_trxn'] = 1;
+        return;
+
       default:
         //all other elements are handle in this case
         $fldName = substr($name, 13);
