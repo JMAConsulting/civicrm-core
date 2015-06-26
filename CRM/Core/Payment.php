@@ -103,6 +103,18 @@ abstract class CRM_Core_Payment {
   }
 
   /**
+   * Opportunity for the payment processor to override the entire form build.
+   *
+   * @param CRM_Core_Form $form
+   *
+   * @return bool
+   *   Should form building stop at this point?
+   */
+  public function buildForm(&$form) {
+    return FALSE;
+  }
+
+  /**
    * Log payment notification message to forensic system log.
    *
    * @todo move to factory class \Civi\Payment\System (or similar)
@@ -479,6 +491,125 @@ abstract class CRM_Core_Payment {
   }
 
   /**
+   * Get base url dependent on component.
+   *
+   * @return string|void
+   */
+  protected function getBaseReturnUrl() {
+    if ($this->_component == 'event') {
+      $baseURL = 'civicrm/event/register';
+    }
+    else {
+      $baseURL = 'civicrm/contribute/transact';
+    }
+    return $baseURL;
+  }
+
+  /**
+   * Get url to return to after cancelled or failed transaction
+   *
+   * @param $qfKey
+   * @param $participantID
+   *
+   * @return string cancel url
+   */
+  protected function getCancelUrl($qfKey, $participantID) {
+    if ($this->_component == 'event') {
+      return CRM_Utils_System::url($this->getBaseReturnUrl(), array(
+        'reset' => 1,
+        'cc' => 'fail',
+        'participantId' => $participantID,
+      ),
+        TRUE, NULL, FALSE
+      );
+    }
+
+    return CRM_Utils_System::url($this->getBaseReturnUrl(), array(
+      '_qf_Main_display' => 1,
+      'qfKey' => $qfKey,
+      'cancel' => 1,
+    ),
+      TRUE, NULL, FALSE
+    );
+  }
+
+  /**
+   * Get URL to return the browser to on success.
+   *
+   * @param $qfKey
+   *
+   * @return string
+   */
+  protected function getReturnSuccessUrl($qfKey) {
+    return CRM_Utils_System::url($this->getBaseReturnUrl(), array(
+      '_qf_ThankYou_display' => 1,
+      'qfKey' => $qfKey,
+    ),
+      TRUE, NULL, FALSE
+    );
+  }
+
+  /**
+   * Get URL to return the browser to on failure.
+   *
+   * @param string $key
+   * @param int $participantID
+   * @param int $eventID
+   *
+   * @return string
+   *   URL for a failing transactor to be redirected to.
+   */
+  protected function getReturnFailUrl($key, $participantID = NULL, $eventID = NULL) {
+    $test = $this->_is_test ? '&action=preview' : '';
+    if ($this->_component == "event") {
+      return CRM_Utils_System::url('civicrm/event/register',
+        "reset=1&cc=fail&participantId={$participantID}&id={$eventID}{$test}&qfKey={$key}",
+        FALSE, NULL, FALSE
+      );
+    }
+    else {
+      return CRM_Utils_System::url('civicrm/contribute/transact',
+        "_qf_Main_display=1&cancel=1&qfKey={$key}{$test}",
+        FALSE, NULL, FALSE
+      );
+    }
+  }
+
+  /**
+   * Get URl for when the back button is pressed.
+   *
+   * @param $qfKey
+   *
+   * @return string url
+   */
+  protected function getGoBackUrl($qfKey) {
+    return CRM_Utils_System::url($this->getBaseReturnUrl(), array(
+      '_qf_Confirm_display' => 'true',
+      'qfKey' => $qfKey,
+    ),
+      TRUE, NULL, FALSE
+    );
+  }
+
+  /**
+   * Get the notify (aka ipn, web hook or silent post) url.
+   *
+   * If there is no '.' in it we assume that we are dealing with localhost or
+   * similar and it is unreachable from the web & hence invalid.
+   *
+   * @return string
+   *   URL to notify outcome of transaction.
+   */
+  protected function getNotifyUrl() {
+    $url = CRM_Utils_System::url(
+      'civicrm/payment/ipn/' . $this->_paymentProcessor['id'],
+      array(),
+      TRUE
+    );
+    return (stristr($url, '.')) ? $url : '';
+  }
+
+  /**
    * Calling this from outside the payment subsystem is deprecated - use doPayment.
    *
    * Does a server to server payment transaction.
@@ -609,6 +740,9 @@ abstract class CRM_Core_Payment {
    * @param string $method
    *   'PaymentNotification' or 'PaymentCron'
    * @param array $params
+   *
+   * @throws \CRM_Core_Exception
+   * @throws \Exception
    */
   public static function handlePaymentMethod($method, $params = array()) {
     if (!isset($params['processor_id']) && !isset($params['processor_name'])) {
@@ -618,7 +752,9 @@ abstract class CRM_Core_Payment {
         $params['processor_id'] = $_GET['processor_id'] = $lastParam;
       }
       else {
-        throw new CRM_Core_Exception("Either 'processor_id' or 'processor_name' param is required for payment callback");
+        throw new CRM_Core_Exception("Either 'processor_id' (recommended) or 'processor_name' (deprecated) is
+        required
+        for payment callback");
       }
     }
 
@@ -660,15 +796,11 @@ abstract class CRM_Core_Payment {
     // possible we may get more. Hence, iterate through all instances ..
 
     while ($dao->fetch()) {
-      // Check pp is extension
+      // Check pp is extension - is this still required - surely the singleton below handles it.
       $ext = CRM_Extension_System::singleton()->getMapper();
       if ($ext->isExtensionKey($dao->class_name)) {
         $paymentClass = $ext->keyToClass($dao->class_name, 'payment');
         require_once $ext->classToPath($paymentClass);
-      }
-      else {
-        // Legacy or extension as module instance
-        $paymentClass = 'CRM_Core_' . $dao->class_name;
       }
 
       $processorInstance = Civi\Payment\System::singleton()->getById($dao->processor_id);
@@ -710,6 +842,40 @@ abstract class CRM_Core_Payment {
    */
   public function isSupported($method = 'cancelSubscription') {
     return method_exists(CRM_Utils_System::getClassName($this), $method);
+  }
+
+  /**
+   * Some processors replace the form submit button with their own.
+   *
+   * Returning false here will leave the button off front end forms.
+   *
+   * At this stage there is zero cross-over between back-office processors and processors that suppress the submit.
+   */
+  public function isSuppressSubmitButtons() {
+    return FALSE;
+  }
+
+  /**
+   * Checks to see if invoice_id already exists in db.
+   *
+   * It's arguable if this belongs in the payment subsystem at all but since several processors implement it
+   * it is better to standardise to being here.
+   *
+   * @param int $invoiceId The ID to check.
+   *
+   * @param null $contributionID
+   *   If a contribution exists pass in the contribution ID.
+   *
+   * @return bool
+   *   True if invoice ID otherwise exists, else false
+   */
+  protected function checkDupe($invoiceId, $contributionID = NULL) {
+    $contribution = new CRM_Contribute_DAO_Contribution();
+    $contribution->invoice_id = $invoiceId;
+    if ($contributionID) {
+      $contribution->whereAdd("id <> $contributionID");
+    }
+    return $contribution->find();
   }
 
   /**
@@ -788,7 +954,7 @@ INNER JOIN civicrm_contribution con ON ( con.contribution_recur_id = rec.id )
     }
 
     // Else default
-    return $this->_paymentProcessor['url_recur'];
+    return isset($this->_paymentProcessor['url_recur']) ? $this->_paymentProcessor['url_recur'] : '';
   }
 
 }

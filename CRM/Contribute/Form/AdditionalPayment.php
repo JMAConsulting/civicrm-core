@@ -246,7 +246,7 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
           'id' => $type,
         );
 
-        CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE);
+        CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE, TRUE);
 
         $qfKey = $this->controller->_key;
         $this->assign('qfKey', $qfKey);
@@ -491,7 +491,7 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
       $this->_params,
       $config->defaultCurrency
     );
-    $this->_params['payment_action'] = 'Sale';
+
     if (!empty($this->_params['trxn_date'])) {
       $this->_params['receive_date'] = CRM_Utils_Date::processDate($this->_params['trxn_date'], $this->_params['trxn_date_time']);
     }

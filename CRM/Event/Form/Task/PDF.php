@@ -53,6 +53,8 @@ class CRM_Event_Form_Task_PDF extends CRM_Event_Form_Task {
    * @var array
    */
   public $_templates = NULL;
+  public $_cid = NULL;
+  public $_activityId = NULL;
 
   /**
    * Build all the data structures needed to build the form.
@@ -88,6 +90,16 @@ class CRM_Event_Form_Task_PDF extends CRM_Event_Form_Task {
    */
   public function setDefaultValues() {
     return CRM_Contact_Form_Task_PDFLetterCommon::setDefaultValues();
+  }
+
+  /**
+   * List available tokens for this form.
+   *
+   * @return array
+   */
+  public function listTokens() {
+    $tokens = CRM_Core_SelectValues::contactTokens();
+    return $tokens;
   }
 
 }

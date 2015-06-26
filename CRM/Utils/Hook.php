@@ -81,7 +81,6 @@ abstract class CRM_Utils_Hook {
     if (self::$_singleton == NULL || $fresh) {
       $config = CRM_Core_Config::singleton();
       $class = $config->userHookClass;
-      require_once str_replace('_', DIRECTORY_SEPARATOR, $config->userHookClass) . '.php';
       self::$_singleton = new $class();
     }
     return self::$_singleton;
@@ -1937,6 +1936,26 @@ abstract class CRM_Utils_Hook {
   public static function check(&$messages) {
     return self::singleton()
       ->invoke(1, $messages, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, 'civicrm_check');
+  }
+
+  /**
+   * This hook is called when a query string of the CSV Batch export is generated.
+   */
+  public static function batchQuery(&$query) {
+    return self::singleton()->invoke(1, $query, self::$_nullObject,
+      self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject,
+      'civicrm_batchQuery'
+    );
+  }
+
+  /**
+   * This hook is called when the entries of the CSV Batch export are mapped.
+   */
+  public static function batchItems(&$results, &$items) {
+    return self::singleton()->invoke(2, $results, $items,
+      self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject,
+      'civicrm_batchItems'
+    );
   }
 
 }

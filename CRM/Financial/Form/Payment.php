@@ -49,25 +49,25 @@ class CRM_Financial_Form_Payment extends CRM_Core_Form {
     $this->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($this->_paymentProcessorID, 'unused');
     CRM_Core_Payment_ProcessorForm::preProcess($this);
 
-    //@todo - figure out how to deal with payment express.
-    //get payPal express id and make it available to template
-    //$payPalExpressId = ($values['payment_processor_type'] == 'PayPal_Express') ? $values['id'] : 0;
-    // $this->assign('payPalExpressId', $payPalExpressId);
-
-    // Add JS to show icons for the accepted credit cards
-
-    $creditCardTypes = CRM_Core_Payment_Form::getCreditCardCSSNames();
-    CRM_Core_Resources::singleton()
-      ->addScriptFile('civicrm', 'templates/CRM/Core/BillingBlock.js', 10)
-      // workaround for CRM-13634
-      // ->addSetting(array('config' => array('creditCardTypes' => $creditCardTypes)));
-      ->addScript('CRM.config.creditCardTypes = ' . json_encode($creditCardTypes) . ';');
+    self::addCreditCardJs();
 
     $this->assign('paymentProcessorID', $this->_paymentProcessorID);
   }
 
   public function buildQuickForm() {
     CRM_Core_Payment_ProcessorForm::buildQuickForm($this);
+  }
+
+  /**
+   * Add JS to show icons for the accepted credit cards
+   */
+  public static function addCreditCardJs() {
+    $creditCardTypes = CRM_Core_Payment_Form::getCreditCardCSSNames();
+    CRM_Core_Resources::singleton()
+      ->addScriptFile('civicrm', 'templates/CRM/Core/BillingBlock.js', 10)
+      // workaround for CRM-13634
+      // ->addSetting(array('config' => array('creditCardTypes' => $creditCardTypes)));
+      ->addScript('CRM.config.creditCardTypes = ' . json_encode($creditCardTypes) . ';');
   }
 
 }

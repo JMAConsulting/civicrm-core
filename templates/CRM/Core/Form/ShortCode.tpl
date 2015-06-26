@@ -1,9 +1,8 @@
-<?php
-/*
+{*
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                  |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -23,23 +22,32 @@
  | GNU Affero General Public License or the licensing of CiviCRM,     |
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
-*/
+*}
+<div class="help">
+  {ts}Can't find your form? Make sure it is active.{/ts}
+</div>
 
-/**
- * Config handles all the run time configuration changes that the system needs to deal with.
- * Typically we'll have different values for a user's sandbox, a qa sandbox and a production area.
- * The default values in general, should reflect production values (minimizes chances of screwing up)
- *
- * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
- */
+<div class="crm-field-wrapper">
+  <span class="shortcode-param">{$form.component.html}</span>&nbsp;&nbsp;
+  <span class="shortcode-param" data-components='{$selects|@json_encode}'>{$form.entity.html}</span>
+</div>
 
-require_once 'CRM/Core/Component/Config.php';
+{foreach from=$options key='item' item='option'}
+  <div class="crm-field-wrapper shortcode-param" data-components='{$option.components|@json_encode}'>
+    {if $form.$item.label}
+      <p>{$form.$item.label}</p>
+    {/if}
+    {$form.$item.html}
+  </div>
 
-/**
- * Class CRM_Auction_Config
- */
-class CRM_Auction_Config extends CRM_Core_Component_Config {}
+{/foreach}
 
+{* Hack to prevent WP toolbars from popping up above the dialog *}
+{literal}<style type="text/css">
+  #wpadminbar,
+  #adminmenuwrap,
+  .wp-editor-expand #wp-content-editor-tools,
+  .wp-editor-expand div.mce-toolbar-grp {
+    z-index: 100 !important;
+  }
+</style>{/literal}

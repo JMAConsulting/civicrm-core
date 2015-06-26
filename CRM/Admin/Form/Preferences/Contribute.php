@@ -1,10 +1,46 @@
 <?php
+/*
+ +--------------------------------------------------------------------+
+ | CiviCRM version 4.6                                                |
+ +--------------------------------------------------------------------+
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
+ +--------------------------------------------------------------------+
+ | This file is a part of CiviCRM.                                    |
+ |                                                                    |
+ | CiviCRM is free software; you can copy, modify, and distribute it  |
+ | under the terms of the GNU Affero General Public License           |
+ | Version 3, 19 November 2007 and the CiviCRM Licensing Exception.   |
+ |                                                                    |
+ | CiviCRM is distributed in the hope that it will be useful, but     |
+ | WITHOUT ANY WARRANTY; without even the implied warranty of         |
+ | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               |
+ | See the GNU Affero General Public License for more details.        |
+ |                                                                    |
+ | You should have received a copy of the GNU Affero General Public   |
+ | License and the CiviCRM Licensing Exception along                  |
+ | with this program; if not, contact CiviCRM LLC                     |
+ | at info[AT]civicrm[DOT]org. If you have questions about the        |
+ | GNU Affero General Public License or the licensing of CiviCRM,     |
+ | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
+ +--------------------------------------------------------------------+
+ */
+
+/**
+ *
+ * @package CRM
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
+ */
 
 /**
  * This class generates form components for the display preferences
  *
  */
 class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
+  protected $_settings = array(
+    'cvv_backoffice_required' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
+  );
   /**
    * Process the form submission.
    *
@@ -89,6 +125,27 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
    * @return void
    */
   public function buildQuickForm() {
+    //CRM-16691: Changes made related to settings of 'CVV'.
+    foreach ($this->_settings as $setting => $group) {
+      $settingMetaData = civicrm_api3('setting', 'getfields', array('name' => $setting));
+      $props = $settingMetaData['values'][$setting];
+      if (isset($props['quick_form_type'])) {
+        $add = 'add' . $props['quick_form_type'];
+        if ($add == 'addElement') {
+          $this->$add(
+            $props['html_type'],
+            $setting,
+            ts($props['title']),
+            CRM_Utils_Array::value($props['html_type'] == 'select' ? 'option_values' : 'html_attributes', $props, array()),
+            $props['html_type'] == 'select' ? CRM_Utils_Array::value('html_attributes', $props) : NULL
+          );
+        }
+        else {
+          $this->$add($setting, ts($props['title']));
+        }
+      }
+      $this->assign("{$setting}_description", ts($props['description']));
+    }
     $this->add('checkbox', 'invoicing', ts('Enable Tax and Invoicing'));
     parent::buildQuickForm();
   }
@@ -102,6 +159,17 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
    */
   public function setDefaultValues() {
     $defaults = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME, 'contribution_invoice_settings');
+    //CRM-16691: Changes made related to settings of 'CVV'.
+    foreach ($this->_settings as $setting => $group) {
+      $settingMetaData = civicrm_api3('setting', 'getfields', array('name' => $setting));
+      $defaults[$setting] = civicrm_api3('setting', 'getvalue',
+        array(
+          'name' => $setting,
+          'group' => $group,
+          'default_value' => CRM_Utils_Array::value('default', $settingMetaData['values'][$setting]),
+        )
+      );
+    }
     return $defaults;
   }
 
@@ -140,6 +208,10 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
         CRM_Core_DAO::VALUE_SEPARATOR;
       CRM_Core_BAO_Setting::setItem($settingName, 'CiviCRM Preferences', 'user_dashboard_options');
     }
+    //CRM-16691: Changes made related to settings of 'CVV'.
+    $settings = array_intersect_key($params, $this->_settings);
+    $result = civicrm_api3('setting', 'create', $settings);
+    CRM_Core_Session::setStatus(ts('Your changes have been saved.'), ts('Changes Saved'), "success");
   }
 
 }

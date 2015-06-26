@@ -25,14 +25,12 @@
 *}
 {crmRegion name="billing-block"}
 <div id="payment_information">
-  {if $paymentFields|@count}
+  {if $paymentFields|@count && (!$form.$expressButtonName || $paymentProcessor.payment_processor_type EQ 'PayPal')}
     <fieldset class="billing_mode-group {$paymentTypeName}_info-group">
       <legend>
         {$paymentTypeLabel}
       </legend>
       {crmRegion name="billing-block-pre"}
-        {* todo move this region assignment to paypal processor *}
-        {include file= "CRM/Financial/Form/PaypalPro.tpl"}
       {/crmRegion}
       <div class="crm-section billing_mode-section {$paymentTypeName}_info-section">
         {foreach from=$paymentFields item=paymentField}
@@ -51,7 +49,6 @@
         {/foreach}
       </div>
     </fieldset>
-  {/if}
   {if $billingDetailsFields|@count}
     {if $profileAddressFields}
       <input type="checkbox" id="billingcheckbox" value="0">
@@ -74,6 +71,7 @@
       </div>
     </fieldset>
   {/if}
+{/if}
 </div>
 {if $profileAddressFields}
   <script type="text/javascript">
@@ -199,15 +197,34 @@
         $('#credit_card_number').val(cc);
       });
     });
-    {/literal}
+
+    $('input[name="payment_processor_id"]').change( function() {
+      function toggleConfirmButton() {
+        var suppressSubmitButton = {/literal}"{$suppressSubmitButton}"{literal};
+        var elementObj = $('input[name="payment_processor"]');
+        if ( elementObj.attr('type') == 'hidden' ) {
+          var processorTypeId = elementObj.val( );
+        }
+        else {
+          var processorTypeId = elementObj.filter(':checked').val();
+        }
+
+        if (suppressSubmitButton) {
+          $("#crm-submit-buttons").hide();
+        }
+        else {
+          $("#crm-submit-buttons").show();
+        }
+      }
+      toggleConfirmButton();
+    });
+
   </script>
+  {/literal}
 {/if}
 {/crmRegion}
+{crmRegion name="billing-block-post"}
+  {* Payment processors sometimes need to append something to the end of the billing block. We create a region for
+     clarity  - the plan is to move to assigning this through the payment processor to this region *}
+{/crmRegion}
 
-{if $is_monetary}
-  {crmRegion name="billing-block-post"}
-    {* Payment processors sometimes need to append something to the end of the billing block. We create a region for
-       clarity  - the plan is to move to assigning this through the payment processor to this region *}
-    {include file= "CRM/Financial/Form/PaypalExpress.tpl"}
-  {/crmRegion}
-{/if}

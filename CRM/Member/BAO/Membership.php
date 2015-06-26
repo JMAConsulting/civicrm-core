@@ -986,6 +986,21 @@ INNER JOIN  civicrm_membership_type type ON ( type.id = membership.membership_ty
    * @return array|bool
    */
   public static function getContactMembership($contactID, $memType, $isTest, $membershipId = NULL, $onlySameParentOrg = FALSE) {
+    //check for owner membership id, if it exists update that membership instead: CRM-15992
+    if ($membershipId) {
+      $ownerMemberId = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership',
+        $membershipId,
+        'owner_membership_id', 'id'
+      );
+      if ($ownerMemberId) {
+        $membershipId = $ownerMemberId;
+        $contactID = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership',
+          $membershipId,
+          'contact_id', 'id'
+        );
+      }
+    }
+
     $dao = new CRM_Member_DAO_Membership();
     if ($membershipId) {
       $dao->id = $membershipId;
@@ -1040,6 +1055,17 @@ INNER JOIN  civicrm_membership_type type ON ( type.id = membership.membership_ty
         $membership['status_id'],
         'is_current_member', 'id'
       );
+      $ownerMemberId = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership',
+        $membership['id'],
+        'owner_membership_id', 'id'
+      );
+      if ($ownerMemberId) {
+        $membership['id'] = $membership['membership_id'] = $ownerMemberId;
+        $membership['membership_contact_id'] = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership',
+          $membership['id'],
+          'contact_id', 'id'
+        );
+      }
       return $membership;
     }
 
@@ -1136,7 +1162,7 @@ INNER JOIN  civicrm_membership_type type ON ( type.id = membership.membership_ty
   /**
    * Get all exportable fields.
    *
-   * @retun array return array of all exportable fields
+   * @return array return array of all exportable fields
    */
   public static function &exportableFields() {
     $expFieldMembership = CRM_Member_DAO_Membership::export();
@@ -1314,7 +1340,7 @@ AND civicrm_membership.is_test = %2";
     $isProcessSeparateMembershipTransaction, $defaultContributionTypeID, $membershipLineItems, $isPayLater) {
     $result = $membershipContribution = NULL;
     $isTest = CRM_Utils_Array::value('is_test', $membershipParams, FALSE);
-    $errors = $createdMemberships = array();
+    $errors = $createdMemberships = $paymentResult = array();
 
     //@todo move this into the calling function & pass in the correct financialTypeID
     if (isset($paymentParams['financial_type'])) {
@@ -1329,7 +1355,12 @@ AND civicrm_membership.is_test = %2";
     }
 
     if ($isPaidMembership) {
-      $result = CRM_Contribute_BAO_Contribution_Utils::processConfirm($form, $membershipParams,
+      if ($isProcessSeparateMembershipTransaction) {
+        // If we have 2 transactions only one can use the invoice id.
+        $membershipParams['invoiceID'] .= '-2';
+      }
+
+      $paymentResult = CRM_Contribute_BAO_Contribution_Utils::processConfirm($form, $membershipParams,
         $premiumParams, $contactID,
         $financialTypeID,
         'membership',
@@ -1338,20 +1369,24 @@ AND civicrm_membership.is_test = %2";
         $isPayLater
       );
       if (is_a($result[1], 'CRM_Core_Error')) {
-        $errors[1] = CRM_Core_Error::getMessages($result[1]);
+        $errors[1] = CRM_Core_Error::getMessages($paymentResult[1]);
       }
-      elseif (!empty($result[1])) {
+
+      if (is_a($paymentResult, 'CRM_Core_Error')) {
+        $errors[1] = CRM_Core_Error::getMessages($paymentResult);
+      }
+      elseif (!empty($paymentResult['contribution'])) {
+        //note that this will be over-written if we are using a separate membership transaction. Otherwise there is only one
+        $membershipContribution = $paymentResult['contribution'];
         // Save the contribution ID so that I can be used in email receipts
         // For example, if you need to generate a tax receipt for the donation only.
-        $form->_values['contribution_other_id'] = $result[1]->id;
-        //note that this will be over-written if we are using a separate membership transaction. Otherwise there is only one
-        $membershipContribution = $result[1];
+        $form->_values['contribution_other_id'] = $membershipContribution->id;
       }
     }
 
     if ($isProcessSeparateMembershipTransaction) {
       try {
-        $lineItems = $form->_lineItem = $membershipLineItems;
+        $form->_lineItem = $membershipLineItems;
         if (empty($form->_params['auto_renew']) && !empty($membershipParams['is_recur'])) {
           unset($membershipParams['is_recur']);
         }
@@ -1438,14 +1473,13 @@ AND civicrm_membership.is_test = %2";
       $form->_values['contribution_id'] = $membershipContributionID;
     }
 
-    // Do not send an email if Recurring transaction is done via Direct Mode
-    // Email will we sent when the IPN is received.
-    if (!empty($form->_params['is_recur']) && $form->_contributeMode == 'direct') {
-      if (!empty($membershipContribution->trxn_id)) {
+    if ($form->_contributeMode == 'direct') {
+      if (CRM_Utils_Array::value('contribution_status_id', $paymentResult) == 1) {
         try {
           civicrm_api3('contribution', 'completetransaction', array(
-            'id' => $membershipContribution->id,
-            'trxn_id' => $membershipContribution->trxn_id,
+            'id' => $paymentResult['contribution']->id,
+            'trxn_id' => $paymentResult['contribution']->trxn_id,
+            'is_transactional' => FALSE,
           ));
         }
         catch (CiviCRM_API3_Exception $e) {
@@ -1761,8 +1795,12 @@ WHERE  civicrm_membership.contact_id = civicrm_contact.id
    * @param CRM_Core_DAO $dao
    *   Membership object.
    *
-   * @return null|array
-   *   array of memberships if created
+   * @param bool $reset
+   *
+   * @return array|null
+   *   Membership details, if created.
+   *
+   * @throws \CRM_Core_Exception
    */
   public static function createRelatedMemberships(&$params, &$dao, $reset = FALSE) {
     static $relatedContactIds = array();
@@ -2304,12 +2342,16 @@ INNER JOIN  civicrm_contact contact ON ( contact.id = membership.contact_id AND 
    * @return array
    */
   public static function createOrRenewMembership($membershipParams, $contactID, $customFieldsFormatted, $membershipID, $memType, $isTest, $numTerms, $membershipContribution, &$form) {
+    if (!empty($membershipContribution)) {
+      $pendingStatus = CRM_Core_OptionGroup::getValue('contribution_status', 'Pending', 'name');
+      $pending = ($membershipContribution->contribution_status_id == $pendingStatus) ? TRUE : FALSE;
+    }
     $membership = self::renewMembershipFormWrapper($contactID, $memType,
       $isTest, $form, NULL,
       CRM_Utils_Array::value('cms_contactID', $membershipParams),
       $customFieldsFormatted, $numTerms,
       $membershipID,
-      self::extractPendingFormValue($form, $memType)
+      self::extractPendingFormValue($form, $memType, $pending)
     );
 
     if (!empty($membershipContribution)) {
@@ -2349,9 +2391,8 @@ INNER JOIN  civicrm_contact contact ON ( contact.id = membership.contact_id AND 
    *
    * @return bool
    */
-  public static function extractPendingFormValue($form, $membershipID) {
+  public static function extractPendingFormValue($form, $membershipID, $pending = FALSE) {
     $membershipTypeDetails = CRM_Member_BAO_MembershipType::getMembershipTypeDetails($membershipID);
-    $pending = FALSE;
     //@todo this is a BAO function & should not inspect the form - the form should do this
     // & pass required params to the BAO
     if (CRM_Utils_Array::value('minimum_fee', $membershipTypeDetails) > 0.0) {

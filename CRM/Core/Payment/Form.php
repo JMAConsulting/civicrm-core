@@ -49,8 +49,10 @@ class CRM_Core_Payment_Form {
    *   Array of properties including 'object' as loaded from CRM_Financial_BAO_PaymentProcessor::getPaymentProcessors.
    * @param bool $forceBillingFieldsForPayLater
    *   Display billing fields even for pay later.
+   * @param bool $isBackOffice
+   *   Is this a back office function? If so the option to suppress the cvn needs to be evaluated.
    */
-  static public function setPaymentFieldsByProcessor(&$form, $processor, $forceBillingFieldsForPayLater = FALSE) {
+  static public function setPaymentFieldsByProcessor(&$form, $processor, $forceBillingFieldsForPayLater = FALSE, $isBackOffice = FALSE) {
     $form->billingFieldSets = array();
     if ($processor != NULL) {
       // ie it is pay later
@@ -62,7 +64,6 @@ class CRM_Core_Payment_Form {
       $form->assign('paymentTypeLabel', $paymentTypeLabel);
 
       $form->billingFieldSets[$paymentTypeName]['fields'] = $form->_paymentFields = array_intersect_key(self::getPaymentFieldMetadata($processor), array_flip($paymentFields));
-      $form->billingPane = array($paymentTypeName => $paymentTypeLabel);
       $form->assign('paymentFields', $paymentFields);
     }
 
@@ -252,26 +253,28 @@ class CRM_Core_Payment_Form {
    *   for payment processors that gather payment data on site as rendering the fields as not being required. (not entirely sure why but this
    *   is implemented for back office forms)
    *
+   * @param bool $isBackOffice
+   *   Is this a backoffice form. This could affect the display of the cvn or whether some processors show,
+   *   although the distinction is losing it's meaning as front end forms are used for back office and a permission
+   *   for the 'enter without cvn' is probably more appropriate. Paypal std does not support another user
+   *   entering details but once again the issue is not back office but 'another user'.
+   *
    * @return bool
    */
-  public static function buildPaymentForm(&$form, $processor, $isBillingDataOptional) {
+  public static function buildPaymentForm(&$form, $processor, $isBillingDataOptional, $isBackOffice) {
     //if the form has address fields assign to the template so the js can decide what billing fields to show
     $profileAddressFields = $form->get('profileAddressFields');
     if (!empty($profileAddressFields)) {
       $form->assign('profileAddressFields', $profileAddressFields);
     }
 
-    // $processor->buildForm appears to be an undocumented (possibly unused) option for payment processors
-    // which was previously available only in some form flows
-    if (!empty($form->_paymentProcessor) && !empty($form->_paymentProcessor['object']) && $form->_paymentProcessor['object']->isSupported('buildForm')) {
-      $form->_paymentProcessor['object']->buildForm($form);
+    if (!empty($processor['object']) && $processor['object']->buildForm($form)) {
       return NULL;
     }
 
-    self::setPaymentFieldsByProcessor($form, $processor, empty($isBillingDataOptional));
+    self::setPaymentFieldsByProcessor($form, $processor, empty($isBillingDataOptional), $isBackOffice);
     self::addCommonFields($form, !$isBillingDataOptional, $form->_paymentFields);
     self::addRules($form, $form->_paymentFields);
-    self::addPaypalExpressCode($form);
     return (!empty($form->_paymentFields));
   }
 
@@ -296,6 +299,8 @@ class CRM_Core_Payment_Form {
   }
 
   /**
+<<<<<<< HEAD
+=======
    * Billing mode button is basically synonymous with paypal express  - this is probably a good example of 'odds & sods' code we
    * need to find a way for the payment processor to assign. A tricky aspect is that the payment processor may need to set the order
    *
@@ -303,8 +308,7 @@ class CRM_Core_Payment_Form {
    */
   protected static function addPaypalExpressCode(&$form) {
     if (empty($form->isBackOffice)) {
-      if (CRM_Utils_Array::value('billing_mode', $form->_paymentProcessor) == 3
-      ) {
+      if (in_array(CRM_Utils_Array::value('billing_mode', $form->_paymentProcessor), array(2, 3))) {
         $form->_expressButtonName = $form->getButtonName('upload', 'express');
         $form->assign('expressButtonName', $form->_expressButtonName);
         $form->add('image',
@@ -317,6 +321,7 @@ class CRM_Core_Payment_Form {
   }
 
   /**
+>>>>>>> 65e3e1ce2d1e407fa768966606173c79b12ba81f
    * Validate the payment instrument values before passing it to the payment processor
    * We want this to be overrideable by the payment processor, and default to using
    * this object's validCreditCard for credit cards (implemented as the default in the Payment class).

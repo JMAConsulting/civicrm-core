@@ -1,5 +1,4 @@
-<?php
-/*
+{*
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
@@ -23,56 +22,33 @@
  | GNU Affero General Public License or the licensing of CiviCRM,     |
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
-*/
+*}
+{literal}
+<script type="text/javascript">
+  CRM.$(function($) {
+    var $form = $("form.{/literal}{$form.formClass}{literal}");
 
-/**
- *
- * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
- */
-
-require_once 'CRM/Core/Controller.php';
-require_once 'CRM/Core/Session.php';
-
-/**
- * This class is used for item create functionality.
- *
- *  - the controller is used for building/processing multiform
- *    searches.
- *
- * Typically the first form will be used to create account if not already exists
- *
- * The second form is used to add items
- *
- */
-class CRM_Auction_Controller_Item extends CRM_Core_Controller {
-
-  /**
-   * class constructor
-   * @param null $title
-   * @param bool|int $action
-   * @param bool $modal
-   */
-  function __construct($title = NULL, $action = CRM_Core_Action::NONE, $modal = TRUE) {
-    require_once 'CRM/Auction/StateMachine/Item.php';
-    parent::__construct($title, $modal);
-
-    $this->_stateMachine = new CRM_Auction_StateMachine_Item($this, $action);
-
-    // create and instantiate the pages
-    $this->addPages($this->_stateMachine, $action);
-
-    // add all the actions
-    $uploadNames = $this->get('uploadNames');
-    if (!empty($uploadNames)) {
-      $config = CRM_Core_Config::singleton();
-      $this->addActions($config->customFileUploadDir, $uploadNames);
-    }
-    else {
-      $this->addActions();
-    }
-  }
-}
-
+    // FIXME: This could be much simpler as an entityRef field but pcp doesn't have a searchable api :(
+    var pcpURL = CRM.url('civicrm/ajax/rest', 'className=CRM_Contact_Page_AJAX&fnName=getPCPList&json=1&context=contact&reset=1');
+    $('#pcp_made_through_id').crmSelect2({
+      minimumInputLength: 1,
+      ajax: {
+        url: pcpURL,
+        data: function(term, page) {
+          return {term: term, page: page};
+        },
+        results: function(response) {
+          return response;
+        }
+      },
+      initSelection: function(el, callback) {
+        callback({id: $(el).val(), text: $('[name=pcp_made_through]', $form).val()});
+      }
+    })
+      // This is just a cheap trick to store the name when the form reloads
+      .on('change', function() {
+        $('[name=pcp_made_through]', $form).val($(this).select2('data').text || '');
+      });
+  });
+</script>
+{/literal}

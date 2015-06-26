@@ -124,11 +124,16 @@
     {$form.contribution_source.label} <br />
     {$form.contribution_source.html|crmAddClass:twenty}
   </td>
+  <td>
+    {$form.contribution_product_id.label} <br />
+    {$form.contribution_product_id.html|crmAddClass:twenty}
+  </td>
 </tr>
 <tr>
   <td>
     {$form.contribution_pcp_made_through_id.label} <br />
-    {$form.contribution_pcp_made_through_id.html|crmAddClass:twenty}
+    {$form.contribution_pcp_made_through_id.html}
+    {include file="CRM/Contribute/Form/PCP.js.tpl"}
   </td>
   <td>
     {$form.contribution_pcp_display_in_roll.label}

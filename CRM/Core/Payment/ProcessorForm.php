@@ -25,16 +25,16 @@
  +--------------------------------------------------------------------+
  */
 
+use Civi\Payment\System;
 /**
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
  */
 
+
 /**
- * base class for building payment block for online contribution / event pages
+ * Base class for building payment block for online contribution / event pages.
  */
 class CRM_Core_Payment_ProcessorForm {
 
@@ -58,10 +58,12 @@ class CRM_Core_Payment_ProcessorForm {
     }
 
     $form->set('paymentProcessor', $form->_paymentProcessor);
+    $form->_paymentObject = Civi\Payment\System::singleton()->getByProcessor($form->_paymentProcessor);
+
+    $form->assign('suppressSubmitButton', $form->_paymentObject->isSuppressSubmitButtons());
 
     // also set cancel subscription url
     if (!empty($form->_paymentProcessor['is_recur']) && !empty($form->_values['is_recur'])) {
-      $form->_paymentObject = CRM_Core_Payment::singleton($mode, $form->_paymentProcessor, $form);
       $form->_values['cancelSubscriptionUrl'] = $form->_paymentObject->subscriptionURL();
     }
 
@@ -111,7 +113,7 @@ class CRM_Core_Payment_ProcessorForm {
     if (!empty($form->_paymentProcessorID)) {
       $form->addElement('hidden', 'hidden_processor', 1);
     }
-    CRM_Core_Payment_Form::buildPaymentForm($form, $form->_paymentProcessor, empty($form->_isBillingAddressRequiredForPayLater));
+    CRM_Core_Payment_Form::buildPaymentForm($form, $form->_paymentProcessor, empty($form->_isBillingAddressRequiredForPayLater), FALSE);
   }
 
 }

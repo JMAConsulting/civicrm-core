@@ -23,53 +23,45 @@
  | GNU Affero General Public License or the licensing of CiviCRM,     |
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
-*/
-
-/**
- *
- * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
  */
 
 /**
- * class to represent the actions that can be performed on a group of contacts
- * used by the search forms
+ * This api exposes CiviCRM FinancialItem.
  *
+ * @package CiviCRM_APIv3
  */
-class CRM_Touchstone_Task {
-  const FIRST_ACTION = 1, SECOND_ACTION = 2, THIRD_ACTION = 3;
 
-  /**
-   * the task array
-   *
-   * @var array
-   */
-  static $_tasks = NULL;
-
-  /**
-   * the optional task array
-   *
-   * @var array
-   */
-  static $_optionalTasks = NULL;
-
-  /**
-   * These tasks are the core set of tasks that the user can perform
-   * on a contact / group of contacts
-   *
-   * @return array the set of tasks for a group of contacts
-   */
-  static function &tasks() {
-    if (!(self::$_tasks)) {
-      self::$_tasks = array(
-        1 => ts('Perform First Task'),
-        2 => ts('Perform Second Task'),
-        5 => ts('Perform Third Task'),
-      );
-    }
-    return self::$_tasks;
-  }
+/**
+ * Save a Financial Item.
+ *
+ * @param array $params
+ *
+ * @return array
+ */
+function civicrm_api3_financial_trxn_create($params) {
+  return _civicrm_api3_basic_create(_civicrm_api3_get_BAO(__FUNCTION__), $params);
 }
 
+/**
+ * Get a Financialtrxn.
+ *
+ * @param array $params
+ *
+ * @return array
+ *   Array of retrieved Financial trxn property values.
+ */
+function civicrm_api3_financial_trxn_get($params) {
+  return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+}
+
+/**
+ * Delete a Financial trxn.
+ *
+ * @param array $params
+ *
+ * @return array
+ *   Array of deleted values.
+ */
+function civicrm_api3_financial_trxn_delete($params) {
+  return _civicrm_api3_basic_delete(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+}
