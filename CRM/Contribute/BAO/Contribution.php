@@ -4177,16 +4177,6 @@ LIMIT 1;";
     return $contribution->composeMessageArray($input, $ids, $values, $recur, $returnMessageText);
   }
 
-  public static function getPaidLineItems($params) {
-    $lineItems = civicrm_api3('LineItem', 'get', $params);
-    CRM_Core_Error::debug( '$lineItems', $lineItems );
-    exit;
-    // Get Financial Trxns
-    $entityFT = civicrm_api3('EntityFinancialTrxn', 'get', array('entity_table' => 'civicrm_contribution', 'entity_id' => $params['contribution_id']));
-    CRM_Core_Error::debug( '$entityFT', $entityFT );
-    exit;
-  }
-
   public static function recordPartialPayment($contribution, $params) {
     $contributionStatuses = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
     $pendingStatus = array(
