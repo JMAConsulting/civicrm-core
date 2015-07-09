@@ -113,6 +113,7 @@ class api_v3_ContributionTest extends CiviUnitTestCase {
    */
   public function tearDown() {
     $this->quickCleanUpFinancialEntities();
+    $this->quickCleanup(array('civicrm_uf_match'));
   }
 
   /**
@@ -197,6 +198,14 @@ class api_v3_ContributionTest extends CiviUnitTestCase {
   }
 
   /**
+   * Test that test contributions can be retrieved.
+   */
+  public function testGetTestContribution() {
+    $this->callAPISuccess('Contribution', 'create', array_merge($this->_params, array('is_test' => 1)));
+    $this->callAPISuccessGetSingle('Contribution', array('is_test' => 1));
+  }
+
+  /**
    * We need to ensure previous tested behaviour still works as part of the api contract.
    */
   public function testGetContributionLegacyBehaviour() {
@@ -213,7 +222,7 @@ class api_v3_ContributionTest extends CiviUnitTestCase {
       'source' => 'SSF',
       'contribution_status_id' => 1,
     );
-    $this->_contribution = $this->callAPISuccess('contribution', 'create', $p);
+    $this->_contribution = $this->callAPISuccess('Contribution', 'create', $p);
 
     $params = array(
       'contribution_id' => $this->_contribution['id'],
@@ -502,6 +511,25 @@ class api_v3_ContributionTest extends CiviUnitTestCase {
     $this->assertArrayHasKey('payment_instrument', $contribution['values'][0]);
     $this->assertEquals('Credit Card', $contribution['values'][0]['payment_instrument']);
     $this->assertEquals(1, $contribution['count']);
+  }
+
+  /**
+   * CRM-16227 introduces invoice_id as a parameter.
+   */
+  public function testGetContributionByInvoice() {
+    $this->callAPISuccess('Contribution', 'create', array_merge($this->_params, array('invoice_id' => 'curly')));
+    $this->callAPISuccess('Contribution', 'create', array_merge($this->_params), array('invoice_id' => 'churlish'));
+    $this->callAPISuccessGetCount('Contribution', array(), 2);
+    $this->callAPISuccessGetSingle('Contribution', array('invoice_id' => 'curly'));
+    // The following don't work. They are the format we are trying to introduce but although the form uses this format
+    // CRM_Contact_BAO_Query::convertFormValues puts them into the other format & the where only supports that.
+    // ideally the where clause would support this format (as it does on contact_BAO_Query) and those lines would
+    // come out of convertFormValues
+    // $this->callAPISuccessGetSingle('Contribution', array('invoice_id' => array('LIKE' => '%ish%')));
+    // $this->callAPISuccessGetSingle('Contribution', array('invoice_id' => array('NOT IN' => array('curly'))));
+    // $this->callAPISuccessGetCount('Contribution', array('invoice_id' => array('LIKE' => '%ly%')), 2);
+    // $this->callAPISuccessGetCount('Contribution', array('invoice_id' => array('IN' => array('curly', 'churlish'))),
+    // 2);
   }
 
   /**

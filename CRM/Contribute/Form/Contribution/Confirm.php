@@ -63,10 +63,10 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
    * @param int $campaignId
    * @param bool $isMonetary
    * @param bool $pending
-   * @param $paymentProcessorOutcome
-   * @param $receiptDate
+   * @param array $paymentProcessorOutcome
+   * @param string $receiptDate
    * @param int $recurringContributionID
-   * @param $isTest
+   * @param bool $isTest
    * @param int $addressID
    * @param int $softCreditToID
    * @param array $lineItems
@@ -545,8 +545,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
       if (isset($params['selectMembership']) &&
         $params['selectMembership'] != 'no_thanks'
       ) {
-        CRM_Member_BAO_Membership::buildMembershipBlock($this,
-          $this->_id,
+        $this->buildMembershipBlock(
           $this->_membershipContactID,
           FALSE,
           $params['selectMembership'],
@@ -696,8 +695,9 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
   }
 
   /**
-   * Overwrite action, since we are only showing elements in frozen mode
-   * no help display needed
+   * Overwrite action.
+   *
+   * Since we are only showing elements in frozen mode no help display needed.
    *
    * @return int
    */
@@ -715,8 +715,6 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
    *
    * Note that in edit/view mode
    * the default values are retrieved from the database
-   *
-   * @return void
    */
   public function setDefaultValues() {
   }
@@ -937,10 +935,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
     // add these values for the recurringContrib function ,CRM-10188
     $params['financial_type_id'] = $financialType->id;
 
-    //create an contribution address
-    if ($contributeMode != 'notify' && empty($params['is_pay_later']) && $isMonetary) {
-      $addressID = CRM_Contribute_BAO_Contribution::createAddress($params, $billingLocationID);
-    }
+    $addressID = CRM_Contribute_BAO_Contribution::createAddress($params, $billingLocationID);
 
     //@todo - this is being set from the form to resolve CRM-10188 - an
     // eNotice caused by it not being set @ the front end
@@ -1524,13 +1519,15 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
    * @param array $premiumParams
    * @param array $membershipLineItems
    *   Line items specifically relating to memberships.
-   * @param $isPayLater
+   * @param bool $isPayLater
    */
   public function processMembership($membershipParams, $contactID, $customFieldsFormatted, $fieldTypes, $premiumParams, $membershipLineItems, $isPayLater) {
     try {
       $membershipTypeIDs = (array) $membershipParams['selectMembership'];
       $membershipTypes = CRM_Member_BAO_Membership::buildMembershipTypeValues($this, $membershipTypeIDs);
       $membershipType = empty($membershipTypes) ? array() : reset($membershipTypes);
+      $isPending = $this->getIsPending();
+
       $this->assign('membership_name', CRM_Utils_Array::value('name', $membershipType));
 
       $isPaidMembership = FALSE;
@@ -1544,16 +1541,20 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
       $isProcessSeparateMembershipTransaction = $this->isSeparateMembershipTransaction($this->_id, $this->_values['amount_block_is_active']);
 
       if ($this->_values['amount_block_is_active']) {
-        $contributionTypeId = $this->_values['financial_type_id'];
+        $financialTypeID = $this->_values['financial_type_id'];
       }
       else {
-        $contributionTypeId = CRM_Utils_Array::value('financial_type_id', $membershipType, CRM_Utils_Array::value('financial_type_id', $membershipParams));
+        $financialTypeID = CRM_Utils_Array::value('financial_type_id', $membershipType, CRM_Utils_Array::value('financial_type_id', $membershipParams));
+      }
+
+      if (CRM_Utils_Array::value('membership_source', $this->_params)) {
+        $membershipParams['contribution_source'] = $this->_params['membership_source'];
       }
 
       CRM_Member_BAO_Membership::postProcessMembership($membershipParams, $contactID,
-        $this, $premiumParams, $customFieldsFormatted, $fieldTypes, $membershipType, $membershipTypeIDs, $isPaidMembership, $this->_membershipId, $isProcessSeparateMembershipTransaction, $contributionTypeId,
-        $membershipLineItems, $isPayLater
-      );
+        $this, $premiumParams, $customFieldsFormatted, $fieldTypes, $membershipType, $membershipTypeIDs, $isPaidMembership, $this->_membershipId, $isProcessSeparateMembershipTransaction, $financialTypeID,
+        $membershipLineItems, $isPayLater, $isPending);
+
       $this->assign('membership_assign', TRUE);
       $this->set('membershipTypeID', $membershipParams['selectMembership']);
     }
@@ -1561,6 +1562,26 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
       CRM_Core_Session::singleton()->setStatus($e->getMessage());
       CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/contribute/transact', "_qf_Main_display=true&qfKey={$this->_params['qfKey']}"));
     }
+  }
+
+  /**
+   * Is the payment a pending payment.
+   *
+   * We are moving towards always creating as pending and updating at the end (based on payment), so this should be
+   * an interim refactoring. It was shared with another unrelated form & some parameters may not apply to this form.
+   *
+   *
+   * @return bool
+   */
+  protected function getIsPending() {
+    if (((isset($this->_contributeMode)) || !empty
+        ($this->_params['is_pay_later'])
+      ) &&
+      (($this->_values['is_monetary'] && $this->_amount > 0.0))
+    ) {
+      return TRUE;
+    }
+    return FALSE;
   }
 
   /**

@@ -74,6 +74,28 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
   protected $_action;
 
   /**
+   * Available payment processors.
+   *
+   * As part of trying to consolidate various payment pages we store processors here & have functions
+   * at this level to manage them.
+   *
+   * @var array
+   *   An array of payment processor details with objects loaded in the 'object' field.
+   */
+  protected $_paymentProcessors;
+
+  /**
+   * Available payment processors (IDS).
+   *
+   * As part of trying to consolidate various payment pages we store processors here & have functions
+   * at this level to manage them.
+   *
+   * @var array
+   *   An array of the IDS available on this form.
+   */
+  public $_paymentProcessorIDs;
+
+  /**
    * The renderer used for this form
    *
    * @var object
@@ -637,6 +659,77 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
   }
 
   /**
+   * This if a front end form function for setting the payment processor.
+   *
+   * It would be good to sync it with the back-end function on abstractEditPayment & use one everywhere.
+   *
+   * @throws \CRM_Core_Exception
+   */
+  protected function assignPaymentProcessor() {
+    $this->_paymentProcessors = CRM_Financial_BAO_PaymentProcessor::getPaymentProcessors(
+      array(ucfirst($this->_mode) . 'Mode'),
+      $this->_paymentProcessorIDs
+    );
+
+    if (!empty($this->_paymentProcessors)) {
+      foreach ($this->_paymentProcessors as $paymentProcessorID => $paymentProcessorDetail) {
+        if (empty($this->_paymentProcessor) && $paymentProcessorDetail['is_default'] == 1 || (count($this->_paymentProcessors) == 1)
+        ) {
+          $this->_paymentProcessor = $paymentProcessorDetail;
+          $this->assign('paymentProcessor', $this->_paymentProcessor);
+          // Setting this is a bit of a legacy overhang.
+          $this->_paymentObject = $paymentProcessorDetail['object'];
+        }
+      }
+      // It's not clear why we set this on the form.
+      $this->set('paymentProcessors', $this->_paymentProcessors);
+    }
+    else {
+      throw new CRM_Core_Exception(ts('A payment processor configured for this page might be disabled (contact the site administrator for assistance).'));
+    }
+  }
+
+  /**
+   * Handle Payment Processor switching for contribution and event registration forms.
+   *
+   * This function is shared between contribution & event forms & this is their common class.
+   *
+   * However, this should be seen as an in-progress refactor, the end goal being to also align the
+   * backoffice forms that action payments.
+   *
+   * This function overlaps assignPaymentProcessor, in a bad way.
+   */
+  protected function preProcessPaymentOptions() {
+    $this->_paymentProcessorID = NULL;
+    if ($this->_paymentProcessors) {
+      if (!empty($this->_submitValues)) {
+        $this->_paymentProcessorID = CRM_Utils_Array::value('payment_processor_id', $this->_submitValues);
+        $this->_paymentProcessor = CRM_Utils_Array::value($this->_paymentProcessorID, $this->_paymentProcessors);
+        $this->set('type', $this->_paymentProcessorID);
+        $this->set('mode', $this->_mode);
+        $this->set('paymentProcessor', $this->_paymentProcessor);
+      }
+      // Set default payment processor
+      else {
+        foreach ($this->_paymentProcessors as $values) {
+          if (!empty($values['is_default']) || count($this->_paymentProcessors) == 1) {
+            $this->_paymentProcessorID = $values['id'];
+            break;
+          }
+        }
+      }
+      if ($this->_paymentProcessorID) {
+        CRM_Core_Payment_ProcessorForm::preProcess($this);
+      }
+      else {
+        $this->_paymentProcessor = array();
+      }
+      CRM_Financial_Form_Payment::addCreditCardJs();
+    }
+    $this->assign('paymentProcessorID', $this->_paymentProcessorID);
+  }
+
+  /**
    * Setter function for options.
    *
    * @param mixed $options
@@ -1166,6 +1259,7 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
    * @param bool $required
    * @throws \CiviCRM_API3_Exception
    * @throws \Exception
+   * @return HTML_QuickForm_Element
    */
   public function addField($name, $props = array(), $required = FALSE) {
     // TODO: Handle custom field
@@ -1268,26 +1362,22 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
       case 'Link':
         //TODO: Autodetect ranges
         $props['size'] = isset($props['size']) ? $props['size'] : 60;
-        $this->add('text', $name, $label, $props, $required);
-        break;
+        return $this->add('text', $name, $label, $props, $required);
 
       case 'hidden':
-        $this->add('hidden', $name, NULL, $props, $required);
-        break;
+        return $this->add('hidden', $name, NULL, $props, $required);
 
       case 'TextArea':
         //Set default columns and rows for textarea.
         $props['rows'] = isset($props['rows']) ? $props['rows'] : 4;
         $props['cols'] = isset($props['cols']) ? $props['cols'] : 60;
-        $this->addElement('textarea', $name, $label, $props, $required);
-        break;
+        return $this->addElement('textarea', $name, $label, $props, $required);
 
       case 'Select Date':
         //TODO: add range support
         //TODO: Add date formats
         //TODO: Add javascript template for dates.
-        $this->addDate($name, $label, $required, $props);
-        break;
+        return $this->addDate($name, $label, $required, $props);
 
       case 'Radio':
         $separator = isset($props['separator']) ? $props['separator'] : NULL;
@@ -1295,47 +1385,41 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
         if (!isset($props['allowClear'])) {
           $props['allowClear'] = !$required;
         }
-        $this->addRadio($name, $label, $options, $props, $separator, $required);
-        break;
+        return $this->addRadio($name, $label, $options, $props, $separator, $required);
 
       case 'Select':
         if (empty($props['multiple'])) {
           $options = array('' => $props['placeholder']) + $options;
         }
-        $this->add('select', $name, $label, $options, $required, $props);
         // TODO: Add and/or option for fields that store multiple values
-        break;
+        return $this->add('select', $name, $label, $options, $required, $props);
 
       case 'CheckBoxGroup':
-        $this->addCheckBox($name, $label, array_flip($options), $required, $props);
-        break;
+        return $this->addCheckBox($name, $label, array_flip($options), $required, $props);
 
       case 'RadioGroup':
-        $this->addRadio($name, $label, $options, $props, NULL, $required);
-        break;
+        return $this->addRadio($name, $label, $options, $props, NULL, $required);
 
       //case 'AdvMulti-Select':
       case 'CheckBox':
         $text = isset($props['text']) ? $props['text'] : NULL;
         unset($props['text']);
-        $this->addElement('checkbox', $name, $label, $text, $props);
-        break;
+        return $this->addElement('checkbox', $name, $label, $text, $props);
 
       case 'File':
         // We should not build upload file in search mode.
         if (isset($props['context']) && $props['context'] == 'search') {
           return;
         }
-        $this->add('file', $name, $label, $props, $required);
+        $file = $this->add('file', $name, $label, $props, $required);
         $this->addUploadElement($name);
-        break;
+        return $file;
 
       //case 'RichTextEditor':
       //TODO: Add javascript template for wysiwyg.
       case 'Autocomplete-Select':
       case 'EntityRef':
-        $this->addEntityRef($name, $label, $props, $required);
-        break;
+        return $this->addEntityRef($name, $label, $props, $required);
 
       // Check datatypes of fields
       // case 'Int':

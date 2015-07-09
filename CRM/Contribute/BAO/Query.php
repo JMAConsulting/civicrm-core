@@ -215,6 +215,16 @@ class CRM_Contribute_BAO_Query {
       $query->_select['contribution_campaign_title'] = "civicrm_campaign.title as contribution_campaign_title";
       $query->_element['contribution_campaign_title'] = $query->_tables['civicrm_campaign'] = 1;
     }
+
+    // Adding address_id in a way that is more easily extendable since the above is a bit ... wordy.
+    $supportedBasicReturnValues = array('address_id');
+    foreach ($supportedBasicReturnValues as $fieldName) {
+      if (!empty($query->_returnProperties[$fieldName])) {
+        $query->_select[$fieldName] = "civicrm_contribution.{$fieldName} as $fieldName";
+        $query->_element[$fieldName] = $query->_tables['civicrm_contribution'] = 1;
+      }
+    }
+
     //CRM-16116: get financial_type_id
     if (!empty($query->_returnProperties['financial_type_id'])) {
       $query->_select['financial_type_id'] = "civicrm_contribution.financial_type_id as financial_type_id";
@@ -336,6 +346,7 @@ class CRM_Contribute_BAO_Query {
       case 'contribution_status':
         $name .= '_id';
       case 'financial_type_id':
+      case 'invoice_id':
       case 'payment_instrument_id':
       case 'contribution_payment_instrument_id':
       case 'contribution_page_id':
@@ -664,7 +675,10 @@ class CRM_Contribute_BAO_Query {
         break;
 
       case 'civicrm_campaign':
-        $from = " $side  JOIN civicrm_campaign ON civicrm_campaign.id = civicrm_contribution.campaign_id";
+        //CRM-16764 - get survey clause from campaign bao
+        if (!CRM_Campaign_BAO_Query::$_applySurveyClause) {
+          $from = " $side  JOIN civicrm_campaign ON civicrm_campaign.id = civicrm_contribution.campaign_id";
+        }
         break;
 
       case 'contribution_participant':
@@ -897,7 +911,7 @@ class CRM_Contribute_BAO_Query {
     );
 
     $form->addSelect('payment_instrument_id',
-      array('entity' => 'contribution', 'label' => ts('Payment Method'), 'option_url' => NULL, 'placeholder' => ts('- any -'))
+      array('entity' => 'contribution', 'multiple' => 'multiple', 'label' => ts('Payment Method'), 'option_url' => NULL, 'placeholder' => ts('- any -'))
     );
 
     // Fixme: Not a true entityRef field. Relies on PCP.js.tpl
@@ -933,7 +947,7 @@ class CRM_Contribute_BAO_Query {
 
     // Add field for transaction ID search
     $form->addElement('text', 'contribution_trxn_id', ts("Transaction ID"));
-
+    $form->addElement('text', 'invoice_id', ts("Invoice ID"));
     $form->addElement('text', 'contribution_check_number', ts('Check Number'));
 
     // Add field for pcp display in roll search

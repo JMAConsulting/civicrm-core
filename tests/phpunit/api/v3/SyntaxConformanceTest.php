@@ -102,6 +102,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
       'Extension',
       'ReportTemplate',
       'System',
+      'User',
     );
     $this->toBeImplemented['delete'] = array(
       'MembershipPayment',
@@ -118,6 +119,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
       'Entity',
       'Domain',
       'Setting',
+      'User',
     );
     $this->deprecatedAPI = array('Location', 'ActivityType', 'SurveyRespondant');
     $this->deletableTestObjects = array();
@@ -278,8 +280,10 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
    *
    * Mailing Contact Just doesn't support id. We have always insisted on finding a way to
    * support id in API but in this case the underlying tables are crying out for a restructure
-   * & it just doesn't make sense, on the otherhand Event need id to be existent as pseudo property
-   * is been associated with it, so we need to bypass for get api otherwise it will through pseudo_match validation
+   * & it just doesn't make sense.
+   *
+   * User doesn't support get By ID because the user id is actually the CMS user ID & is not part of
+   *   CiviCRM - so can only be tested through UserTest - not SyntaxConformanceTest.
    *
    * @param bool $sequential
    *
@@ -287,7 +291,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
    *   Entities that cannot be retrieved by ID
    */
   public static function toBeSkipped_getByID($sequential = FALSE) {
-    return array('MailingContact', 'Event');
+    return array('MailingContact', 'User');
   }
 
   /**
@@ -327,6 +331,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
       'Profile',
       'CustomValue',
       'Setting',
+      'User',
     );
     if ($sequential === TRUE) {
       return $entitiesWithout;
@@ -599,6 +604,15 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
           'weight', //won't update as there is no 1 in the same price set
         ),
       ),
+      'SavedSearch' => array(
+        // I think the fields below are generated based on form_values.
+        'cant_update' => array(
+          'search_custom_id',
+          'where_clause',
+          'select_tables',
+          'where_tables',
+        ),
+      ),
     );
     if (empty($knownFailures[$entity]) || empty($knownFailures[$entity][$key])) {
       return array();
@@ -719,6 +733,7 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
     $this->customFieldDelete($ids['custom_field_id']);
     $this->customGroupDelete($ids['custom_group_id']);
     $this->callAPISuccess($entityName, 'delete', array('id' => $result['id']));
+    $this->quickCleanup(array('civicrm_uf_match'));
   }
 
   /**
@@ -1135,7 +1150,19 @@ class api_v3_SyntaxConformanceTest extends CiviUnitTestCase {
         case CRM_Utils_Type::T_TEXT:
         case CRM_Utils_Type::T_LONGTEXT:
         case CRM_Utils_Type::T_EMAIL:
-          $entity[$fieldName] = substr('New String', 0, CRM_Utils_Array::Value('maxlength', $specs, 100));
+          if ($fieldName == 'form_values' && $entityName == 'SavedSearch') {
+            // This is a hack for the SavedSearch API.
+            // It expects form_values to be an array.
+            // If you want to fix this, you should definitely read this forum
+            // post.
+            // http://forum.civicrm.org/index.php/topic,33990.0.html
+            // See also my question on the CiviCRM Stack Exchange:
+            // https://civicrm.stackexchange.com/questions/3437
+            $entity[$fieldName] = array('sort_name' => "SortName2");
+          }
+          else {
+            $entity[$fieldName] = substr('New String', 0, CRM_Utils_Array::Value('maxlength', $specs, 100));
+          }
           break;
 
         case CRM_Utils_Type::T_INT:

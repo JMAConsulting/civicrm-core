@@ -473,6 +473,9 @@ class CiviUnitTestCase extends PHPUnit_Extensions_Database_TestCase {
    * Emulate a logged in user since certain functions use that.
    * value to store a record in the DB (like activity)
    * CRM-8180
+   *
+   * @return int
+   *   Contact ID of the created user.
    */
   public function createLoggedInUser() {
     $params = array(
@@ -481,9 +484,15 @@ class CiviUnitTestCase extends PHPUnit_Extensions_Database_TestCase {
       'contact_type' => 'Individual',
     );
     $contactID = $this->individualCreate($params);
+    $this->callAPISuccess('UFMatch', 'create', array(
+      'contact_id' => $contactID,
+      'uf_name' => 'superman',
+      'uf_id' => 6,
+    ));
 
     $session = CRM_Core_Session::singleton();
     $session->set('userID', $contactID);
+    return $contactID;
   }
 
   public function cleanDB() {
@@ -525,7 +534,7 @@ class CiviUnitTestCase extends PHPUnit_Extensions_Database_TestCase {
       CRM_Core_Transaction::forceRollbackIfEnabled();
       \Civi\Core\Transaction\Manager::singleton(TRUE);
 
-      $tablesToTruncate = array('civicrm_contact');
+      $tablesToTruncate = array('civicrm_contact', 'civicrm_uf_match');
       $this->quickCleanup($tablesToTruncate);
       $this->createDomainContacts();
     }
@@ -906,6 +915,39 @@ class CiviUnitTestCase extends PHPUnit_Extensions_Database_TestCase {
    */
   public function civicrm_api($entity, $action, $params) {
     return civicrm_api($entity, $action, $params);
+  }
+
+  /**
+   * Create a batch of external API calls which can
+   * be executed concurrently.
+   *
+   * @code
+   * $calls = $this->createExternalAPI()
+   *    ->addCall('Contact', 'get', ...)
+   *    ->addCall('Contact', 'get', ...)
+   *    ...
+   *    ->run()
+   *    ->getResults();
+   * @endcode
+   *
+   * @return \Civi\API\ExternalBatch
+   * @throws PHPUnit_Framework_SkippedTestError
+   */
+  public function createExternalAPI() {
+    global $civicrm_root;
+    $defaultParams = array(
+      'version' => $this->_apiversion,
+      'debug' => 1,
+    );
+
+    $calls = new \Civi\API\ExternalBatch($defaultParams);
+    $calls->setSettingsPath("$civicrm_root/tests/phpunit/CiviTest/civicrm.settings.cli.php");
+
+    if (!$calls->isSupported()) {
+      $this->markTestSkipped('The test relies on Civi\API\ExternalBatch. This is unsupported in the local environment.');
+    }
+
+    return $calls;
   }
 
   /**
@@ -1440,6 +1482,7 @@ class CiviUnitTestCase extends PHPUnit_Extensions_Database_TestCase {
       'name' => 'Dummy',
       'payment_processor_type_id' => 10,
       'financial_account_id' => 12,
+      'is_test' => TRUE,
       'is_active' => 1,
       'user_name' => '',
       'url_site' => 'http://dummy.com',
