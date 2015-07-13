@@ -1298,7 +1298,7 @@ AND civicrm_membership.is_test = %2";
         // call postProcess hook before leaving
         $form->postProcessHook();
         // this does not return
-        $payment = CRM_Core_Payment::singleton($form->_mode, $form->_paymentProcessor, $form);
+        $payment = $form->_paymentProcessor['object'];
         $payment->doTransferCheckout($form->_params, 'contribute');
       }
     }
@@ -1308,7 +1308,9 @@ AND civicrm_membership.is_test = %2";
     }
 
     if ($form->_contributeMode == 'direct') {
-      if (CRM_Utils_Array::value('contribution_status_id', $paymentResult) == 1) {
+      if (CRM_Utils_Array::value('payment_status_id', $paymentResult) == 1) {
+        // Refer to CRM-16737. Payment processors 'should' return payment_status_id
+        // to denote the outcome of the transaction.
         try {
           civicrm_api3('contribution', 'completetransaction', array(
             'id' => $paymentResult['contribution']->id,
@@ -1322,6 +1324,8 @@ AND civicrm_membership.is_test = %2";
           CRM_Core_Error::debug_log_message('contribution ' . $membershipContribution->id . ' not completed with trxn_id ' . $membershipContribution->trxn_id . ' and message ' . $e->getMessage());
         }
       }
+      // Do not send an email if Recurring transaction is done via Direct Mode
+      // Email will we sent when the IPN is received.
       return;
     }
 
@@ -1743,7 +1747,7 @@ WHERE  civicrm_membership.contact_id = civicrm_contact.id
    * Build an array of available membership types.
    *
    * @param CRM_Core_Form $form
-   * @param int $membershipTypeID
+   * @param array $membershipTypeID
    * @param bool $activeOnly
    *   Do we only want active ones?
    *   (probably this should default to TRUE but as a newly added parameter we are leaving default b
@@ -1751,20 +1755,16 @@ WHERE  civicrm_membership.contact_id = civicrm_contact.id
    *
    * @return array
    */
-  public static function buildMembershipTypeValues(&$form, $membershipTypeID = NULL, $activeOnly = FALSE) {
+  public static function buildMembershipTypeValues(&$form, $membershipTypeID = array(), $activeOnly = FALSE) {
     $whereClause = " WHERE domain_id = " . CRM_Core_Config::domainID();
+    $membershipTypeIDS = (array) $membershipTypeID;
 
     if ($activeOnly) {
       $whereClause .= " AND is_active = 1 ";
     }
-    if (is_array($membershipTypeID)) {
-      $allIDs = implode(',', $membershipTypeID);
+    if (!empty($membershipTypeIDS)) {
+      $allIDs = implode(',', $membershipTypeIDS);
       $whereClause .= " AND id IN ( $allIDs )";
-    }
-    elseif (is_numeric($membershipTypeID) &&
-      $membershipTypeID > 0
-    ) {
-      $whereClause .= " AND id = $membershipTypeID";
     }
 
     $query = "
@@ -1995,88 +1995,6 @@ INNER JOIN  civicrm_contact contact ON ( contact.id = membership.contact_id AND 
   }
 
   /**
-   * Where a second separate financial transaction is supported we will process it here.
-   *
-   * @param int $contactID
-   * @param CRM_Contribute_Form_Contribution_Confirm $form
-   * @param array $tempParams
-   * @param bool $isTest
-   * @param array $lineItems
-   * @param $minimumFee
-   * @param int $financialTypeID
-   *
-   * @throws CRM_Core_Exception
-   * @throws Exception
-   * @return CRM_Contribute_BAO_Contribution
-   */
-  public static function processSecondaryFinancialTransaction($contactID, &$form, $tempParams, $isTest, $lineItems, $minimumFee, $financialTypeID) {
-    $financialType = new CRM_Financial_DAO_FinancialType();
-    $financialType->id = $financialTypeID;
-    $financialType->find(TRUE);
-    $tempParams['amount'] = $minimumFee;
-    $tempParams['invoiceID'] = md5(uniqid(rand(), TRUE));
-
-    $result = NULL;
-    if ($form->_values['is_monetary'] && !$form->_params['is_pay_later'] && $minimumFee > 0.0) {
-      $payment = CRM_Core_Payment::singleton($form->_mode, $form->_paymentProcessor, $form);
-
-      if ($form->_contributeMode == 'express') {
-        $result = $payment->doExpressCheckout($tempParams);
-        if (is_a($result, 'CRM_Core_Error')) {
-          throw new CRM_Core_Exception(CRM_Core_Error::getMessages($result));
-        }
-      }
-      else {
-        $result = $payment->doPayment($tempParams, 'contribute');
-      }
-    }
-
-    //assign receive date when separate membership payment
-    //and contribution amount not selected.
-    if ($form->_amount == 0) {
-      $now = date('YmdHis');
-      $form->_params['receive_date'] = $now;
-      $receiveDate = CRM_Utils_Date::mysqlToIso($now);
-      $form->set('params', $form->_params);
-      $form->assign('receive_date', $receiveDate);
-    }
-
-    $form->set('membership_trx_id', $result['trxn_id']);
-    $form->set('membership_amount', $minimumFee);
-
-    $form->assign('membership_trx_id', $result['trxn_id']);
-    $form->assign('membership_amount', $minimumFee);
-
-    // we don't need to create the user twice, so lets disable cms_create_account
-    // irrespective of the value, CRM-2888
-    $tempParams['cms_create_account'] = 0;
-
-    //CRM-16165, scenarios are
-    // 1) If contribution is_pay_later and if contribution amount is > 0.0 we set pending = TRUE, vice-versa FALSE
-    // 2) If not pay later but auto-renewal membership is chosen then pending = TRUE as it later triggers
-    //   pending recurring contribution, vice-versa FALSE
-    $pending = $form->_params['is_pay_later'] ? (($minimumFee > 0.0) ? TRUE : FALSE) : (!empty($form->_params['auto_renew']) ? TRUE : FALSE);
-
-    //set this variable as we are not creating pledge for
-    //separate membership payment contribution.
-    //so for differentiating membership contribution from
-    //main contribution.
-    $form->_params['separate_membership_payment'] = 1;
-    $membershipContribution = CRM_Contribute_Form_Contribution_Confirm::processFormContribution($form,
-      $tempParams,
-      $result,
-      $contactID,
-      $financialType,
-      $pending,
-      TRUE,
-      $isTest,
-      $lineItems,
-      $form->_bltID
-    );
-    return $membershipContribution;
-  }
-
-  /**
    * Create linkages between membership & contribution - note this is the wrong place for this code but this is a
    * refactoring step. This should be BAO functionality
    * @param $membership
@@ -2087,22 +2005,6 @@ INNER JOIN  civicrm_contact contact ON ( contact.id = membership.contact_id AND 
       'membership_id' => $membership->id,
       'contribution_id' => $membershipContribution->id,
     ));
-  }
-
-  /**
-   * Turn array of errors into message string.
-   *
-   * @param array $errors
-   *
-   * @return string
-   */
-  public static function compileErrorMessage($errors) {
-    foreach ($errors as $error) {
-      if (is_string($error)) {
-        $message[] = $error;
-      }
-    }
-    return ts('Payment Processor Error message') . ': ' . implode('<br/>', $message);
   }
 
   /**
@@ -2354,6 +2256,54 @@ INNER JOIN  civicrm_contact contact ON ( contact.id = membership.contact_id AND 
     $membership->find(TRUE);
 
     return array($membership, $renewalMode, $dates);
+  }
+
+  /**
+   * Get line items representing the default price set.
+   *
+   * @param int $membershipOrg
+   * @param int $membershipTypeID
+   * @param float $total_amount
+   *
+   * @return array
+   */
+  public static function getQuickConfigMembershipLineItems($membershipOrg, $membershipTypeID, $total_amount) {
+    $priceSetId = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceSet', 'default_membership_type_amount', 'id', 'name');
+    $priceSets = current(CRM_Price_BAO_PriceSet::getSetDetail($priceSetId));
+
+    // The name of the price field corresponds to the membership_type organization contact.
+    $params = array(
+      'price_set_id' => $priceSetId,
+      'name' => $membershipOrg,
+    );
+    $results = array();
+    CRM_Price_BAO_PriceField::retrieve($params, $results);
+
+    if (!empty($results)) {
+      $fields[$results['id']] = $priceSets['fields'][$results['id']];
+      $fid = $results['id'];
+      $editedFieldParams = array(
+        'price_field_id' => $results['id'],
+        'membership_type_id' => $membershipTypeID,
+      );
+      $results = array();
+      CRM_Price_BAO_PriceFieldValue::retrieve($editedFieldParams, $results);
+      $fields[$fid]['options'][$results['id']] = $priceSets['fields'][$fid]['options'][$results['id']];
+      if (!empty($total_amount)) {
+        $fields[$fid]['options'][$results['id']]['amount'] = $total_amount;
+      }
+    }
+
+    $fieldID = key($fields);
+    $returnParams = array(
+      'price_set_id' => $priceSetId,
+      'price_sets' => $priceSets,
+      'fields' => $fields,
+      'price_fields' => array(
+        'price_' . $fieldID => CRM_Utils_Array::value('id', $results),
+      ),
+    );
+    return $returnParams;
   }
 
   /**
@@ -2706,6 +2656,9 @@ WHERE      civicrm_membership.is_test = 0";
 
   /**
    * Record line items for default membership.
+   * @deprecated
+   *
+   * Use getQuickConfigMembershipLineItems
    *
    * @param CRM_Core_Form $qf
    * @param array $membershipType

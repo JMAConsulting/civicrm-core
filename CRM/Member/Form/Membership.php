@@ -723,10 +723,8 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
 
     $this->addFormRule(array('CRM_Member_Form_Membership', 'formRule'), $this);
 
-    $mailingInfo = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::MAILING_PREFERENCES_NAME,
-      'mailing_backend'
-    );
-    $this->assign('outBound_option', $mailingInfo['outBound_option']);
+    $this->assign('outBound_option', CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::MAILING_PREFERENCES_NAME,
+      'mailing_backend'));
 
     parent::buildQuickForm();
   }
@@ -1010,6 +1008,7 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
     }
 
     CRM_Core_BAO_UFGroup::getValues($formValues['contact_id'], $customFields, $customValues, FALSE, $members);
+    $form->assign('customValues', $customValues);
 
     if ($form->_mode) {
       $name = '';
@@ -1091,7 +1090,6 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
       $form->assign('membership_name', CRM_Member_PseudoConstant::membershipType($membership->membership_type_id));
     }
 
-    $form->assign('customValues', $customValues);
     $isBatchProcess = is_a($form, 'CRM_Batch_Form_Entry');
     if ((empty($form->_contributorDisplayName) || empty($form->_contributorEmail)) || $isBatchProcess) {
       // in this case the form is being called statically from the batch editing screen
@@ -1438,8 +1436,6 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
         $fields["email-{$this->_bltID}"] = 1;
       }
 
-      $ctype = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $this->_contactID, 'contact_type');
-
       $nameFields = array('first_name', 'middle_name', 'last_name');
 
       foreach ($nameFields as $name) {
@@ -1452,7 +1448,8 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
       if ($this->_contributorContactID == $this->_contactID) {
         //see CRM-12869 for discussion of why we don't do this for separate payee payments
         CRM_Contact_BAO_Contact::createProfileContact($formValues, $fields,
-          $this->_contributorContactID, NULL, NULL, $ctype
+          $this->_contributorContactID, NULL, NULL,
+          CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $this->_contactID, 'contact_type')
         );
       }
 
@@ -1557,9 +1554,14 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
         $this->assign('amount', $params['total_amount']);
       }
 
-      // if the payment processor returns a contribution_status_id -> use it!
-      if (isset($result['contribution_status_id'])) {
-        $params['contribution_status_id'] = $result['contribution_status_id'];
+      // if the payment processor returns a payment_status_id -we assume this
+      // applies to the whole contribution.
+      // At this stage this form is not processing separate payments.
+      if (isset($result['payment_status_id'])) {
+        // CRM-16737 $result['contribution_status_id'] is deprecated in favour
+        // of payment_status_id as the payment processor only knows whether the payment is complete
+        // not whether payment completes the contribution
+        $params['contribution_status_id'] = $params['payment_status_id'];
       }
       // do what used to happen previously
       else {

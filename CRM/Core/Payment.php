@@ -72,37 +72,6 @@ abstract class CRM_Core_Payment {
   protected $_paymentProcessor;
 
   /**
-   * Singleton function used to manage this object.
-   *
-   * We will migrate to calling Civi\Payment\System::singleton()->getByProcessor($paymentProcessor)
-   * & Civi\Payment\System::singleton()->getById($paymentProcessor) directly as the main access methods & work
-   * to remove this function all together
-   *
-   * @param string $mode
-   *   The mode of operation: live or test.
-   * @param array $paymentProcessor
-   *   The details of the payment processor being invoked.
-   * @param object $paymentForm
-   *   Deprecated - avoid referring to this if possible. If you have to use it document why as this is scary interaction.
-   * @param bool $force
-   *   Should we force a reload of this payment object.
-   *
-   * @return CRM_Core_Payment
-   * @throws \CRM_Core_Exception
-   */
-  public static function singleton($mode = 'test', &$paymentProcessor, &$paymentForm = NULL, $force = FALSE) {
-    // make sure paymentProcessor is not empty
-    // CRM-7424
-    if (empty($paymentProcessor)) {
-      return CRM_Core_DAO::$_nullObject;
-    }
-    //we use two lines because we can't remove the '&singleton' without risking breakage
-    //of extension classes that extend this one
-    $object = Civi\Payment\System::singleton()->getByProcessor($paymentProcessor);
-    return $object;
-  }
-
-  /**
    * Opportunity for the payment processor to override the entire form build.
    *
    * @param CRM_Core_Form $form
@@ -220,6 +189,47 @@ abstract class CRM_Core_Payment {
    */
   protected function supportsFutureRecurStartDate() {
     return FALSE;
+  }
+
+  /**
+   * Does this processor support pre-approval.
+   *
+   * This would generally look like a redirect to enter credentials which can then be used in a later payment call.
+   *
+   * Currently Paypal express supports this, with a redirect to paypal after the 'Main' form is submitted in the
+   * contribution page. This token can then be processed at the confirm phase. Although this flow 'looks' like the
+   * 'notify' flow a key difference is that in the notify flow they don't have to return but in this flow they do.
+   *
+   * @return bool
+   */
+  protected function supportsPreApproval() {
+    return FALSE;
+  }
+
+  /**
+   * Function to action pre-approval if supported
+   *
+   * @param array $params
+   *   Parameters from the form
+   *
+   * This function returns an array which should contain
+   *   - pre_approval_parameters (this will be stored on the calling form & available later)
+   *   - redirect_url (if set the browser will be redirected to this.
+   */
+  public function doPreApproval(&$params) {}
+
+  /**
+   * Get any details that may be available to the payment processor due to an approval process having happened.
+   *
+   * In some cases the browser is redirected to enter details on a processor site. Some details may be available as a
+   * result.
+   *
+   * @param array $storedDetails
+   *
+   * @return array
+   */
+  public function getPreApprovalDetails($storedDetails) {
+    return array();
   }
 
   /**
@@ -631,12 +641,15 @@ abstract class CRM_Core_Payment {
    * The function ensures an exception is thrown & moves some of this logic out of the form layer and makes the forms
    * more agnostic.
    *
-   * Payment processors should set contribution_status_id. This function adds some historical defaults ie. the
+   * Payment processors should set payment_status_id. This function adds some historical defaults ie. the
    * assumption that if a 'doDirectPayment' processors comes back it completed the transaction & in fact
    * doTransferCheckout would not traditionally come back.
    *
    * doDirectPayment does not do an immediate payment for Authorize.net or Paypal so the default is assumed
    * to be Pending.
+   *
+   * Once this function is fully rolled out then it will be preferred for processors to throw exceptions than to
+   * return Error objects
    *
    * @param array $params
    *
@@ -651,19 +664,24 @@ abstract class CRM_Core_Payment {
     $statuses = CRM_Contribute_BAO_Contribution::buildOptions('contribution_status_id');
     if ($this->_paymentProcessor['billing_mode'] == 4) {
       $result = $this->doTransferCheckout($params, $component);
-      if (is_array($result) && !isset($result['contribution_status_id'])) {
-        $result['contribution_status_id'] = array_search('Pending', $statuses);
+      if (is_array($result) && !isset($result['payment_status_id'])) {
+        $result['payment_status_id'] = array_search('Pending', $statuses);
       }
     }
     else {
-      $result = $this->doDirectPayment($params, $component);
-      if (is_array($result) && !isset($result['contribution_status_id'])) {
+      if ($this->_paymentProcessor['billing_mode'] == 1) {
+        $result = $this->doDirectPayment($params, $component);
+      }
+      else {
+        $result = $this->doExpressCheckout($params);
+      }
+      if (is_array($result) && !isset($result['payment_status_id'])) {
         if (!empty($params['is_recur'])) {
           // See comment block.
-          $paymentParams['contribution_status_id'] = array_search('Pending', $statuses);
+          $result['payment_status_id'] = array_search('Pending', $statuses);
         }
         else {
-          $result['contribution_status_id'] = array_search('Completed', $statuses);
+          $result['payment_status_id'] = array_search('Completed', $statuses);
         }
       }
     }

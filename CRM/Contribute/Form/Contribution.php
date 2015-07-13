@@ -1025,7 +1025,6 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   protected function processCreditCard($submittedValues, $lineItem, $contactID) {
-    $contribution = FALSE;
 
     $isTest = ($this->_mode == 'test') ? 1 : 0;
     // CRM-12680 set $_lineItem if its not set
@@ -1213,8 +1212,8 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
 
     if ($paymentParams['amount'] > 0.0) {
       // force a re-get of the payment processor in case the form changed it, CRM-7179
-      // NOTE - I expect this is not obsolete.
-      $payment = CRM_Core_Payment::singleton($this->_mode, $this->_paymentProcessor, $this, TRUE);
+      // NOTE - I expect this is obsolete.
+      $payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
       try {
         $statuses = CRM_Contribute_BAO_Contribution::buildOptions('contribution_status_id');
         $result = $payment->doPayment($paymentParams, 'contribute');
@@ -1226,12 +1225,11 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
          *     with a delayed start)
          *  3) the payment succeeded with an immediate payment.
          *
-         * The doPayment function ensures that contribution_status_id is always set
+         * The doPayment function ensures that payment_status_id is always set
          * as historically we have had to guess from the context - ie doDirectPayment
          * = error or success, unless it is a recurring contribution in which case it is pending.
          */
-        if (!isset($result['contribution_status_id']) || $result['contribution_status_id'] ==
-          array_search('Completed', $statuses)) {
+        if ($result['payment_status_id'] == array_search('Completed', $statuses)) {
           civicrm_api3('contribution', 'completetransaction', array('id' => $contribution->id, 'trxn_id' => $result['trxn_id']));
         }
         else {
@@ -1594,10 +1592,8 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       if (!empty($pcp)) {
         $params['pcp'] = $pcp;
       }
-      if (!empty($softParams)) {
-        $params['soft_credit'] = $softParams;
-        $params['soft_credit_ids'] = $softIDs;
-      }
+      $params['soft_credit'] = !empty($softParams) ? $softParams : array();
+      $params['soft_credit_ids'] = !empty($softIDs) ? $softIDs : array();
 
       // CRM-5740 if priceset is used, no need to cleanup money.
       if ($priceSetId) {
@@ -1796,39 +1792,39 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     if (!empty($params['non_deductible_amount'])) {
       return $params['non_deductible_amount'];
     }
-    if (empty($params['non_deductible_amount'])) {
-      $contributionType = new CRM_Financial_DAO_FinancialType();
-      $contributionType->id = $params['financial_type_id'];
 
-      if ($contributionType->is_deductible) {
+    $financialType = new CRM_Financial_DAO_FinancialType();
+    $financialType->id = $params['financial_type_id'];
 
-        if (isset($formValues['product_name'][0])) {
-          $selectProduct = $formValues['product_name'][0];
+    if ($financialType->is_deductible) {
+
+      if (isset($formValues['product_name'][0])) {
+        $selectProduct = $formValues['product_name'][0];
+      }
+      // if there is a product - compare the value to the contribution amount
+      if (isset($selectProduct)) {
+        $productDAO = new CRM_Contribute_DAO_Product();
+        $productDAO->id = $selectProduct;
+        $productDAO->find(TRUE);
+        // product value exceeds contribution amount
+        if ($params['total_amount'] < $productDAO->price) {
+          return $params['total_amount'];
         }
-        // if there is a product - compare the value to the contribution amount
-        if (isset($selectProduct)) {
-          $productDAO = new CRM_Contribute_DAO_Product();
-          $productDAO->id = $selectProduct;
-          $productDAO->find(TRUE);
-          // product value exceeds contribution amount
-          if ($params['total_amount'] < $productDAO->price) {
-            return $params['total_amount'];
-          }
-          // product value does NOT exceed contribution amount
-          else {
-            return $productDAO->price;
-          }
-        }
-        // contribution is deductible - but there is no product
+        // product value does NOT exceed contribution amount
         else {
-          return '0.00';
+          return $productDAO->price;
         }
       }
-      // contribution is NOT deductible
+      // contribution is deductible - but there is no product
       else {
-        return $params['total_amount'];
+        return '0.00';
       }
     }
+    // contribution is NOT deductible
+    else {
+      return $params['total_amount'];
+    }
+
     return 0;
   }
 
