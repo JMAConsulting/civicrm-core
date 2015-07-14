@@ -468,7 +468,16 @@ WHERE     ct.id = cp.financial_type_id AND
       }
       $query .= " AND civicrm_price_set.extends LIKE '%$componentId%' ";
     }
-
+    // Check permissioned financial types
+    CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialType, 'add');
+    if ($financialType) {
+      $types = implode(',', array_keys($financialType));
+      $query .= ' AND s.financial_type_id IN (' . $types . ') AND v.financial_type_id IN (' . $types . ') ';
+    }
+    else {
+      $query .= " AND 0 "; // Do not display any price sets
+    }
+    $query .= " GROUP BY s.id";
     $dao = CRM_Core_DAO::executeQuery($query);
     while ($dao->fetch()) {
       $priceSets[$dao->id] = $dao->$column;

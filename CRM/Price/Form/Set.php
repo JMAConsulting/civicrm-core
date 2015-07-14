@@ -191,7 +191,7 @@ class CRM_Price_Form_Set extends CRM_Core_Form {
     // financial type
     $financialType = CRM_Financial_BAO_FinancialType::getIncomeFinancialType();
     foreach ($financialType as $finTypeId => $type) {
-      if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus() 
+      if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()
         && !CRM_Core_Permission::check('add contributions of type ' . $type)
       ) {
         unset($financialType[$finTypeId]);
