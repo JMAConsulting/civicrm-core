@@ -4283,7 +4283,7 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
   }
 
 
-  public function getPermissionedFTQuery(&$query, $alias = NULL) {
+  public function getPermissionedFTQuery(&$query, $alias = NULL, $return = FALSE) {
     if (!CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()) {
       return FALSE;
     }
@@ -4296,7 +4296,7 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
       $contFTs = $liFTs = implode(',', array_keys($financialTypes));
     }
     if ($alias) {
-      $temp = $query->_aliases['civicrm_line_item'];
+      $temp = CRM_Utils_Array::value('civicrm_line_item', $query->_aliases);
       $query->_aliases['civicrm_line_item'] = $alias;
     }
     if (empty($query->_where)) {
@@ -4312,11 +4312,14 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
                       AND {$query->_aliases['civicrm_contribution']}.financial_type_id IN (" . $contFTs . ") 
                       AND {$query->_aliases['civicrm_line_item']}.id IS NULL
               GROUP BY {$query->_aliases['civicrm_contribution']}.id";
-    $query->_from .= " 
-              INNER JOIN civicrm_contribution_temp temp ON {$query->_aliases['civicrm_contribution']}.id = temp.id ";
+    CRM_Core_DAO::executeQuery($sql);
     if (isset($temp)) {
       $query->_aliases['civicrm_line_item'] = $temp;
     }
+    $from = " INNER JOIN civicrm_contribution_temp temp ON {$query->_aliases['civicrm_contribution']}.id = temp.id ";
+    if ($return) {
+      return $from;
+    }
+    $query->_from .= $from;
   }
-
 }
