@@ -2739,7 +2739,7 @@ WHERE  contribution_id = %1 ";
         $balanceTrxnParams['status_id'] = $statusId;
         $balanceTrxnParams['payment_instrument_id'] = $params['contribution']->payment_instrument_id;
         $balanceTrxnParams['check_number'] = CRM_Utils_Array::value('check_number', $params);
-        if (!empty($balanceTrxnParams['from_financial_account_id']) && 
+        if (!empty($balanceTrxnParams['from_financial_account_id']) &&
             ($statusId == array_search('Completed', $contributionStatuses) || $statusId == array_search('Partially paid', $contributionStatuses))) {
           $balanceTrxnParams['is_payment'] = 1;
         }
@@ -2990,7 +2990,7 @@ WHERE  contribution_id = %1 ";
       && $context == 'changePaymentInstrument'
     ) {
       return;
-    } 
+    }
     if (($params['prevContribution']->contribution_status_id == array_search('Partially paid', $contributionStatus))
       && $params['contribution']->contribution_status_id == array_search('Completed', $contributionStatus)
       && $context == 'changedStatus'
@@ -4214,7 +4214,7 @@ LIMIT 1;";
     $balanceTrxnParams['status_id'] = $statusId;
     $balanceTrxnParams['payment_instrument_id'] = CRM_Utils_Array::value('payment_instrument_id', $params, $contribution['payment_instrument_id']);
     $balanceTrxnParams['check_number'] = CRM_Utils_Array::value('check_number', $params);
-    if ($fromFinancialAccountId != NULL && 
+    if ($fromFinancialAccountId != NULL &&
         ($statusId == array_search('Completed', $contributionStatuses) || $statusId == array_search('Partially paid', $contributionStatuses))) {
       $balanceTrxnParams['is_payment'] = 1;
     }
@@ -4226,8 +4226,9 @@ LIMIT 1;";
 
   public static function addPayments($lineItems, $contributions) {
     foreach ($contributions as $k => $contribution) {
-      if ($contribution->contribution_status_id != CRM_Core_OptionGroup::getValue('contribution_status', 'Partially paid', 'name')) 
+      if ($contribution->contribution_status_id != CRM_Core_OptionGroup::getValue('contribution_status', 'Partially paid', 'name')) {
         continue;
+      }
       // get financial trxn which is a payment
       $sql = "SELECT ft.id 
       FROM civicrm_financial_trxn ft 
@@ -4244,7 +4245,7 @@ LIMIT 1;";
         $ftIds[$dao->price_field_value_id] = $dao->id;
       }
       foreach ($lineItems as $key => $value) {
-        $paid = $value['line_total'] * ($contribution->net_amount/$contribution->total_amount);
+        $paid = $value['line_total'] * ($contribution->net_amount / $contribution->total_amount);
         // Record Entity Financial Trxn
         $params = array(
           'entity_table' => 'civicrm_financial_item',
@@ -4272,7 +4273,7 @@ LIMIT 1;";
         $ftIds[$dao->price_field_value_id] = $dao->id;
       }
       foreach ($lineItems as $key => $value) {
-        $paid = $value['line_total'] * ($params['total_amount']/$contribution['total_amount']);
+        $paid = $value['line_total'] * ($params['total_amount'] / $contribution['total_amount']);
         // Record Entity Financial Trxn
         $eftParams = array(
           'entity_table' => 'civicrm_financial_item',
