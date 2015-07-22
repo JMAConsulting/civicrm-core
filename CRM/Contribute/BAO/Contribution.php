@@ -3249,6 +3249,10 @@ WHERE  contribution_id = %1 ";
               $amount = $params['total_amount'];
             }
           }
+          elseif (CRM_Utils_Array::value('diff_amount', $fieldValues)) {
+            // change in amount for line item
+            $amount = $fieldValues['diff_amount'];
+          }
           else {
             if ($context == 'changeFinancialType' || $params['contribution']->contribution_status_id == array_search('Cancelled', $contributionStatus)
               || $params['contribution']->contribution_status_id == array_search('Refunded', $contributionStatus)
