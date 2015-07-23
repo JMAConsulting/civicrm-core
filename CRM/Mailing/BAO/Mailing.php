@@ -425,7 +425,7 @@ WHERE      $mg.entity_table = '$group'
       }
 
       $smartGroupInclude = "
-INSERT IGNORE INTO I_$job_id (email_id, contact_id)
+REPLACE INTO I_$job_id (email_id, contact_id)
 SELECT     civicrm_email.id as email_id, c.id as contact_id
 FROM       civicrm_contact c
 INNER JOIN civicrm_email                ON civicrm_email.contact_id         = c.id
@@ -442,7 +442,7 @@ $order_by
 ";
       if ($mode == 'sms') {
         $smartGroupInclude = "
-INSERT IGNORE INTO I_$job_id (phone_id, contact_id)
+REPLACE INTO I_$job_id (phone_id, contact_id)
 SELECT     p.id as phone_id, c.id as contact_id
 FROM       civicrm_contact c
 INNER JOIN civicrm_phone p                ON p.contact_id         = c.id
@@ -2663,7 +2663,7 @@ LEFT JOIN civicrm_mailing_group g ON g.mailing_id   = m.id
     if ($className != 'CRM_SMS_Form_Upload' && $className != 'CRM_Contact_Form_Task_SMS' &&
       $className != 'CRM_Contact_Form_Task_SMS'
     ) {
-      $form->add('wysiwyg', 'html_message',
+      $form->addWysiwyg('html_message',
         ts('HTML Format'),
         array(
           'cols' => '80',
@@ -2763,7 +2763,7 @@ LEFT JOIN civicrm_mailing_group g ON g.mailing_id   = m.id
     );
     $form->add('text', 'saveTemplateName', ts('Template Title'));
 
-    $form->add('wysiwyg', 'html_message',
+    $form->addWysiwyg('html_message',
       ts('Your Letter'),
       array(
         'cols' => '80',
@@ -2906,17 +2906,13 @@ WHERE  civicrm_mailing_job.id = %1
     // CRM-8460
     $gotCronLock = FALSE;
 
-    if (property_exists($config, 'mailerJobsMax') && $config->mailerJobsMax && $config->mailerJobsMax > 1) {
+    if (property_exists($config, 'mailerJobsMax') && $config->mailerJobsMax && $config->mailerJobsMax > 0) {
       $lockArray = range(1, $config->mailerJobsMax);
       shuffle($lockArray);
 
       // check if we are using global locks
-      $serverWideLock = CRM_Core_BAO_Setting::getItem(
-        CRM_Core_BAO_Setting::MAILING_PREFERENCES_NAME,
-        'civimail_server_wide_lock'
-      );
       foreach ($lockArray as $lockID) {
-        $cronLock = new CRM_Core_Lock("civimail.cronjob.{$lockID}", NULL, $serverWideLock);
+        $cronLock = Civi\Core\Container::singleton()->get('lockManager')->acquire("worker.mailing.send.{$lockID}");
         if ($cronLock->isAcquired()) {
           $gotCronLock = TRUE;
           break;
@@ -2927,6 +2923,11 @@ WHERE  civicrm_mailing_job.id = %1
       if (!$gotCronLock) {
         CRM_Core_Error::debug_log_message('Returning early, since max number of cronjobs running');
         return TRUE;
+      }
+
+      if (getenv('CIVICRM_CRON_HOLD')) {
+        // In testing, we may need to simulate some slow activities.
+        sleep(getenv('CIVICRM_CRON_HOLD'));
       }
     }
 
@@ -3046,17 +3047,18 @@ AND        m.id = %1
     // format params and add links
     $contactMailings = array();
     foreach ($mailings as $mailingId => $values) {
-      $mailing = array();
-      $mailing['subject'] = $values['subject'];
-      $mailing['creator_name'] = CRM_Utils_System::href(
+      $contactMailings[$mailingId]['subject'] = $values['subject'];
+      $contactMailings[$mailingId]['start_date'] = CRM_Utils_Date::customFormat($values['start_date']);
+      $contactMailings[$mailingId]['recipients'] = CRM_Utils_System::href(ts('(recipients)'), 'civicrm/mailing/report/event',
+        "mid={$values['mailing_id']}&reset=1&cid={$params['contact_id']}&event=queue&context=mailing");
+
+      $contactMailings[$mailingId]['mailing_creator'] = CRM_Utils_System::href(
         $values['creator_name'],
         'civicrm/contact/view',
         "reset=1&cid={$values['creator_id']}");
-      $mailing['recipients'] = CRM_Utils_System::href(ts('(recipients)'), 'civicrm/mailing/report/event',
-        "mid={$values['mailing_id']}&reset=1&cid={$params['contact_id']}&event=queue&context=mailing");
-      $mailing['start_date'] = CRM_Utils_Date::customFormat($values['start_date']);
+
       //CRM-12814
-      $mailing['openstats'] = "Opens: " .
+      $contactMailings[$mailingId]['openstats'] = "Opens: " .
         CRM_Utils_Array::value($values['mailing_id'], $openCounts, 0) .
         "<br />Clicks: " .
         CRM_Utils_Array::value($values['mailing_id'], $clickCounts, 0);
@@ -3082,7 +3084,7 @@ AND        m.id = %1
         $mailingKey = $hash;
       }
 
-      $mailing['links'] = CRM_Core_Action::formLink(
+      $contactMailings[$mailingId]['links'] = CRM_Core_Action::formLink(
         $actionLinks,
         NULL,
         array(
@@ -3096,16 +3098,9 @@ AND        m.id = %1
         'Mailing',
         $values['mailing_id']
       );
-
-      array_push($contactMailings, $mailing);
     }
 
-    $contactMailingsDT = array();
-    $contactMailingsDT['data'] = $contactMailings;
-    $contactMailingsDT['recordsTotal'] = $params['total'];
-    $contactMailingsDT['recordsFiltered'] = $params['total'];
-
-    return $contactMailingsDT;
+    return $contactMailings;
   }
 
   /**

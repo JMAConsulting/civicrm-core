@@ -39,12 +39,11 @@
 function civicrm_api3_generic_getList($apiRequest) {
   $entity = _civicrm_api_get_entity_name_from_camel($apiRequest['entity']);
   $request = $apiRequest['params'];
-  $meta = civicrm_api3_generic_getfields(array('action' => 'get') + $apiRequest, FALSE);
 
   // Hey api, would you like to provide default values?
   $fnName = "_civicrm_api3_{$entity}_getlist_defaults";
   $defaults = function_exists($fnName) ? $fnName($request) : array();
-  _civicrm_api3_generic_getList_defaults($entity, $request, $defaults, $meta['values']);
+  _civicrm_api3_generic_getList_defaults($entity, $request, $defaults);
 
   // Hey api, would you like to format the search params?
   $fnName = "_civicrm_api3_{$entity}_getlist_params";
@@ -57,7 +56,7 @@ function civicrm_api3_generic_getList($apiRequest) {
   // Hey api, would you like to format the output?
   $fnName = "_civicrm_api3_{$entity}_getlist_output";
   $fnName = function_exists($fnName) ? $fnName : '_civicrm_api3_generic_getlist_output';
-  $values = $fnName($result, $request, $entity, $meta['values']);
+  $values = $fnName($result, $request);
 
   _civicrm_api3_generic_getlist_postprocess($result, $request, $values);
 
@@ -81,8 +80,9 @@ function civicrm_api3_generic_getList($apiRequest) {
  * @param array $request
  * @param array $apiDefaults
  */
-function _civicrm_api3_generic_getList_defaults($entity, &$request, $apiDefaults, $fields) {
+function _civicrm_api3_generic_getList_defaults($entity, &$request, $apiDefaults) {
   $config = CRM_Core_Config::singleton();
+  $fields = _civicrm_api_get_fields($entity);
   $defaults = array(
     'page_num' => 1,
     'input' => '',
@@ -106,9 +106,6 @@ function _civicrm_api3_generic_getList_defaults($entity, &$request, $apiDefaults
     }
   }
   $resultsPerPage = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'search_autocomplete_count', NULL, 10);
-  if (isset($request['params']) && isset($apiDefaults['params'])) {
-    $request['params'] += $apiDefaults['params'];
-  }
   $request += $apiDefaults + $defaults;
   // Default api params
   $params = array(
@@ -159,11 +156,10 @@ function _civicrm_api3_generic_getlist_params(&$request) {
  *
  * @param array $result
  * @param array $request
- * @param array $fields
  *
  * @return array
  */
-function _civicrm_api3_generic_getlist_output($result, $request, $entity, $fields) {
+function _civicrm_api3_generic_getlist_output($result, $request) {
   $output = array();
   if (!empty($result['values'])) {
     foreach ($result['values'] as $row) {
@@ -175,16 +171,7 @@ function _civicrm_api3_generic_getlist_output($result, $request, $entity, $field
         $data['description'] = array();
         foreach ((array) $request['description_field'] as $field) {
           if (!empty($row[$field])) {
-            if (!isset($fields[$field]['pseudoconstant'])) {
-              $data['description'][] = $row[$field];
-            }
-            else {
-              $data['description'][] = CRM_Core_PseudoConstant::getLabel(
-                _civicrm_api3_get_BAO($entity),
-                $field,
-                $row[$field]
-              );
-            }
+            $data['description'][] = $row[$field];
           }
         }
       };

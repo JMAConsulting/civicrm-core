@@ -34,7 +34,7 @@
  */
 
 /**
- * When running script from cli :
+ * When runing script from cli :
  * 1. By default script is being used for civimail processing.
  * eg : nice -19 php bin/EmailProcessor.php -u<login> -p<password> -s<sites(or default)>
  *
@@ -51,8 +51,7 @@ if (php_sapi_name() == "cli") {
   //if it doesn't die, it's authenticated
   //log the execution of script
   CRM_Core_Error::debug_log_message('EmailProcessor.php from the cli');
-  require_once 'CRM/Core/Lock.php';
-  $lock = new CRM_Core_Lock('EmailProcessor');
+  $lock = Civi\Core\Container::singleton()->get('lockManager')->acquire('worker.mailing.EmailProcessor');
 
   if (!$lock->isAcquired()) {
     throw new Exception('Could not acquire lock, another EmailProcessor process is running');
@@ -83,8 +82,7 @@ else {
   //log the execution of script
   CRM_Core_Error::debug_log_message('EmailProcessor.php');
 
-  require_once 'CRM/Core/Lock.php';
-  $lock = new CRM_Core_Lock('EmailProcessor');
+  $lock = Civi\Core\Container::singleton()->get('lockManager')->acquire('worker.mailing.EmailProcessor');
 
   if (!$lock->isAcquired()) {
     throw new Exception('Could not acquire lock, another EmailProcessor process is running');

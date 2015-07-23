@@ -53,13 +53,6 @@ class CRM_Campaign_Form_Survey_Main extends CRM_Campaign_Form_Survey {
    */
   protected $_context;
 
-  /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Survey';
-  }
-
   public function preProcess() {
     parent::preProcess();
 
@@ -166,7 +159,7 @@ class CRM_Campaign_Form_Survey_Main extends CRM_Campaign_Form_Survey {
     $this->add('select', 'campaign_id', ts('Campaign'), array('' => ts('- select -')) + $campaigns);
 
     // script / instructions
-    $this->add('wysiwyg', 'instructions', ts('Instructions for interviewers'), array('rows' => 5, 'cols' => 40));
+    $this->addWysiwyg('instructions', ts('Instructions for interviewers'), array('rows' => 5, 'cols' => 40));
 
     // release frequency
     $this->add('text', 'release_frequency', ts('Release Frequency'), CRM_Core_DAO::getAttribute('CRM_Campaign_DAO_Survey', 'release_frequency'));
@@ -216,6 +209,7 @@ class CRM_Campaign_Form_Survey_Main extends CRM_Campaign_Form_Survey {
     $params['is_default'] = CRM_Utils_Array::value('is_default', $params, 0);
 
     $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
+      $customFields,
       $this->_surveyId,
       'Survey'
     );

@@ -273,14 +273,7 @@ class CRM_Event_Form_ManageEvent_Fee extends CRM_Event_Form_ManageEvent {
     );
 
     // financial type
-    if (!CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus() ||
-        (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus() && CRM_Core_Permission::check('administer CiviCRM Financial Types'))) {
-      $this->addSelect('financial_type_id');
-    }
-    else {
-      CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes, 'add');
-      $this->addSelect('financial_type_id', array('context' => 'search', 'options' => $financialTypes));
-    }
+    $this->addSelect('financial_type_id');
     // add pay later options
     $this->addElement('checkbox', 'is_pay_later', ts('Enable Pay Later option?'), NULL,
       array('onclick' => "return showHideByValue('is_pay_later','','payLaterOptions','block','radio',false);")
@@ -289,7 +282,7 @@ class CRM_Event_Form_ManageEvent_Fee extends CRM_Event_Form_ManageEvent {
       CRM_Core_DAO::getAttribute('CRM_Event_DAO_Event', 'pay_later_text'),
       FALSE
     );
-    $this->add('wysiwyg', 'pay_later_receipt', ts('Pay Later Instructions'), CRM_Core_DAO::getAttribute('CRM_Event_DAO_Event', 'pay_later_receipt'));
+    $this->addWysiwyg('pay_later_receipt', ts('Pay Later Instructions'), CRM_Core_DAO::getAttribute('CRM_Event_DAO_Event', 'pay_later_receipt'));
 
     $this->addElement('checkbox', 'is_billing_required', ts('Billing address required'));
     $this->add('text', 'fee_label', ts('Fee Label'));

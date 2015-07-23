@@ -370,7 +370,6 @@ class CRM_Event_Form_Registration_AdditionalParticipant extends CRM_Event_Form_R
     }
     $this->addButtons($buttons);
     $this->addFormRule(array('CRM_Event_Form_Registration_AdditionalParticipant', 'formRule'), $this);
-    $this->unsavedChangesWarn = TRUE;
   }
 
   /**

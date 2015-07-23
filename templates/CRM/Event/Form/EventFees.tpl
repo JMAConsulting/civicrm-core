@@ -24,13 +24,6 @@
  +--------------------------------------------------------------------+
 *}
 {assign var=isRecordPayment value=1 }
-{if $isFTPermissionDenied}
-  <script>
-  {literal}
-    CRM.alert(ts('You do not have all the permissions needed for this page.'), 'Permission Denied', 'error');
-  {/literal}
-  </script>
-{/if}
 {if $paid} {* We retrieve this tpl when event is selected - keep it empty if event is not paid *}
     <table class="form-layout">
     {if $priceSet}
@@ -74,7 +67,7 @@
     </tr>
  {/if}
 
-    {if $accessContribution and ! $participantMode and ($action neq 2 or !$rows.0.contribution_id or $onlinePendingContributionId) and $isRecordPayment and ! $registeredByParticipantId }
+    { if $accessContribution and ! $participantMode and ($action neq 2 or !$rows.0.contribution_id or $onlinePendingContributionId) and $isRecordPayment and ! $registeredByParticipantId }
         <tr class="crm-event-eventfees-form-block-record_contribution">
             <td class="label">{$form.record_contribution.label}</td>
             <td>{$form.record_contribution.html}<br />
@@ -122,7 +115,7 @@
 {* credit card block when it is live or test mode*}
 {if $participantMode and $paid}
   <div class="spacer"></div>
-  {include file='CRM/Core/BillingBlockWrapper.tpl'}
+  {include file='CRM/Core/BillingBlock.tpl'}
 {/if}
 {if ($email OR $batchEmail) and $outBound_option != 2}
     <fieldset id="send_confirmation_receipt"><legend>{if $paid}{ts}Registration Confirmation and Receipt{/ts}{else}{ts}Registration Confirmation{/ts}{/if}</legend>

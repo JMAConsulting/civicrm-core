@@ -6,7 +6,7 @@
   angular.module('crmUi', [])
 
     // example <div crm-ui-accordion crm-title="ts('My Title')" crm-collapsed="true">...content...</div>
-    // WISHLIST: crmCollapsed should support two-way/continuous binding
+    // WISHLIST: crmCollapsed should support two-way/continous binding
     .directive('crmUiAccordion', function() {
       return {
         scope: {
@@ -314,10 +314,12 @@
 
     // Display an HTML blurb inside an IFRAME.
     // example: <iframe crm-ui-iframe="getHtmlContent()"></iframe>
+    // example:  <iframe crm-ui-iframe crm-ui-iframe-src="getUrl()"></iframe>
     .directive('crmUiIframe', function ($parse) {
       return {
         scope: {
-          crmUiIframe: '@' // expression which evalutes to HTML content
+          crmUiIframeSrc: '@', // expression which evaluates to a URL
+          crmUiIframe: '@' // expression which evaluates to HTML content
         },
         link: function (scope, elm, attrs) {
           var iframe = $(elm)[0];
@@ -325,20 +327,24 @@
           iframe.setAttribute('frameborder', '0');
 
           var refresh = function () {
-            // var iframeHtml = '<html><head><base target="_blank"></head><body onload="parent.document.getElementById(\'' + iframe.id + '\').style.height=document.body.scrollHeight + \'px\'"><scr' + 'ipt type="text/javascript" src="https://gist.github.com/' + iframeId + '.js"></sc' + 'ript></body></html>';
-            var iframeHtml = scope.$parent.$eval(attrs.crmUiIframe);
-
-            var doc = iframe.document;
-            if (iframe.contentDocument) {
-              doc = iframe.contentDocument;
+            if (attrs.crmUiIframeSrc) {
+              iframe.setAttribute('src', scope.$parent.$eval(attrs.crmUiIframeSrc));
             }
-            else if (iframe.contentWindow) {
-              doc = iframe.contentWindow.document;
-            }
+            else {
+              var iframeHtml = scope.$parent.$eval(attrs.crmUiIframe);
 
-            doc.open();
-            doc.writeln(iframeHtml);
-            doc.close();
+              var doc = iframe.document;
+              if (iframe.contentDocument) {
+                doc = iframe.contentDocument;
+              }
+              else if (iframe.contentWindow) {
+                doc = iframe.contentWindow.document;
+              }
+
+              doc.open();
+              doc.writeln(iframeHtml);
+              doc.close();
+            }
           };
 
           // If the iframe is in a dialog, respond to resize events
@@ -355,13 +361,31 @@
     // Example:
     //   <a ng-click="$broadcast('my-insert-target', 'some new text')>Insert</a>
     //   <textarea crm-ui-insert-rx='my-insert-target'></textarea>
+    // TODO Consider ways to separate the plain-text/rich-text implementations
     .directive('crmUiInsertRx', function() {
       return {
         link: function(scope, element, attrs) {
           scope.$on(attrs.crmUiInsertRx, function(e, tokenName) {
-            CRM.wysiwyg.insert(element, tokenName);
-            $(element).select2('close').select2('val', '');
-            CRM.wysiwyg.focus(element);
+            var id = element.attr('id');
+            if (CKEDITOR.instances[id]) {
+              CKEDITOR.instances[id].insertText(tokenName);
+              $(element).select2('close').select2('val', '');
+              CKEDITOR.instances[id].focus();
+            }
+            else {
+              var crmForEl = $('#' + id);
+              var origVal = crmForEl.val();
+              var origPos = crmForEl[0].selectionStart;
+              var newVal = origVal.substring(0, origPos) + tokenName + origVal.substring(origPos, origVal.length);
+              crmForEl.val(newVal);
+              var newPos = (origPos + tokenName.length);
+              crmForEl[0].selectionStart = newPos;
+              crmForEl[0].selectionEnd = newPos;
+
+              $(element).select2('close').select2('val', '');
+              crmForEl.triggerHandler('change');
+              crmForEl.focus();
+            }
           });
         }
       };
@@ -373,15 +397,28 @@
       return {
         require: '?ngModel',
         link: function (scope, elm, attr, ngModel) {
+          var ck = CKEDITOR.replace(elm[0]);
 
-          var editor = CRM.wysiwyg.create(elm);
+          if (ck) {
+            _.extend(ck.config, {
+              width: '94%',
+              height: '400',
+              filebrowserBrowseUrl: CRM.crmUi.browseUrl + '?cms=civicrm&type=files',
+              filebrowserImageBrowseUrl: CRM.crmUi.browseUrl + '?cms=civicrm&type=images',
+              filebrowserFlashBrowseUrl: CRM.crmUi.browseUrl + '?cms=civicrm&type=flash',
+              filebrowserUploadUrl: CRM.crmUi.uploadUrl + '?cms=civicrm&type=files',
+              filebrowserImageUploadUrl: CRM.crmUi.uploadUrl + '?cms=civicrm&type=images',
+              filebrowserFlashUploadUrl: CRM.crmUi.uploadUrl + '?cms=civicrm&type=flash',
+            });
+          }
+
           if (!ngModel) {
             return;
           }
 
           if (attr.ngBlur) {
-            $(elm).on('blur', function() {
-              $timeout(function() {
+            ck.on('blur', function(){
+              $timeout(function(){
                 scope.$eval(attr.ngBlur);
               });
             });
@@ -402,8 +439,8 @@
             });
           });
 
-          ngModel.$render = function(value) {
-            CRM.wysiwyg.setVal(elm, ngModel.$viewValue);
+          ngModel.$render = function (value) {
+            ck.setData(ngModel.$viewValue);
           };
         }
       };

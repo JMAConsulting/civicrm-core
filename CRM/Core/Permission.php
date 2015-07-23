@@ -120,6 +120,8 @@ class CRM_Core_Permission {
   public static function check($permissions) {
     $permissions = (array) $permissions;
 
+    $tempPerm = CRM_Core_Config::singleton()->userPermissionTemp;
+
     foreach ($permissions as $permission) {
       if (is_array($permission)) {
         foreach ($permission as $orPerm) {
@@ -132,7 +134,10 @@ class CRM_Core_Permission {
         return FALSE;
       }
       else {
-        if (!CRM_Core_Config::singleton()->userPermissionClass->check($permission)) {
+        if (
+          !CRM_Core_Config::singleton()->userPermissionClass->check($permission)
+          && !($tempPerm && $tempPerm->check($permission))
+        ) {
           //one of our 'and' conditions has not been met
           return FALSE;
         }
@@ -618,7 +623,6 @@ class CRM_Core_Permission {
     // Add any permissions defined in hook_civicrm_permission implementations.
     $module_permissions = $config->userPermissionClass->getAllModulePermissions($descriptions);
     $permissions = array_merge($permissions, $module_permissions);
-    CRM_Financial_BAO_FinancialType::permissionedFinancialTypes($permissions);
     return $permissions;
   }
 

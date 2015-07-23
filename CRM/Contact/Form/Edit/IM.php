@@ -60,12 +60,20 @@ class CRM_Contact_Form_Edit_IM {
     $form->applyFilter('__ALL__', 'trim');
 
     //IM provider select
-    $form->addField("im[$blockId][provider_id]", array('entity' => 'im', 'class' => 'eight', 'placeholder' => NULL));
+    $form->addSelect("im[$blockId][provider_id]", array('entity' => 'im', 'class' => 'eight', 'placeholder' => NULL));
+
     //Block type select
-    $form->addField("im[$blockId][location_type_id]", array('entity' => 'im', 'class' => 'eight', 'placeholder' => NULL));
+    $form->addSelect("im[$blockId][location_type_id]", array(
+        'entity' => 'im',
+        'class' => 'eight',
+        'placeholder' => NULL,
+      ));
 
     //IM box
-    $form->addField("im[$blockId][name]", array('entity' => 'im'));
+    $form->addElement('text', "im[$blockId][name]", ts('Instant Messenger'),
+      CRM_Core_DAO::getAttribute('CRM_Core_DAO_IM', 'name')
+    );
+
     //is_Primary radio
     $js = array('id' => 'IM_' . $blockId . '_IsPrimary');
     if (!$blockEdit) {

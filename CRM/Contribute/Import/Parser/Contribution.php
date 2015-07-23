@@ -260,6 +260,7 @@ class CRM_Contribute_Import_Parser_Contribution extends CRM_Contribute_Import_Pa
     }
 
     $params = &$this->getActiveFieldParams();
+    $params['contact_type'] = 'Contribution';
     $formatted = array('version' => 3);
 
     // don't add to recent items, CRM-4399
@@ -355,6 +356,7 @@ class CRM_Contribute_Import_Parser_Contribution extends CRM_Contribute_Import_Pa
 
     if ($onDuplicate != CRM_Import_Parser::DUPLICATE_UPDATE) {
       $formatted['custom'] = CRM_Core_BAO_CustomField::postProcess($formatted,
+        CRM_Core_DAO::$_nullObject,
         NULL,
         'Contribution'
       );
@@ -374,6 +376,7 @@ class CRM_Contribute_Import_Parser_Contribution extends CRM_Contribute_Import_Pa
         if ($ids['contribution']) {
           $formatted['id'] = $ids['contribution'];
           $formatted['custom'] = CRM_Core_BAO_CustomField::postProcess($formatted,
+            CRM_Core_DAO::$_nullObject,
             $formatted['id'],
             'Contribution'
           );

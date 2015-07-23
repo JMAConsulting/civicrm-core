@@ -62,6 +62,12 @@
 
 <div class="crm-block crm-form-block crm-payment-form-block">
 
+  {if $contributionMode == 'test'}
+    {assign var=contribMode value="TEST"}
+    {elseif $contributionMode == 'live'}
+    {assign var=contribMode value="LIVE"}
+  {/if}
+
   {if !$email}
   <div class="messages status no-popup">
     <div class="icon inform-icon"></div>&nbsp;{ts}You will not be able to send an automatic email receipt for this payment because there is no email address recorded for this contact. If you want a receipt to be sent when this payment is recorded, click Cancel and then click Edit from the Summary tab to add an email address before recording the payment.{/ts}
@@ -258,8 +264,8 @@ cj('#fee_amount').change( function() {
   var totalAmount = cj('#total_amount').val();
   var feeAmount = cj('#fee_amount').val();
   var netAmount = totalAmount.replace(/,/g, '') - feeAmount.replace(/,/g, '');
-  if (!cj('#net_amount').val()) {
-    cj('#net_amount').val(netAmount);
+  if (!cj('#net_amount').val() && totalAmount) {
+    cj('#net_amount').val(CRM.formatMoney(netAmount, true));
   }
 });
     </script>

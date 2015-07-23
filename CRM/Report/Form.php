@@ -1004,7 +1004,7 @@ class CRM_Report_Form extends CRM_Core_Form {
             if (!$groupTitle && isset($table['group_title'])) {
               $groupTitle = $table['group_title'];
               // Having a group_title is secret code for being a custom group
-              // which cryptically translates to needing an accordion.
+              // which cryptically translates to needing an accordian.
               // here we make that explicit.
               $colGroups[$tableName]['use_accordian_for_field_selection'] = TRUE;
             }
@@ -1739,8 +1739,8 @@ class CRM_Report_Form extends CRM_Core_Form {
         if ($value !== NULL && count($value) > 0) {
           $sqlOP = $this->getSQLOperator($op);
           $clause
-            = "{$field['dbAlias']} REGEXP '[[:<:]]" . implode('|', $value) .
-            "[[:>:]]'";
+            = "{$field['dbAlias']} REGEXP '[[:cntrl:]]" . implode('|', $value) .
+            "[[:cntrl:]]'";
         }
         break;
 
@@ -1749,8 +1749,8 @@ class CRM_Report_Form extends CRM_Core_Form {
         if ($value !== NULL && count($value) > 0) {
           $sqlOP = $this->getSQLOperator($op);
           $clause
-            = "( {$field['dbAlias']} NOT REGEXP '[[:<:]]" . implode('|', $value) .
-            "[[:>:]]' OR {$field['dbAlias']} IS NULL )";
+            = "( {$field['dbAlias']} NOT REGEXP '[[:cntrl:]]" . implode('|', $value) .
+            "[[:cntrl:]]' OR {$field['dbAlias']} IS NULL )";
         }
         break;
 
@@ -4282,44 +4282,4 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
     );
   }
 
-
-  public function getPermissionedFTQuery(&$query, $alias = NULL, $return = FALSE) {
-    if (!CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()) {
-      return FALSE;
-    }
-    CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes);
-    if (empty($financialTypes)) {
-      $contFTs = "0";
-      $liFTs = implode(',', array_keys(CRM_Contribute_Pseudoconstant::financialType()));
-    }
-    else {
-      $contFTs = $liFTs = implode(',', array_keys($financialTypes));
-    }
-    if ($alias) {
-      $temp = CRM_Utils_Array::value('civicrm_line_item', $query->_aliases);
-      $query->_aliases['civicrm_line_item'] = $alias;
-    }
-    if (empty($query->_where)) {
-      $query->_where = "WHERE {$query->_aliases['civicrm_contribution']}.id IS NOT NULL ";
-    }
-    CRM_Core_DAO::executeQuery("DROP TEMPORARY TABLE IF EXISTS civicrm_contribution_temp");
-    $sql = "CREATE TEMPORARY TABLE civicrm_contribution_temp AS SELECT {$query->_aliases['civicrm_contribution']}.id {$query->_from} 
-              LEFT JOIN civicrm_line_item   {$query->_aliases['civicrm_line_item']}
-                      ON {$query->_aliases['civicrm_contribution']}.id = {$query->_aliases['civicrm_line_item']}.contribution_id AND
-                         {$query->_aliases['civicrm_line_item']}.entity_table = 'civicrm_contribution' 
-                      AND {$query->_aliases['civicrm_line_item']}.financial_type_id NOT IN (" . $liFTs . ") 
-              {$query->_where} 
-                      AND {$query->_aliases['civicrm_contribution']}.financial_type_id IN (" . $contFTs . ") 
-                      AND {$query->_aliases['civicrm_line_item']}.id IS NULL
-              GROUP BY {$query->_aliases['civicrm_contribution']}.id";
-    CRM_Core_DAO::executeQuery($sql);
-    if (isset($temp)) {
-      $query->_aliases['civicrm_line_item'] = $temp;
-    }
-    $from = " INNER JOIN civicrm_contribution_temp temp ON {$query->_aliases['civicrm_contribution']}.id = temp.id ";
-    if ($return) {
-      return $from;
-    }
-    $query->_from .= $from;
-  }
 }

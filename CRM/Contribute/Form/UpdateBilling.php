@@ -111,7 +111,13 @@ class CRM_Contribute_Form_UpdateBilling extends CRM_Core_Form {
     }
     $this->assign('paymentProcessor', $this->_paymentProcessor);
 
-    $this->assignBillingType();
+    // get the billing location type
+    $locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id', array(), 'validate');
+    $this->_bltID = array_search('Billing', $locationTypes);
+    $this->assign('bltID', $this->_bltID);
+    if (!$this->_bltID) {
+      CRM_Core_Error::fatal(ts('Please set a location type of %1', array(1 => 'Billing')));
+    }
 
     $this->assign('frequency_unit', $this->_subscriptionDetails->frequency_unit);
     $this->assign('frequency_interval', $this->_subscriptionDetails->frequency_interval);
@@ -207,7 +213,7 @@ class CRM_Contribute_Form_UpdateBilling extends CRM_Core_Form {
       )
     );
 
-    CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor['object'], TRUE);
+    CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor['object'], TRUE, TRUE);
     $this->addFormRule(array('CRM_Contribute_Form_UpdateBilling', 'formRule'), $this);
   }
 

@@ -100,7 +100,7 @@ class CRM_Price_BAO_PriceSet extends CRM_Price_DAO_PriceSet {
    * @internal param bool $is_active value we want to set the is_active field
    *
    * @return Object
-   *   DAO object on success, null otherwise
+   *   DAO object on sucess, null otherwise
    */
   public static function setIsActive($id, $isActive) {
     return CRM_Core_DAO::setFieldValue('CRM_Price_DAO_PriceSet', $id, 'is_active', $isActive);
@@ -436,26 +436,27 @@ WHERE     ct.id = cp.financial_type_id AND
    * @param bool $withInactive
    *   Whether or not to include inactive entries.
    * @param bool|string $extendComponentName name of the component like 'CiviEvent','CiviContribute'
+   * @param string $column name of the column.
    *
    * @return array
    *   associative array of id => name
    */
-  public static function getAssoc($withInactive = FALSE, $extendComponentName = FALSE) {
-    $query = 'SELECT
-       s.id, title
+  public static function getAssoc($withInactive = FALSE, $extendComponentName = FALSE, $column = 'title') {
+    $query = "
+    SELECT
+       DISTINCT ( price_set_id ) as id, {$column}
     FROM
-       civicrm_price_set s
-       INNER JOIN civicrm_price_field f ON f.price_set_id = s.id
-       INNER JOIN civicrm_price_field_value v ON v.price_field_id = f.id
+       civicrm_price_field,
+       civicrm_price_set
     WHERE
-       is_quick_config = 0';
+       civicrm_price_set.id = civicrm_price_field.price_set_id  AND is_quick_config = 0 ";
 
     if (!$withInactive) {
-      $query .= ' AND s.is_active = 1 ';
+      $query .= ' AND civicrm_price_set.is_active = 1 ';
     }
 
     if (self::eventPriceSetDomainID()) {
-      $query .= ' AND s.domain_id = ' . CRM_Core_Config::domainID();
+      $query .= ' AND civicrm_price_set.domain_id = ' . CRM_Core_Config::domainID();
     }
 
     $priceSets = array();
@@ -465,21 +466,12 @@ WHERE     ct.id = cp.financial_type_id AND
       if (!$componentId) {
         return $priceSets;
       }
-      $query .= " AND s.extends LIKE '%$componentId%' ";
+      $query .= " AND civicrm_price_set.extends LIKE '%$componentId%' ";
     }
-    // Check permissioned financial types
-    CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialType, 'add');
-    if ($financialType) {
-      $types = implode(',', array_keys($financialType));
-      $query .= ' AND s.financial_type_id IN (' . $types . ') AND v.financial_type_id IN (' . $types . ') ';
-    }
-    else {
-      $query .= " AND 0 "; // Do not display any price sets
-    }
-    $query .= " GROUP BY s.id";
+
     $dao = CRM_Core_DAO::executeQuery($query);
     while ($dao->fetch()) {
-      $priceSets[$dao->id] = $dao->title;
+      $priceSets[$dao->id] = $dao->$column;
     }
     return $priceSets;
   }
@@ -744,7 +736,7 @@ WHERE  id = %1";
    *   This parameter appears to only be relevant to determining whether memberships should be auto-renewed.
    *   (and is effectively a boolean for 'is_membership' which could be calculated from the line items.)
    */
-  public static function processAmount($fields, &$params, &$lineItem, $component = '') {
+  public static function processAmount(&$fields, &$params, &$lineItem, $component = '') {
     // using price set
     $totalPrice = $totalTax = 0;
     $radioLevel = $checkboxLevel = $selectLevel = $textLevel = array();
@@ -961,18 +953,7 @@ WHERE  id = %1";
     else {
       $feeBlock = &$form->_priceSet['fields'];
     }
-    if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()) {
-      foreach ($feeBlock as $key => $value) {
-        foreach ($value['options'] as $k => $options) {
-          if (!CRM_Core_Permission::check('add contributions of type ' . CRM_Contribute_PseudoConstant::financialType($options['financial_type_id']))) {
-            unset($feeBlock[$key]['options'][$k]);
-          }
-        }
-        if (empty($feeBlock[$key]['options'])) {
-          unset($feeBlock[$key]);
-        }
-      }
-    }
+
     // call the hook.
     CRM_Utils_Hook::buildAmount($component, $form, $feeBlock);
 
@@ -1355,7 +1336,7 @@ GROUP BY     mt.member_of_contact_id";
    *   Value we want to set the is_quick_config field.
    *
    * @return Object
-   *   DAO object on success, null otherwise
+   *   DAO object on sucess, null otherwise
    */
   public static function setIsQuickConfig($id, $isQuickConfig) {
     return CRM_Core_DAO::setFieldValue('CRM_Price_DAO_PriceSet', $id, 'is_quick_config', $isQuickConfig);

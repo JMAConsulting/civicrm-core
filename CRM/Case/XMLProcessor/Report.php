@@ -795,7 +795,7 @@ LIMIT  1
       return FALSE;
     }
 
-    // next get activity set Information
+    // next get activity set Informtion
     $activitySet = array(
       'label' => $form->getActivitySetLabel($xml, $activitySetName),
       'includeActivities' => 'All',

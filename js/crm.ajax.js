@@ -440,6 +440,18 @@
             }
           }
         },
+        beforeSerialize: function(form, options) {
+          if (window.CKEDITOR && window.CKEDITOR.instances) {
+            $.each(CKEDITOR.instances, function() {
+              if (this.updateElement) this.updateElement();
+            });
+          }
+          if (window.tinyMCE && tinyMCE.editors) {
+            $.each(tinyMCE.editors, function() {
+              this.save();
+            });
+          }
+        },
         beforeSubmit: function(submission) {
           $.each(formErrors, function() {
             if (this && this.close) this.close();
@@ -450,17 +462,20 @@
       }, settings.ajaxForm));
       if (settings.openInline) {
         settings.autoClose = $el.crmSnippet('isOriginalUrl');
-        $(settings.openInline, this).not(exclude + ', .crm-popup').click(function(event) {
+        $(this).on('click', settings.openInline, function(e) {
+          if ($(this).is(exclude + ', .crm-popup')) {
+            return;
+          }
           if ($(this).hasClass('open-inline-noreturn')) {
             // Force reset of original url
             $el.data('civiCrmSnippet')._originalUrl = $(this).attr('href');
           }
           $el.crmSnippet('option', 'url', $(this).attr('href')).crmSnippet('refresh');
-          return false;
+          e.preventDefault();
         });
       }
-      // Show form buttons as part of the dialog
       if ($el.data('uiDialog')) {
+        // Show form buttons as part of the dialog
         var buttonContainers = '.crm-submit-buttons, .action-link',
           buttons = [],
           added = [];
@@ -486,6 +501,15 @@
           $el.parents(buttonContainers).css({height: 0, padding: 0, margin: 0, overflow: 'hidden'}).find('.crm-button-icon').hide();
         });
         $el.dialog('option', 'buttons', buttons);
+
+        // Show done button for non-ajax dialogs (e.g. file downloads)
+        $(this).on('submit', "form[data-no-ajax-submit=true]", function() {
+          $el.dialog('option', 'buttons', [{
+            text: ts('Done'),
+            icons: {primary: 'ui-icon-close'},
+            click: function() {$(this).dialog('close');}
+          }]);
+        });
       }
       // Allow a button to prevent ajax submit
       $('input[data-no-ajax-submit=true]').click(function() {
@@ -563,12 +587,6 @@
       // Destroy old unsaved dialog
       .on('dialogcreate', function(e) {
         $('.ui-dialog-content.crm-ajax-container:hidden[data-unsaved-changes=true]').crmSnippet('destroy').dialog('destroy').remove();
-      })
-      // Ensure wysiwyg content is updated prior to ajax submit
-      .on('form-pre-serialize', function(e) {
-        $('.crm-wysiwyg-enabled', e.target).each(function() {
-          CRM.wysiwyg.updateElement(this);
-        });
       })
       // Auto-resize dialogs when loading content
       .on('crmLoad dialogopen', 'div.ui-dialog.ui-resizable.crm-container', function(e) {

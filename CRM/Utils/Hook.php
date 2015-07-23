@@ -1340,7 +1340,7 @@ abstract class CRM_Utils_Hook {
    *   float $x x position in user units
    *   float $y y position in user units
    *   boolean $reseth if true reset the last cell height (default true).
-   *   int $stretch stretch character mode: <ul><li>0 = disabled</li><li>1 = horizontal scaling only if
+   *   int $stretch stretch carachter mode: <ul><li>0 = disabled</li><li>1 = horizontal scaling only if
    *                necessary</li><li>2 = forced horizontal scaling</li><li>3 = character spacing only if
    *                necessary</li><li>4 = forced character spacing</li></ul>
    *   boolean $ishtml set to true if $txt is HTML content (default = false).
@@ -1928,15 +1928,23 @@ abstract class CRM_Utils_Hook {
   }
 
   /**
-   * Check system status.
-   *
-   * @param array $messages
-   *   Array<CRM_Utils_Check_Message>. A list of messages regarding system status.
-   * @return mixed
+   * This hook is called when a query string of the CSV Batch export is generated.
    */
-  public static function check(&$messages) {
-    return self::singleton()
-      ->invoke(1, $messages, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject, 'civicrm_check');
+  public static function batchQuery(&$query) {
+    return self::singleton()->invoke(1, $query, self::$_nullObject,
+      self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject,
+      'civicrm_batchQuery'
+    );
+  }
+
+  /**
+   * This hook is called when the entries of the CSV Batch export are mapped.
+   */
+  public static function batchItems(&$results, &$items) {
+    return self::singleton()->invoke(2, $results, $items,
+      self::$_nullObject, self::$_nullObject, self::$_nullObject, self::$_nullObject,
+      'civicrm_batchItems'
+    );
   }
 
 }

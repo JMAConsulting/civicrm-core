@@ -34,7 +34,9 @@
  */
 
 /**
- * This form records additional payments needed when event/contribution is partially paid.
+ * This form records additional payments needed when
+ * event/contribution is partially paid
+ *
  */
 class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_AbstractEditPayment {
   public $_contributeMode = 'direct';
@@ -246,7 +248,7 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
           'id' => $type,
         );
 
-        CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE);
+        CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE, TRUE);
 
         $qfKey = $this->controller->_key;
         $this->assign('qfKey', $qfKey);

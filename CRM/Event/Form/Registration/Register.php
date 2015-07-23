@@ -548,7 +548,6 @@ class CRM_Event_Form_Registration_Register extends CRM_Event_Form_Registration {
     }
 
     $this->addFormRule(array('CRM_Event_Form_Registration_Register', 'formRule'), $this);
-    $this->unsavedChangesWarn = TRUE;
 
     // add pcp fields
     if ($this->_pcpId) {
@@ -1331,7 +1330,7 @@ class CRM_Event_Form_Registration_Register extends CRM_Event_Form_Registration {
       }
     }
 
-    // update status and send mail to cancelled additional participants, CRM-4320
+    // update status and send mail to cancelled additonal participants, CRM-4320
     if ($this->_allowConfirmation && is_array($cancelledIds) && !empty($cancelledIds)) {
       $cancelledId = array_search('Cancelled',
         CRM_Event_PseudoConstant::participantStatus(NULL, "class = 'Negative'")

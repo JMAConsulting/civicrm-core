@@ -86,10 +86,7 @@
           <td>{$form.contact_id.html}</td>
         {/if}
         {if $membershipMode}
-          <tr>
-            <td class="label">{$form.payment_processor_id.label}</td>
-            <td>{$form.payment_processor_id.html}</td>
-          </tr>
+          <tr><td class="label">{$form.payment_processor_id.label}</td><td>{$form.payment_processor_id.html}</td></tr>
         {/if}
         <tr class="crm-membership-form-block-membership_type_id">
           <td class="label">{$form.membership_type_id.label}</td>
@@ -151,8 +148,17 @@
             <span class="description">{ts}Latest membership period expiration date. End Date will be automatically set based on Membership Type if you don't select a date.{/ts}</span>
           </td>
         </tr>
+        {if !empty($form.auto_renew)}
+          <tr id="autoRenew" class="crm-membership-form-block-auto_renew">
+            <td class="label"> {$form.auto_renew.label} {help id="id-auto_renew" file="CRM/Member/Form/Membership.hlp" action=$action} </td>
+            <td> {$form.auto_renew.html} </td>
+          </tr>
+        {/if}
         {if !$membershipMode}
           <tr><td class="label">{$form.is_override.label} {help id="id-status-override"}</td><td>{$form.is_override.html}</td></tr>
+        {/if}
+
+        {if ! $membershipMode}
           {* Show read-only Status block - when action is UPDATE and is_override is FALSE *}
           <tr id="memberStatus_show">
             {if $action eq 2}
@@ -163,9 +169,45 @@
           {* Show editable status field when is_override is TRUE *}
           <tr id="memberStatus"><td class="label">{$form.status_id.label}</td><td>{$form.status_id.html}<br />
             <span class="description">{ts}If <strong>Status Override</strong> is checked, the selected status will remain in force (it will NOT be modified by the automated status update script).{/ts}</span></td></tr>
-        {/if}
 
-        {if $accessContribution and !$membershipMode AND ($action neq 2 or (!$rows.0.contribution_id AND !$softCredit) or $onlinePendingContributionId)}
+          {elseif $membershipMode}
+          <tr class="crm-membership-form-block-financial_type_id-mode">
+            <td class="label">{$form.financial_type_id.label}</td>
+            <td>{$form.financial_type_id.html}<br />
+              <span class="description">{ts}Select the appropriate financial type for this payment.{/ts}</span></td>
+          </tr>
+          <tr class="crm-membership-form-block-total_amount">
+            <td class="label">{$form.total_amount.label}</td>
+            <td>{$form.total_amount.html}<br />
+              <span class="description">{ts}Membership payment amount.{/ts}</span><div class="totaltaxAmount"></div></td>
+          </tr>
+          <tr class="crm-membership-form-block-contribution-contact">
+            <td class="label">{$form.is_different_contribution_contact.label}</td>
+            <td>{$form.is_different_contribution_contact.html}&nbsp;&nbsp;{help id="id-contribution_contact"}</td>
+          </tr>
+          <tr id="record-different-contact">
+            <td>&nbsp;</td>
+            <td>
+              <table class="compressed">
+                <tr class="crm-membership-form-block-soft-credit-type">
+                {*CRM-15366*}
+                  <td class="label">{$form.soft_credit_type_id.label}</td>
+                  <td>{$form.soft_credit_type_id.html}</td>
+                </tr>
+                <tr class="crm-membership-form-block-soft-credit-contact-id">
+                  <td class="label">{$form.soft_credit_contact_id.label}</td>
+                  <td>{$form.soft_credit_contact_id.html}</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr class="crm-membership-form-block-billing">
+            <td colspan="2">
+            {include file='CRM/Core/BillingBlock.tpl'}
+            </td>
+          </tr>
+        {/if}
+        {if $accessContribution and ! $membershipMode AND ($action neq 2 or (!$rows.0.contribution_id AND !$softCredit) or $onlinePendingContributionId)}
           <tr id="contri">
             <td class="label">{if $onlinePendingContributionId}{ts}Update Payment Status{/ts}{else}{$form.record_contribution.label}{/if}</td>
             <td>{$form.record_contribution.html}<br />
@@ -173,18 +215,74 @@
           </tr>
           <tr class="crm-membership-form-block-record_contribution"><td colspan="2">
             <fieldset id="recordContribution"><legend>{ts}Membership Payment and Receipt{/ts}</legend>
-         {/if}
-        {include file="CRM/Member/Form/MembershipCommon.tpl"}
+              <table>
+                <tr class="crm-membership-form-block-contribution-contact">
+                  <td class="label">{$form.is_different_contribution_contact.label}</td>
+                  <td>{$form.is_different_contribution_contact.html}&nbsp;&nbsp;{help id="id-contribution_contact"}</td>
+                </tr>
+                <tr id="record-different-contact">
+                  <td>&nbsp;</td>
+                  <td>
+                    <table class="compressed">
+                      <tr class="crm-membership-form-block-soft-credit-type">
+                        <td class="label">{$form.soft_credit_type_id.label}</td>
+                        <td>{$form.soft_credit_type_id.html}</td>
+                      </tr>
+                      <tr class="crm-membership-form-block-soft-credit-contact-id">
+                        <td class="label">{$form.soft_credit_contact_id.label}</td>
+                        <td>{$form.soft_credit_contact_id.html}</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                  <tr class="crm-membership-form-block-financial_type_id">
+                      <td class="label">{$form.financial_type_id.label}</td>
+                      <td>{$form.financial_type_id.html}<br />
+                      <span class="description">{ts}Select the appropriate financial type for this payment.{/ts}</span></td>
+                </tr>
+                <tr class="crm-membership-form-block-total_amount">
+                  <td class="label">{$form.total_amount.label}</td>
+                  <td>{$form.total_amount.html}<br />
+                    <span class="description">{ts}Membership payment amount. A contribution record will be created for this amount.{/ts}</span><div class="totaltaxAmount"></div></td>
+                </tr>
+                <tr class="crm-membership-form-block-receive_date">
+                  <td class="label">{$form.receive_date.label}</td>
+                  <td>{include file="CRM/common/jcalendar.tpl" elementName=receive_date}</td>
+                </tr>
+                <tr class="crm-membership-form-block-payment_instrument_id">
+                  <td class="label">{$form.payment_instrument_id.label}<span class="marker"> *</span></td>
+                  <td>{$form.payment_instrument_id.html} {help id="payment_instrument_id" file="CRM/Contribute/Page/Tab.hlp"}</td>
+                </tr>
+                <tr id="checkNumber" class="crm-membership-form-block-check_number">
+                  <td class="label">{$form.check_number.label}</td>
+                  <td>{$form.check_number.html|crmAddClass:six}</td>
+                </tr>
+                {if $action neq 2 }
+                  <tr class="crm-membership-form-block-trxn_id">
+                    <td class="label">{$form.trxn_id.label}</td>
+                    <td>{$form.trxn_id.html}</td>
+                  </tr>
+                {/if}
+                <tr class="crm-membership-form-block-contribution_status_id">
+                  <td class="label">{$form.contribution_status_id.label}</td>
+                  <td>{$form.contribution_status_id.html}</td>
+                </tr>
+              </table>
+            </fieldset>
+          </td></tr>
+          {else}
+          <div class="spacer"></div>
+        {/if}
 
-        {if $emailExists and $outBound_option != 2}
+        {if $emailExists and $outBound_option != 2 }
           <tr id="send-receipt" class="crm-membership-form-block-send_receipt">
             <td class="label">{$form.send_receipt.label}</td><td>{$form.send_receipt.html}<br />
-            <span class="description">{ts 1=$emailExists}Automatically email a membership confirmation and receipt to %1?{/ts}</span></td>
+            <span class="description">{ts 1=$emailExists}Automatically email a membership confirmation and receipt to %1 ?{/ts} {ts}OR if the payment is from a different contact, this email will only go to them.{/ts}</span></td>
           </tr>
-          {elseif $context eq 'standalone' and $outBound_option != 2}
+          {elseif $context eq 'standalone' and $outBound_option != 2 }
           <tr id="email-receipt" style="display:none;">
             <td class="label">{$form.send_receipt.label}</td><td>{$form.send_receipt.html}<br />
-            <span class="description">{ts}Automatically email a membership confirmation and receipt to {/ts}<span id="email-address"></span>?</span></td>
+            <span class="description">{ts}Automatically email a membership confirmation and receipt to {/ts}<span id="email-address"></span>? {ts}OR if the payment is from a different contact, this email will only go to them.{/ts}</span></td>
           </tr>
         {/if}
         <tr id="fromEmail" style="display:none;">
@@ -192,9 +290,9 @@
           <td>{$form.from_email_address.html}</td>
         </tr>
         <tr id='notice' style="display:none;">
-          <td class="label">{$form.receipt_text.label}</td>
+          <td class="label">{$form.receipt_text_signup.label}</td>
           <td class="html-adjust"><span class="description">{ts}If you need to include a special message for this member, enter it here. Otherwise, the confirmation email will include the standard receipt message configured under System Message Templates.{/ts}</span>
-            {$form.receipt_text.html|crmAddClass:huge}</td>
+            {$form.receipt_text_signup.html|crmAddClass:huge}</td>
         </tr>
       </table>
       <div id="customData"></div>
@@ -256,6 +354,7 @@
       function setPaymentBlock(mode, checkboxEvent) {
         var memType = parseInt(cj('#membership_type_id_1').val( ));
         var isPriceSet = 0;
+        var existingAmount = {/literal}{if !empty($onlinePendingContributionId)}1{else}0{/if}{literal};
 
         if ( cj('#price_set_id').length > 0 && cj('#price_set_id').val() ) {
           isPriceSet = 1;
@@ -266,7 +365,7 @@
         }
 
         var allMemberships = {/literal}{$allMembershipInfo}{literal};
-        if ( !mode ) {
+        if (!mode) {
           //check the record_contribution checkbox if membership is a paid one
           {/literal}{if $action eq 1}{literal}
           if (!checkboxEvent) {
@@ -302,13 +401,16 @@
           cj("#total_amount").val(CRM.formatMoney(feeTotal, true));
         }
         else {
-    if (taxRate) {
+          if (taxRate) {
             var feeTotal = parseFloat(Number((taxRate/100) * allMemberships[memType]['total_amount'])+Number(allMemberships[memType]['total_amount_numeric'])).toFixed(2);
-      cj("#total_amount").val(CRM.formatMoney(feeTotal, true));
+            cj("#total_amount").val(CRM.formatMoney(feeTotal, true));
           }
           else {
-      var feeTotal = allMemberships[memType]['total_amount'];
-      cj("#total_amount").val( allMemberships[memType]['total_amount'] );
+            var feeTotal = allMemberships[memType]['total_amount'];
+            if (!existingAmount) {
+              // CRM-16680 don't set amount if there is an existing contribution.
+              cj("#total_amount").val(allMemberships[memType]['total_amount']);
+            }
           }
         }
         var taxMessage = taxRate!=undefined ? 'Includes '+taxTerm+' amount of '+currency+' '+taxAmount:'';
@@ -344,7 +446,7 @@
       cj('#is_different_contribution_contact').change( function() {
         setDifferentContactBlock();
       });
-
+      
       // give option to override end-date for auto-renew memberships
       {/literal}
       {if $isRecur && $endDate}
@@ -373,7 +475,7 @@
         cj('#record-different-contact').hide();
       }
     }
-
+    
     </script>
     {/literal}
 

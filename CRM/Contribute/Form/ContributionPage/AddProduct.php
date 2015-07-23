@@ -29,6 +29,8 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
@@ -41,7 +43,10 @@ class CRM_Contribute_Form_ContributionPage_AddProduct extends CRM_Contribute_For
   protected $_pid;
 
   /**
-   * Pre process the form.
+   * Pre  process the form.
+   *
+   *
+   * @return void
    */
   public function preProcess() {
     parent::preProcess();
@@ -190,8 +195,6 @@ class CRM_Contribute_Form_ContributionPage_AddProduct extends CRM_Contribute_For
         unset($financialType[$key]);
       }
     }
-    // Check permissioned financial types
-    CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialType, 'add');
     if (count($financialType)) {
       $this->assign('financialType', $financialType);
     }

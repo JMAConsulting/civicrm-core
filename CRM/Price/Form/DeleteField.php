@@ -56,7 +56,7 @@ class CRM_Price_Form_DeleteField extends CRM_Core_Form {
    * Set up variables to build the form.
    *
    * @return void
-   * @access protected
+   * @acess protected
    */
   public function preProcess() {
     $this->_fid = $this->get('fid');

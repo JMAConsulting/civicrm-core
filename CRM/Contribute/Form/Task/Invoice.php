@@ -29,6 +29,7 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2015
+ *
  */
 
 /**
@@ -144,6 +145,7 @@ class CRM_Contribute_Form_Task_Invoice extends CRM_Contribute_Form_Task {
    */
   public function buildQuickForm() {
     $session = CRM_Core_Session::singleton();
+    $this->preventAjaxSubmit();
     if (CRM_Core_Permission::check('administer CiviCRM')) {
       $this->assign('isAdmin', 1);
     }
@@ -182,7 +184,7 @@ class CRM_Contribute_Form_Task_Invoice extends CRM_Contribute_Form_Task {
       $this->addRule('from_email_address', ts('From Email Address is required'), 'required');
     }
 
-    $this->add('wysiwyg', 'email_comment', ts('If you would like to add personal message to email please add it here. (If sending to more then one receipient the same message will be sent to each contact.)'), array(
+    $this->addWysiwyg('email_comment', ts('If you would like to add personal message to email please add it here. (If sending to more then one receipient the same message will be sent to each contact.)'), array(
       'rows' => 2,
       'cols' => 40,
     ));
@@ -326,7 +328,7 @@ class CRM_Contribute_Form_Task_Invoice extends CRM_Contribute_Form_Task {
       else {
         $eid = $contribution->_relatedObjects['participant']->id;
         $etable = 'participant';
-        $lineItem = CRM_Price_BAO_LineItem::getLineItems($eid, $etable);
+        $lineItem = CRM_Price_BAO_LineItem::getLineItems($eid, $etable, NULL, TRUE, FALSE, '', TRUE);
       }
 
       //TO DO: Need to do changes for partially paid to display amount due on PDF invoice
@@ -396,7 +398,7 @@ class CRM_Contribute_Form_Task_Invoice extends CRM_Contribute_Form_Task {
 
       // get organization address
       $domain = CRM_Core_BAO_Domain::getDomain();
-      $locParams = array('contact_id' => $domain->id);
+      $locParams = array('contact_id' => $domain->contact_id);
       $locationDefaults = CRM_Core_BAO_Location::getValues($locParams);
       if (isset($locationDefaults['address'][1]['state_province_id'])) {
         $stateProvinceAbbreviationDomain = CRM_Core_PseudoConstant::stateProvinceAbbreviation($locationDefaults['address'][1]['state_province_id']);
@@ -633,8 +635,7 @@ class CRM_Contribute_Form_Task_Invoice extends CRM_Contribute_Form_Task {
    *   Name of file which is in pdf format
    */
   static public function putFile($html) {
-    require_once "packages/dompdf/dompdf_config.inc.php";
-    spl_autoload_register('DOMPDF_autoload');
+    require_once "vendor/dompdf/dompdf/dompdf_config.inc.php";
     $doc = new DOMPDF();
     $doc->load_html($html);
     $doc->render();

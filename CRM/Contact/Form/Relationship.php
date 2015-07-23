@@ -108,20 +108,6 @@ class CRM_Contact_Form_Relationship extends CRM_Core_Form {
    */
   public $_cdType;
 
-  /**
-   * Explicitly declare the form context.
-   */
-  public function getDefaultContext() {
-    return 'create';
-  }
-
-  /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Relationship';
-  }
-
   public function preProcess() {
     //custom data related code
     $this->_cdType = CRM_Utils_Array::value('type', $_GET);
@@ -311,6 +297,8 @@ class CRM_Contact_Form_Relationship extends CRM_Core_Form {
       );
       return;
     }
+    // Just in case custom data includes a rich text field
+    $this->assign('includeWysiwygEditor', TRUE);
 
     // Select list
     $relationshipList = CRM_Contact_BAO_Relationship::getContactRelationshipType($this->_contactId, $this->_rtype, $this->_relationshipId);
@@ -335,10 +323,20 @@ class CRM_Contact_Form_Relationship extends CRM_Core_Form {
     }
     $this->assign('relationshipData', $jsData);
 
-    $this->addField('relationship_type_id', array('options' => array('' => ts('- select -')) + $relationshipList, 'class' => 'huge', 'placeholder' => '- select -'), TRUE);
+    $this->add(
+      'select',
+      'relationship_type_id',
+      ts('Relationship Type'),
+      array('' => ts('- select -')) + $relationshipList,
+      TRUE,
+      array('class' => 'crm-select2 huge')
+    );
 
     $label = $this->_action & CRM_Core_Action::ADD ? ts('Contact(s)') : ts('Contact');
-    $contactField = $this->addField('related_contact_id', array('label' => $label, 'name' => 'contact_id_b', 'multiple' => TRUE, 'create' => TRUE), TRUE);
+    $contactField = $this->addEntityRef('related_contact_id', $label, array(
+        'multiple' => TRUE,
+        'create' => TRUE,
+      ), TRUE);
     // This field cannot be updated
     if ($this->_action & CRM_Core_Action::UPDATE) {
       $contactField->freeze();
@@ -346,15 +344,16 @@ class CRM_Contact_Form_Relationship extends CRM_Core_Form {
 
     $this->add('advcheckbox', 'is_current_employer', $this->_contactType == 'Organization' ? ts('Current Employee') : ts('Current Employer'));
 
-    $this->addField('start_date', array('label' => ts('Start Date'), 'formatType' => 'searchDate'));
-    $this->addField('end_date', array('label' => ts('End Date'), 'formatType' => 'searchDate'));
+    $this->addDate('start_date', ts('Start Date'), FALSE, array('formatType' => 'searchDate'));
+    $this->addDate('end_date', ts('End Date'), FALSE, array('formatType' => 'searchDate'));
 
-    $this->addField('is_active', array('label' => ts('Enabled?')));
+    $this->add('advcheckbox', 'is_active', ts('Enabled?'));
 
-    $this->addField('is_permission_a_b');
-    $this->addField('is_permission_b_a');
+    // CRM-14612 - Don't use adv-checkbox as it interferes with the form js
+    $this->add('checkbox', 'is_permission_a_b');
+    $this->add('checkbox', 'is_permission_b_a');
 
-    $this->addField('description', array('label' => ts('Description')));
+    $this->add('text', 'description', ts('Description'), CRM_Core_DAO::getAttribute('CRM_Contact_DAO_Relationship', 'description'));
 
     CRM_Contact_Form_Edit_Notes::buildQuickForm($this);
 
@@ -396,6 +395,11 @@ class CRM_Contact_Form_Relationship extends CRM_Core_Form {
     // action is taken depending upon the mode
     if ($this->_action & CRM_Core_Action::DELETE) {
       CRM_Contact_BAO_Relationship::del($this->_relationshipId);
+
+      // CRM-15881 UPDATES
+      // Since the line above nullifies the organization_name and employer_id fiels in the contact record, we need to reload all blocks to reflect this chage on the user interface.
+      $this->ajaxResponse['reloadBlocks'] = array('#crm-contactinfo-content');
+
       return;
     }
 
@@ -438,6 +442,14 @@ class CRM_Contact_Form_Relationship extends CRM_Core_Form {
         // clear the current employer. CRM-3235.
         $relChanged = $params['relationship_type_id'] != $this->_values['relationship_type_id'];
         if (!$params['is_active'] || !$params['is_current_employer'] || $relChanged) {
+
+          // CRM-15881 UPDATES
+          // If not is_active then is_current_employer needs to be set false as well! Logically a contact cannot be a current employee of a disabled employer relationship.
+          // If this is not done, then the below process will go ahead and disable the organization_name and employer_id fields in the contact record (which is what is wanted) but then further down will be re-enabled becuase is_current_employer is not false, therefore undoing what was done correctly.
+          if (!$params['is_active']) {
+            $params['is_current_employer'] = FALSE;
+          }
+
           CRM_Contact_BAO_Contact_Utils::clearCurrentEmployer($this->_values['contact_id_a']);
           // Refresh contact summary if in ajax mode
           $this->ajaxResponse['reloadBlocks'] = array('#crm-contactinfo-content');

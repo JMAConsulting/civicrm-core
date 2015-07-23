@@ -240,15 +240,6 @@ class CRM_Event_Form_Registration extends CRM_Core_Form {
       //retrieve event information
       $params = array('id' => $this->_eventId);
       CRM_Event_BAO_Event::retrieve($params, $this->_values['event']);
-      // check for is_monetary status
-      $isMonetary = CRM_Utils_Array::value('is_monetary', $this->_values['event']);
-      // check for ability to add contributions of type
-      if ($isMonetary
-        && CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()
-        && !CRM_Core_Permission::check('add contributions of type ' . CRM_Contribute_PseudoConstant::financialType($this->_values['event']['financial_type_id']))
-      ) {
-        CRM_Core_Error::fatal(ts('You do not have permission to access this page.'));
-      }
 
       $this->checkValidEvent($infoUrl);
       // get the participant values, CRM-4320
@@ -294,6 +285,8 @@ class CRM_Event_Form_Registration extends CRM_Core_Form {
         $participant_role = CRM_Core_OptionGroup::values('participant_role');
         $this->_values['event']['participant_role'] = $participant_role["{$this->_values['event']['default_role_id']}"];
       }
+      // check for is_monetary status
+      $isMonetary = CRM_Utils_Array::value('is_monetary', $this->_values['event']);
       $isPayLater = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Event', $this->_eventId, 'is_pay_later');
       //check for variour combination for paylater, payment
       //process with paid event.
@@ -381,8 +374,15 @@ class CRM_Event_Form_Registration extends CRM_Core_Form {
           unset($this->_values['additional_custom_post_id']);
         }
       }
-
-      $this->assignBillingType();
+      // get the billing location type
+      $locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id', array(), 'validate');
+      // CRM-8108 remove ts from Billing as the location type can not be translated in CiviCRM!
+      //$this->_bltID = array_search( ts('Billing'),  $locationTypes );
+      $this->_bltID = array_search('Billing', $locationTypes);
+      if (!$this->_bltID) {
+        CRM_Core_Error::fatal(ts('Please set a location type of %1', array(1 => 'Billing')));
+      }
+      $this->set('bltID', $this->_bltID);
 
       if ($this->_values['event']['is_monetary']) {
         CRM_Core_Payment_Form::setPaymentFieldsByProcessor($this, $this->_paymentProcessor);
@@ -720,17 +720,6 @@ class CRM_Event_Form_Registration extends CRM_Core_Form {
     else {
       $isPaidEvent = CRM_Utils_Array::value('is_monetary', $form->_values['event']);
     }
-    if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()
-      && !empty($form->_values['fee'])
-    ) {
-      foreach ($form->_values['fee'] as $k => $fees) {
-        foreach ($fees['options'] as $options) {
-          if (!CRM_Core_Permission::check('add contributions of type ' . CRM_Contribute_PseudoConstant::financialType($options['financial_type_id']))) {
-            unset($form->_values['fee'][$k]);
-          }
-        }
-      }
-    }
     if ($isPaidEvent && empty($form->_values['fee'])) {
       if (CRM_Utils_System::getClassName($form) != 'CRM_Event_Form_Participant') {
         CRM_Core_Error::fatal(ts('No Fee Level(s) or Price Set is configured for this event.<br />Click <a href=\'%1\'>CiviEvent >> Manage Event >> Configure >> Event Fees</a> to configure the Fee Level(s) or Price Set for this event.', array(1 => CRM_Utils_System::url('civicrm/event/manage/fee', 'reset=1&action=update&id=' . $form->_eventId))));
@@ -774,6 +763,7 @@ class CRM_Event_Form_Registration extends CRM_Core_Form {
     }
 
     CRM_Core_BAO_CustomValueTable::postProcess($this->_params,
+      CRM_Core_DAO::$_nullArray,
       'civicrm_participant',
       $participant->id,
       'Participant'
@@ -1214,8 +1204,6 @@ WHERE  v.option_group_id = g.id
   /**
    * Reset values for all options those are full.
    *
-   * @param array $optionFullIds
-   * @param $form
    */
   public static function resetElementValue($optionFullIds = array(), &$form) {
     if (!is_array($optionFullIds) ||
@@ -1286,7 +1274,6 @@ WHERE  v.option_group_id = g.id
   /**
    * @param string $elementName
    * @param array $optionIds
-   * @param CRM_Core_form $form
    */
   public static function resetSubmittedValue($elementName, $optionIds = array(), &$form) {
     if (empty($elementName) ||

@@ -49,28 +49,14 @@ class CRM_Utils_Check_Message {
   private $title;
 
   /**
-   * @var string
-   * @see Psr\Log\LogLevel
-   */
-  private $level;
-
-  /**
    * @param string $name
-   *   Symbolic name for the check.
-   * @param string $message
-   *   Printable message (short or long).
-   * @param string $title
-   *   Printable message (short).
-   * @param string $level
-   *   The severity of the message. Use PSR-3 log levels.
-   *
-   * @see Psr\Log\LogLevel
+   * @param $message
+   * @param $title
    */
-  public function __construct($name, $message, $title, $level = \Psr\Log\LogLevel::WARNING) {
+  public function __construct($name, $message, $title) {
     $this->name = $name;
     $this->message = $message;
     $this->title = $title;
-    $this->level = $level;
   }
 
   /**
@@ -95,14 +81,6 @@ class CRM_Utils_Check_Message {
   }
 
   /**
-   * @return string
-   * @see Psr\Log\LogLevel
-   */
-  public function getLevel() {
-    return $this->level;
-  }
-
-  /**
    * @return array
    */
   public function toArray() {
@@ -110,7 +88,6 @@ class CRM_Utils_Check_Message {
       'name' => $this->name,
       'message' => $this->message,
       'title' => $this->title,
-      'level' => $this->level,
     );
   }
 

@@ -29,11 +29,15 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 class CRM_Contribute_Form_ContributionPage_Settings extends CRM_Contribute_Form_ContributionPage {
 
   /**
    * Set variables up before form is built.
+   *
+   * @return void
    */
   public function preProcess() {
     parent::preProcess();
@@ -117,14 +121,7 @@ class CRM_Contribute_Form_ContributionPage_Settings extends CRM_Contribute_Form_
     $attributes = CRM_Core_DAO::getAttribute('CRM_Contribute_DAO_ContributionPage');
 
     // financial Type
-    CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes, 'add');
-    $financialOptions = array(
-      'options' => $financialTypes,
-    );
-    if (!CRM_Core_Permission::check('administer CiviCRM Financial Types')) {
-      $financialOptions['context'] = 'search';
-    }
-    $this->addSelect('financial_type_id', $financialOptions, TRUE);
+    $this->addSelect('financial_type_id', array(), TRUE);
 
     // name
     $this->add('text', 'title', ts('Title'), $attributes['title'], TRUE);
@@ -132,9 +129,9 @@ class CRM_Contribute_Form_ContributionPage_Settings extends CRM_Contribute_Form_
     //CRM-7362 --add campaigns.
     CRM_Campaign_BAO_Campaign::addCampaign($this, CRM_Utils_Array::value('campaign_id', $this->_values));
 
-    $this->add('wysiwyg', 'intro_text', ts('Introductory Message'), $attributes['intro_text']);
+    $this->addWysiwyg('intro_text', ts('Introductory Message'), $attributes['intro_text']);
 
-    $this->add('wysiwyg', 'footer_text', ts('Footer Message'), $attributes['footer_text']);
+    $this->addWysiwyg('footer_text', ts('Footer Message'), $attributes['footer_text']);
 
     //Register schema which will be used for OnBehalOf and HonorOf profile Selector
     CRM_UF_Page_ProfileEditor::registerSchemas(array('OrganizationModel', 'HouseholdModel'));

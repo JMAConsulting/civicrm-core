@@ -190,13 +190,6 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
   public $_onlinePendingContributionId = NULL;
 
   /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Participant';
-  }
-
-  /**
    * Set variables up before form is built.
    *
    * @return void
@@ -329,7 +322,7 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
           $this->_action = CRM_Core_Action::COPY;
           break;
       }
-      CRM_Contact_Form_Task::preProcessCommon($this);
+      parent::preProcess();
 
       $this->_single = FALSE;
       $this->_contactId = NULL;
@@ -1050,7 +1043,7 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
       unset($params['amount']);
     }
     $params['register_date'] = CRM_Utils_Date::processDate($params['register_date'], $params['register_date_time']);
-    $params['receive_date'] = CRM_Utils_Date::processDate(CRM_Utils_Array::value('receive_date', $params), CRM_Utils_Array::value('receive_date_time', $params));
+    $params['receive_date'] = CRM_Utils_Date::processDate(CRM_Utils_Array::value('receive_date', $params));
     $params['contact_id'] = $this->_contactId;
 
     // overwrite actual payment amount if entered
@@ -1164,6 +1157,7 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
       $customFields = CRM_Utils_Array::crmArrayMerge($customFieldsEvent, $customFields);
       $customFields = CRM_Utils_Array::crmArrayMerge($customFieldsEventType, $customFields);
       $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
+        $customFields,
         $this->_id,
         'Participant'
       );
@@ -1208,7 +1202,7 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
 
       // CRM-15622: fix for incorrect contribution.fee_amount
       $paymentParams['fee_amount'] = NULL;
-      $result = $payment->doPayment($paymentParams);
+      $result = $payment->doDirectPayment($paymentParams);
 
       if (is_a($result, 'CRM_Core_Error')) {
         CRM_Core_Error::displaySessionError($result);
@@ -1259,6 +1253,7 @@ class CRM_Event_Form_Participant extends CRM_Contribute_Form_AbstractEditPayment
 
       //add custom data for participant
       CRM_Core_BAO_CustomValueTable::postProcess($this->_params,
+        CRM_Core_DAO::$_nullArray,
         'civicrm_participant',
         $participants[0]->id,
         'Participant'

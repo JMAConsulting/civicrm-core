@@ -83,7 +83,6 @@ class CRM_Utils_Cache {
 
       // a generic method for utilizing any of the available db caches.
       $dbCacheClass = 'CRM_Utils_Cache_' . $className;
-      require_once str_replace('_', DIRECTORY_SEPARATOR, $dbCacheClass) . '.php';
       $settings = self::getCacheSettings($className);
       self::$_singleton = new $dbCacheClass($settings);
     }
@@ -114,7 +113,7 @@ class CRM_Utils_Cache {
           'prefix' => '',
         );
 
-        // Use old constants if needed to ensure backward compatibility
+        // Use old constants if needed to ensure backward compatability
         if (defined('CIVICRM_MEMCACHE_HOST')) {
           $defaults['host'] = CIVICRM_MEMCACHE_HOST;
         }

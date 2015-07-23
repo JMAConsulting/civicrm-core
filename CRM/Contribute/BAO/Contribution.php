@@ -370,14 +370,11 @@ class CRM_Contribute_BAO_Contribution extends CRM_Contribute_DAO_Contribution {
     // Handle soft credit and / or link to personal campaign page
     $softIDs = CRM_Contribute_BAO_ContributionSoft::getSoftCreditIds($contribution->id);
 
-    //Delete PCP against this contribution and create new on submitted PCP information
     $pcpId = CRM_Contribute_BAO_ContributionSoft::getSoftCreditIds($contribution->id, TRUE);
-    if ($pcpId) {
-      $deleteParams = array('id' => $pcpId);
-      CRM_Contribute_BAO_ContributionSoft::del($deleteParams);
-    }
+
     if ($pcp = CRM_Utils_Array::value('pcp', $params)) {
       $softParams = array();
+      $softParams['id'] = $pcpId ? $pcpId : NULL;
       $softParams['contribution_id'] = $contribution->id;
       $softParams['pcp_id'] = $pcp['pcp_made_through_id'];
       $softParams['contact_id'] = CRM_Core_DAO::getFieldValue('CRM_PCP_DAO_PCP',
@@ -391,12 +388,31 @@ class CRM_Contribute_BAO_Contribution extends CRM_Contribute_DAO_Contribution {
       $softParams['soft_credit_type_id'] = CRM_Core_OptionGroup::getValue('soft_credit_type', 'pcp', 'name');
       $contributionSoft = CRM_Contribute_BAO_ContributionSoft::add($softParams);
       //Send notification to owner for PCP
-      if ($contributionSoft->pcp_id) {
+      if ($contributionSoft->pcp_id && empty($pcpId)) {
         CRM_Contribute_Form_Contribution_Confirm::pcpNotifyOwner($contribution, $contributionSoft);
       }
     }
+    //Delete PCP against this contribution and create new on submitted PCP information
+    elseif (array_key_exists('pcp', $params) && $pcpId) {
+      $deleteParams = array('id' => $pcpId);
+      CRM_Contribute_BAO_ContributionSoft::del($deleteParams);
+    }
     if (isset($params['soft_credit'])) {
       $softParams = $params['soft_credit'];
+      foreach ($softParams as $softParam) {
+        if (!empty($softIDs)) {
+          $key = key($softIDs);
+          $softParam['id'] = $softIDs[$key];
+          unset($softIDs[$key]);
+        }
+        $softParam['contribution_id'] = $contribution->id;
+        $softParam['currency'] = $contribution->currency;
+        //case during Contribution Import when we assign soft contribution amount as contribution's total_amount by default
+        if (empty($softParam['amount'])) {
+          $softParam['amount'] = $contribution->total_amount;
+        }
+        CRM_Contribute_BAO_ContributionSoft::add($softParam);
+      }
 
       if (!empty($softIDs)) {
         foreach ($softIDs as $softID) {
@@ -405,16 +421,6 @@ class CRM_Contribute_BAO_Contribution extends CRM_Contribute_DAO_Contribution {
             CRM_Contribute_BAO_ContributionSoft::del($deleteParams);
           }
         }
-      }
-
-      foreach ($softParams as $softParam) {
-        $softParam['contribution_id'] = $contribution->id;
-        $softParam['currency'] = $contribution->currency;
-        //case during Contribution Import when we assign soft contribution amount as contribution's total_amount by default
-        if (empty($softParam['amount'])) {
-          $softParam['amount'] = $contribution->total_amount;
-        }
-        CRM_Contribute_BAO_ContributionSoft::add($softParam);
       }
     }
 
@@ -754,24 +760,15 @@ class CRM_Contribute_BAO_Contribution extends CRM_Contribute_DAO_Contribution {
     if ($endDate) {
       $where[] = "receive_date <= '" . CRM_Utils_Type::escape($endDate, 'Timestamp') . "'";
     }
-    CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes);
-    if ($financialTypes) {
-      $where[] = "c.financial_type_id IN (" . implode(',', array_keys($financialTypes)) . ")";
-      $where[] = "i.financial_type_id IN (" . implode(',', array_keys($financialTypes)) . ")";
-    }
-    else {
-      $where[] = "c.financial_type_id IN (0)";
-    }
 
     $whereCond = implode(' AND ', $where);
 
     $query = "
     SELECT  sum( total_amount ) as total_amount,
-            count( c.id ) as total_count,
+            count( civicrm_contribution.id ) as total_count,
             currency
-      FROM  civicrm_contribution c
-INNER JOIN  civicrm_contact contact ON ( contact.id = c.contact_id )
-LEFT JOIN  civicrm_line_item i ON ( i.contribution_id = c.id AND i.entity_table = 'civicrm_contribution' )
+      FROM  civicrm_contribution
+INNER JOIN  civicrm_contact contact ON ( contact.id = civicrm_contribution.contact_id )
      WHERE  $whereCond
        AND  ( is_test = 0 OR is_test IS NULL )
        AND  contact.is_deleted = 0
@@ -864,21 +861,6 @@ LEFT JOIN  civicrm_line_item i ON ( i.contribution_id = c.id AND i.entity_table 
     CRM_Utils_Recent::del($contributionRecent);
 
     return $results;
-  }
-
-  /**
-   * React to a financial transaction (payment) failure.
-   *
-   * Prior to CRM-16417 these were simply removed from the database but it has been agreed that seeing attempted
-   * payments is important for forensic and outreach reasons.
-   *
-   * This function updates the financial transaction records to failed.
-   *
-   * @todo in principle we also think it makes sense to add an activity - this part would be a second step as
-   * the first change is likely to go into the LTS.
-   */
-  public static function failPayment($contributionID, $message) {
-
   }
 
   /**
@@ -1151,26 +1133,18 @@ WHERE  civicrm_contribution.contact_id = civicrm_contact.id
     }
     $startDate = "$year$monthDay";
     $endDate = "$nextYear$monthDay";
-    CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes);
-    $additionalWhere = " AND b.financial_type_id IN (0)";
-    $liWhere = " AND i.financial_type_id IN (0)";
-    if (!empty($financialTypes)) {
-      $additionalWhere = " AND b.financial_type_id IN (" . implode(',', array_keys($financialTypes)) . ") AND i.id IS NULL";
-      $liWhere = " AND i.financial_type_id NOT IN (" . implode(',', array_keys($financialTypes)) . ")";
-    }
+
     $query = "
       SELECT count(*) as count,
              sum(total_amount) as amount,
              avg(total_amount) as average,
              currency
         FROM civicrm_contribution b
-        LEFT JOIN civicrm_line_item i ON i.contribution_id = b.id AND i.entity_table = 'civicrm_contribution' $liWhere
        WHERE b.contact_id IN ( $contactIDs )
          AND b.contribution_status_id = 1
          AND b.is_test = 0
          AND b.receive_date >= $startDate
          AND b.receive_date <  $endDate
-      $additionalWhere 
       GROUP BY currency
       ";
     $dao = CRM_Core_DAO::executeQuery($query, CRM_Core_DAO::$_nullArray);
@@ -1868,20 +1842,11 @@ LEFT JOIN  civicrm_contribution contribution ON ( componentPayment.contribution_
     if (!$contactId) {
       return 0;
     }
-    CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes);
-    $additionalWhere = " AND contribution.financial_type_id IN (0)";
-    $liWhere = " AND i.financial_type_id IN (0)";
-    if (!empty($financialTypes)) {
-      $additionalWhere = " AND contribution.financial_type_id IN (" . implode(',', array_keys($financialTypes)) . ")";
-      $liWhere = " AND i.financial_type_id NOT IN (" . implode(',', array_keys($financialTypes)) . ")";
-    }
+
     $contactContributionsSQL = "
       SELECT contribution.id AS id
       FROM civicrm_contribution contribution
-      LEFT JOIN civicrm_line_item i ON i.contribution_id = contribution.id AND i.entity_table = 'civicrm_contribution' $liWhere 
-      WHERE contribution.is_test = 0 AND contribution.contact_id = {$contactId} 
-      $additionalWhere 
-      AND i.id IS NULL";
+      WHERE contribution.is_test = 0 AND contribution.contact_id = {$contactId} ";
 
     $contactSoftCreditContributionsSQL = "
       SELECT contribution.id
@@ -2222,7 +2187,10 @@ WHERE  contribution_id = %1 ";
     //what does recur 'mean here - to do with payment processor return functionality but
     // what is the importance
     if ($recur && !empty($this->_relatedObjects['paymentProcessor'])) {
-      $paymentObject = Civi\Payment\System::singleton()->getByProcessor($this->_relatedObjects['paymentProcessor']);
+      $paymentObject = &CRM_Core_Payment::singleton(
+        $this->is_test ? 'test' : 'live',
+        $this->_relatedObjects['paymentProcessor']
+      );
 
       $entityID = $entity = NULL;
       if (isset($ids['contribution'])) {
@@ -2774,7 +2742,7 @@ WHERE  contribution_id = %1 ";
         if (!empty($params['payment_processor'])) {
           $balanceTrxnParams['payment_processor_id'] = $params['payment_processor'];
         }
-        CRM_Core_BAO_FinancialTrxn::create($balanceTrxnParams);
+        $financialTxn = CRM_Core_BAO_FinancialTrxn::create($balanceTrxnParams);
       }
     }
 
@@ -2960,13 +2928,14 @@ WHERE  contribution_id = %1 ";
         $params['entity_id'] = $financialTxn->id;
       }
     }
-    // record line items and financial items
+    // record line items and finacial items
     if (empty($params['skipLineItem'])) {
       CRM_Price_BAO_LineItem::processPriceSet($entityId, CRM_Utils_Array::value('line_item', $params), $params['contribution'], $entityTable, $update);
     }
 
-    // create batch entry if batch_id is passed
-    if (!empty($params['batch_id'])) {
+    // create batch entry if batch_id is passed and
+    // ensure no batch entry is been made on 'Pending' or 'Failed' contribution, CRM-16611
+    if (!empty($params['batch_id']) && !empty($financialTxn)) {
       $entityParams = array(
         'batch_id' => $params['batch_id'],
         'entity_table' => 'civicrm_financial_trxn',
@@ -3755,75 +3724,6 @@ WHERE con.id = {$contributionId}
     $result = CRM_Core_DAO::executeQuery($sql, $params);
     if ($result->N > 1) {
       $errors['financial_type_id'] = ts('One or more line items have a different financial type than the contribution. Editing the financial type is not yet supported in this situation.');
-    }
-  }
-
-  /**
-   * Update related pledge payment payments.
-   *
-   * This function has been refactored out of the back office contribution form and may
-   * still overlap with other functions.
-   *
-   * @param string $action
-   * @param int $pledgePaymentID
-   * @param int $contributionID
-   * @param bool $adjustTotalAmount
-   * @param float $total_amount
-   * @param float $original_total_amount
-   * @param int $contribution_status_id
-   * @param int $original_contribution_status_id
-   */
-  public static function updateRelatedPledge(
-    $action,
-    $pledgePaymentID,
-    $contributionID,
-    $adjustTotalAmount,
-    $total_amount,
-    $original_total_amount,
-    $contribution_status_id,
-    $original_contribution_status_id
-  ) {
-    if (!$pledgePaymentID || $action & CRM_Core_Action::ADD && !$contributionID) {
-      return;
-    }
-
-    if ($pledgePaymentID) {
-      //store contribution id in payment record.
-      CRM_Core_DAO::setFieldValue('CRM_Pledge_DAO_PledgePayment', $pledgePaymentID, 'contribution_id', $contributionID);
-    }
-    else {
-      $pledgePaymentID = CRM_Core_DAO::getFieldValue('CRM_Pledge_DAO_PledgePayment',
-        $contributionID,
-        'id',
-        'contribution_id'
-      );
-    }
-    $pledgeID = CRM_Core_DAO::getFieldValue('CRM_Pledge_DAO_PledgePayment',
-      $contributionID,
-      'pledge_id',
-      'contribution_id'
-    );
-
-    $updatePledgePaymentStatus = FALSE;
-
-    // If either the status or the amount has changed we update the pledge status.
-    if ($action & CRM_Core_Action::ADD) {
-      $updatePledgePaymentStatus = TRUE;
-    }
-    elseif ($action & CRM_Core_Action::UPDATE && (($original_contribution_status_id != $contribution_status_id) ||
-        ($original_total_amount != $total_amount))
-    ) {
-      $updatePledgePaymentStatus = TRUE;
-    }
-
-    if ($updatePledgePaymentStatus) {
-      CRM_Pledge_BAO_PledgePayment::updatePledgePaymentStatus($pledgeID,
-        array($pledgePaymentID),
-        $contribution_status_id,
-        NULL,
-        $total_amount,
-        $adjustTotalAmount
-      );
     }
   }
 

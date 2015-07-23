@@ -59,20 +59,25 @@ class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
   protected $_fromEmails = array();
 
   public function preProcess() {
-    // Check for edit permission.
-    if (!CRM_Core_Permission::checkActionPermission('CiviMember', $this->_action)) {
-      CRM_Core_Error::fatal(ts('You do not have permission to access this page.'));
-    }
-    parent::preProcess();
-    $params = array();
-    $params['context'] = CRM_Utils_Request::retrieve('context', 'String', $this, FALSE, 'membership');
-    $params['id'] = CRM_Utils_Request::retrieve('id', 'Positive', $this);
-    $params['mode'] = CRM_Utils_Request::retrieve('mode', 'String', $this);
-
-    $this->setContextVariables($params);
+    $this->_action = CRM_Utils_Request::retrieve('action', 'String', $this, FALSE, 'add');
+    $this->_context = CRM_Utils_Request::retrieve('context', 'String', $this, FALSE, 'membership');
+    $this->_id = CRM_Utils_Request::retrieve('id', 'Positive', $this);
+    $this->_contactID = CRM_Utils_Request::retrieve('cid', 'Positive', $this);
+    $this->_mode = CRM_Utils_Request::retrieve('mode', 'String', $this);
 
     $this->assign('context', $this->_context);
     $this->assign('membershipMode', $this->_mode);
+    $this->assign('contactID', $this->_contactID);
+
+    if ($this->_mode) {
+      $this->assignPaymentRelatedVariables();
+    }
+
+    if ($this->_id) {
+      $this->_memType = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership', $this->_id, 'membership_type_id');
+      $this->_membershipIDs[] = $this->_id;
+    }
+    $this->_fromEmails = CRM_Core_BAO_Email::getFromEmail();
   }
 
   /**
@@ -88,13 +93,14 @@ class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
     if (isset($this->_id)) {
       $params = array('id' => $this->_id);
       CRM_Member_BAO_Membership::retrieve($params, $defaults);
-      if (isset($defaults['minimum_fee'])) {
-        $defaults['minimum_fee'] = CRM_Utils_Money::format($defaults['minimum_fee'], NULL, '%a');
-      }
+    }
 
-      if (isset($defaults['status'])) {
-        $this->assign('membershipStatus', $defaults['status']);
-      }
+    if (isset($defaults['minimum_fee'])) {
+      $defaults['minimum_fee'] = CRM_Utils_Money::format($defaults['minimum_fee'], NULL, '%a');
+    }
+
+    if (isset($defaults['status'])) {
+      $this->assign('membershipStatus', $defaults['status']);
     }
 
     if ($this->_action & CRM_Core_Action::ADD) {
@@ -113,76 +119,18 @@ class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
 
   /**
    * Build the form object.
+   *
+   * @return void
    */
   public function buildQuickForm() {
-
     if ($this->_mode) {
       $this->add('select', 'payment_processor_id',
         ts('Payment Processor'),
         $this->_processors, TRUE,
         array('onChange' => "buildAutoRenew( null, this.value );")
       );
-      CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE);
+      CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE, TRUE);
     }
-    // Build the form for auto renew. This is displayed when in credit card mode or update mode.
-    // The reason for showing it in update mode is not that clear.
-    $autoRenew = array();
-    $recurProcessor = array();
-    if ($this->_mode || ($this->_action & CRM_Core_Action::UPDATE)) {
-      if (!empty($recurProcessor)) {
-        $autoRenew = array();
-        if (!empty($membershipType)) {
-          $sql = '
-SELECT  id,
-        auto_renew,
-        duration_unit,
-        duration_interval
- FROM   civicrm_membership_type
-WHERE   id IN ( ' . implode(' , ', array_keys($membershipType)) . ' )';
-          $recurMembershipTypes = CRM_Core_DAO::executeQuery($sql);
-          while ($recurMembershipTypes->fetch()) {
-            $autoRenew[$recurMembershipTypes->id] = $recurMembershipTypes->auto_renew;
-            foreach (array(
-                       'id',
-                       'auto_renew',
-                       'duration_unit',
-                       'duration_interval',
-                     ) as $fld) {
-              $this->_recurMembershipTypes[$recurMembershipTypes->id][$fld] = $recurMembershipTypes->$fld;
-            }
-          }
-        }
-
-        if ($this->_mode) {
-          if (!empty($this->_recurPaymentProcessors)) {
-            $this->assign('allowAutoRenew', TRUE);
-          }
-        }
-
-        $this->assign('autoRenew', json_encode($autoRenew));
-        $autoRenewElement = $this->addElement('checkbox', 'auto_renew', ts('Membership renewed automatically'),
-          NULL, array('onclick' => "showHideByValue('auto_renew','','send-receipt','table-row','radio',true); showHideNotice( );")
-        );
-        if ($this->_action & CRM_Core_Action::UPDATE) {
-          $autoRenewElement->freeze();
-        }
-      }
-
-    }
-    $this->assign('recurProcessor', json_encode($recurProcessor));
-
-    if ($this->_mode || ($this->_action & CRM_Core_Action::UPDATE)) {
-      $this->addElement('checkbox',
-        'auto_renew',
-        ts('Membership renewed automatically'),
-        NULL,
-        array('onclick' => "buildReceiptANDNotice( );")
-      );
-
-      $this->assignPaymentRelatedVariables();
-    }
-    $this->assign('autoRenewOptions', json_encode($autoRenew));
-
     if ($this->_action & CRM_Core_Action::RENEW) {
       $this->addButtons(array(
           array(
@@ -275,29 +223,50 @@ WHERE   id IN ( ' . implode(' , ', array_keys($membershipType)) . ' )';
     }
   }
 
-  protected function setContextVariables($params) {
-    $variables = array(
-      'action' => '_action',
-      'context' => '_context',
-      'id' => '_id',
-      'cid' => '_contactID',
-      'mode' => '_mode',
+  /**
+   * Create a recurring contribution record.
+   *
+   * Recurring contribution parameters are set explicitly rather than merging paymentParams because it's hard
+   * to know the downstream impacts if we keep passing around the same array.
+   *
+   * @param $paymentParams
+   *
+   * @return array
+   * @throws \CiviCRM_API3_Exception
+   */
+  protected function processRecurringContribution($paymentParams) {
+    $membershipID = $paymentParams['membership_type_id'][1];
+    $contributionRecurParams = array(
+      'contact_id' => $paymentParams['contactID'],
+      'amount' => $paymentParams['total_amount'],
+      'payment_processor_id' => $paymentParams['payment_processor_id'],
+      'campaign_id' => CRM_Utils_Array::value('campaign_id', $paymentParams),
+      'financial_type_id' => $paymentParams['financial_type_id'],
+      'is_email_receipt' => CRM_Utils_Array::value('is_email_receipt', $paymentParams),
+      // This is not great as it could also be direct debit - but is consistent with elsewhere & all need fixing.
+      'payment_instrument_id' => 1,
+      'invoice_id' => CRM_Utils_Array::value('invoiceID ', $paymentParams),
     );
-    foreach ($variables as $paramKey => $classVar) {
-      if (isset($params[$paramKey]) && !isset($this->$classVar)) {
-        $this->$classVar = $params[$paramKey];
-      }
+
+    $mapping = array(
+      'frequency_interval' => 'duration_interval',
+      'frequency_unit' => 'duration_unit',
+    );
+    $membershipType = civicrm_api3('MembershipType', 'getsingle', array(
+      'id' => $membershipID,
+      'return' => $mapping,
+    ));
+
+    foreach ($mapping as $recurringFieldName => $membershipTypeFieldName) {
+      $contributionRecurParams[$recurringFieldName] = $membershipType[$membershipTypeFieldName];
     }
 
-    if ($this->_mode) {
-      $this->assignPaymentRelatedVariables();
-    }
-
-    if ($this->_id) {
-      $this->_memType = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership', $this->_id, 'membership_type_id');
-      $this->_membershipIDs[] = $this->_id;
-    }
-    $this->_fromEmails = CRM_Core_BAO_Email::getFromEmail();
+    $contributionRecur = civicrm_api3('ContributionRecur', 'create', $contributionRecurParams);
+    $returnParams = array(
+      'contributionRecurID' => $contributionRecur['id'],
+      'is_recur' => TRUE,
+    );
+    return $returnParams;
   }
 
 }

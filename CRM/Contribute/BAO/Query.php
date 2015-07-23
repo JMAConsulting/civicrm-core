@@ -43,7 +43,7 @@ class CRM_Contribute_BAO_Query {
   static $_contribOrSoftCredit = "only_contribs";
 
   /**
-   * Function get the import/export fields for contribution
+   * Function get the import/export fields for contribution.
    *
    * @return array
    *   self::$_contributionFields  associative array of contribution fields
@@ -64,9 +64,7 @@ class CRM_Contribute_BAO_Query {
   /**
    * If contributions are involved, add the specific contribute fields.
    *
-   * @param $query
-   *
-   * @return void
+   * @param CRM_Contact_BAO_Query $query
    */
   public static function select(&$query) {
     // if contribute mode add contribution id
@@ -213,11 +211,17 @@ class CRM_Contribute_BAO_Query {
       $query->_tables['civicrm_contribution_soft_contact'] = 1;
       $query->_tables['civicrm_contribution_soft_phone'] = 1;
     }
+    if (!empty($query->_returnProperties['contribution_campaign_title'])) {
+      $query->_select['contribution_campaign_title'] = "civicrm_campaign.title as contribution_campaign_title";
+      $query->_element['contribution_campaign_title'] = $query->_tables['civicrm_campaign'] = 1;
+    }
     // LCD 716 END
   }
 
   /**
-   * @param $query
+   * Get where clause.
+   *
+   * @param CRM_Contact_BAO_Query $query
    */
   public static function where(&$query) {
     $grouping = NULL;
@@ -250,8 +254,10 @@ class CRM_Contribute_BAO_Query {
   }
 
   /**
-   * @param $values
-   * @param $query
+   * Get where clause for a single value.
+   *
+   * @param array $values
+   * @param CRM_Contact_BAO_Query $query
    */
   public static function whereClauseSingle(&$values, &$query) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -325,11 +331,11 @@ class CRM_Contribute_BAO_Query {
       case 'contribution_status':
         $name .= '_id';
       case 'financial_type_id':
+      case 'invoice_id':
       case 'payment_instrument_id':
       case 'contribution_payment_instrument_id':
-        CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes);
-        $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("civicrm_contribution.$name", 'IN', array_keys($financialTypes), 'String');
       case 'contribution_page_id':
+      case 'contribution_status_id':
       case 'contribution_id':
       case 'contribution_currency_type':
       case 'contribution_currency':
@@ -341,6 +347,7 @@ class CRM_Contribute_BAO_Query {
       case (strpos($name, '_date') !== FALSE && $name != 'contribution_fulfilled_date'):
         $qillName = $name;
         $pseudoExtraParam = NULL;
+        // @todo including names using a switch statement & then using an 'if' to filter them out is ... odd!
         if ((strpos($name, '_amount') !== FALSE) || (strpos($name, '_date') !== FALSE) || in_array($name,
             array(
               'contribution_id',
@@ -516,8 +523,6 @@ class CRM_Contribute_BAO_Query {
       default:
         //all other elements are handle in this case
         $fldName = substr($name, 13);
-        CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes);
-        $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("civicrm_contribution.financial_type_id", 'IN', array_keys($financialTypes), 'String');
         if (!isset($fields[$fldName])) {
           // CRM-12597
           CRM_Core_Session::setStatus(ts(
@@ -551,9 +556,11 @@ class CRM_Contribute_BAO_Query {
   }
 
   /**
+   * Get from clause.
+   *
    * @param string $name
-   * @param $mode
-   * @param $side
+   * @param string $mode
+   * @param string $side
    *
    * @return NULL|string
    */
@@ -643,6 +650,13 @@ class CRM_Contribute_BAO_Query {
         $from .= " $side  JOIN civicrm_membership ON civicrm_membership_payment.membership_id = civicrm_membership.id ";
         break;
 
+      case 'civicrm_campaign':
+        //CRM-16764 - get survey clause from campaign bao
+        if (!CRM_Campaign_BAO_Query::$_applySurveyClause) {
+          $from = " $side  JOIN civicrm_campaign ON civicrm_campaign.id = civicrm_contribution.campaign_id";
+        }
+        break;
+
       case 'contribution_participant':
         $from = " $side  JOIN civicrm_participant_payment ON civicrm_participant_payment.contribution_id = civicrm_contribution.id";
         $from .= " $side  JOIN civicrm_participant ON civicrm_participant_payment.participant_id = civicrm_participant.id ";
@@ -690,7 +704,9 @@ class CRM_Contribute_BAO_Query {
   }
 
   /**
-   * @param $query
+   * Initialise the soft credit clause.
+   *
+   * @param CRM_Contact_BAO_Query $query
    */
   public static function initializeAnySoftCreditClause(&$query) {
     if (self::isSoftCreditOptionEnabled($query->_params)) {
@@ -703,6 +719,8 @@ class CRM_Contribute_BAO_Query {
   }
 
   /**
+   * Check if soft credits are enables.
+   *
    * @param array $queryParams
    *
    * @return bool
@@ -742,6 +760,8 @@ class CRM_Contribute_BAO_Query {
   }
 
   /**
+   * Get return properties for soft credits.
+   *
    * @param bool $isExportMode
    *
    * @return array
@@ -804,6 +824,7 @@ class CRM_Contribute_BAO_Query {
         'amount_level' => 1,
         'contribution_note' => 1,
         'contribution_batch' => 1,
+        'contribution_campaign_title' => 1,
         'contribution_campaign_id' => 1,
       );
       if (self::isSoftCreditOptionEnabled()) {
@@ -854,31 +875,27 @@ class CRM_Contribute_BAO_Query {
     );
 
     // CRM-13848
-    CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes, 'view');
     $form->addSelect('financial_type_id',
-      array('entity' => 'contribution', 'multiple' => 'multiple', 'context' => 'search', 'options' => $financialTypes)
+      array('entity' => 'contribution', 'multiple' => 'multiple', 'context' => 'search')
     );
 
     $form->add('select', 'contribution_page_id',
       ts('Contribution Page'),
+      array(
+        '' => ts('- any -'),
+      ) +
       CRM_Contribute_PseudoConstant::contributionPage(),
-      FALSE, array('class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('- any -'))
+      FALSE, array('class' => 'crm-select2')
     );
 
     $form->addSelect('payment_instrument_id',
       array('entity' => 'contribution', 'label' => ts('Payment Method'), 'option_url' => NULL, 'placeholder' => ts('- any -'))
     );
 
-    $form->add('select', 'contribution_pcp_made_through_id',
-      ts('Personal Campaign Page'),
-      array(
-        '' => ts('- any -'),
-      ) +
-      CRM_Contribute_PseudoConstant::pcPage(),
-      FALSE, array('class' => 'crm-select2')
-    );
-
-    $status = array();
+    // Fixme: Not a true entityRef field. Relies on PCP.js.tpl
+    $form->add('text', 'contribution_pcp_made_through_id', ts('Personal Campaign Page'), array('class' => 'twenty', 'id' => 'pcp_made_through_id', 'placeholder' => ts('- any -')));
+    // stores the label
+    $form->add('hidden', 'pcp_made_through');
 
     $statusValues = CRM_Core_PseudoConstant::get('CRM_Contribute_DAO_Contribution', 'contribution_status');
     // Remove status values that are only used for recurring contributions or pledges (In Progress, Overdue).
@@ -908,7 +925,7 @@ class CRM_Contribute_BAO_Query {
 
     // Add field for transaction ID search
     $form->addElement('text', 'contribution_trxn_id', ts("Transaction ID"));
-
+    $form->addElement('text', 'invoice_id', ts("Invoice ID"));
     $form->addElement('text', 'contribution_check_number', ts('Check Number'));
 
     // Add field for pcp display in roll search
@@ -968,14 +985,20 @@ class CRM_Contribute_BAO_Query {
   }
 
   /**
-   * @param $row
+   * Function that may not be needed.
+   *
+   * @param array $row
    * @param int $id
    */
   public static function searchAction(&$row, $id) {
   }
 
   /**
-   * @param $tables
+   * Get table names.
+   *
+   * @todo better function comment needed - what IS the point of this?
+   *
+   * @param array $tables
    */
   public static function tableNames(&$tables) {
     // Add contribution table
@@ -1019,6 +1042,8 @@ class CRM_Contribute_BAO_Query {
   }
 
   /**
+   * Get fields for recurring contributions.
+   *
    * @return array
    */
   public static function getRecurringFields() {

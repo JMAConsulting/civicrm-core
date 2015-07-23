@@ -271,11 +271,6 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
     $type, $name, $label = '',
     $attributes = '', $required = FALSE, $extra = NULL
   ) {
-    if ($type == 'wysiwyg') {
-      $attributes = ($attributes ? $attributes : array()) + array('class' => '');
-      $attributes['class'] .= ' crm-form-wysiwyg';
-      $type = "textarea";
-    }
     if ($type == 'select' && is_array($extra)) {
       // Normalize this property
       if (!empty($extra['multiple'])) {
@@ -488,7 +483,7 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
     }
 
     // call the form hook
-    // also call the hook function so any modules can set their own custom defaults
+    // also call the hook function so any modules can set thier own custom defaults
     // the user can do both the form and set default values with this hook
     CRM_Utils_Hook::buildForm(get_class($this), $this);
 
@@ -620,20 +615,11 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
    *
    * @param string $title
    *   The title of the form.
+   *
+   * @return void
    */
   public function setTitle($title) {
     $this->_title = $title;
-  }
-
-  /**
-   * Assign billing type id to bltID.
-   *
-   * @throws CRM_Core_Exception
-   */
-  public function assignBillingType() {
-    $this->_bltID = CRM_Core_BAO_Location::getBillingLocationId();
-    $this->set('bltID', $this->_bltID);
-    $this->assign('bltID', $this->_bltID);
   }
 
   /**
@@ -1046,42 +1032,6 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
   }
 
   /**
-   * Based on form action, return a string representing the api action.
-   * Used by addField method.
-   *
-   * Return string
-   */
-  private function getApiAction() {
-    $action = $this->getAction();
-    if ($action & (CRM_Core_Action::UPDATE + CRM_Core_Action::ADD)) {
-      return 'create';
-    }
-    if ($action & (CRM_Core_Action::BROWSE)) {
-      return 'get';
-    }
-    // If you get this exception try adding more cases above.
-    throw new Exception("Cannot determine api action for " . __CLASS__);
-  }
-
-  /**
-   * Classes extending CRM_Core_Form should implement this method.
-   * @throws Exception
-   */
-  public function getDefaultEntity() {
-    throw new Exception("Cannot determine default entity. The form class should implement getDefaultEntity().");
-  }
-
-  /**
-   * Classes extending CRM_Core_Form should implement this method.
-   *
-   * TODO: Merge with CRM_Core_DAO::buildOptionsContext($context) and add validation.
-   * @throws Exception
-   */
-  public function getDefaultContext() {
-    throw new Exception("Cannot determine default context. The form class should implement getDefaultContext().");
-  }
-
-  /**
    * Adds a select based on field metadata.
    * TODO: This could be even more generic and widget type (select in this case) could also be read from metadata
    * Perhaps a method like $form->bind($name) which would look up all metadata for named field
@@ -1101,7 +1051,7 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
    */
   public function addSelect($name, $props = array(), $required = FALSE) {
     if (!isset($props['entity'])) {
-      $props['entity'] = $this->getDefaultEntity();
+      $props['entity'] = CRM_Utils_Api::getEntityName($this);
     }
     if (!isset($props['field'])) {
       $props['field'] = strrpos($name, '[') ? rtrim(substr($name, 1 + strrpos($name, '[')), ']') : $name;
@@ -1151,204 +1101,6 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
   }
 
   /**
-   * Adds a field based on metadata.
-   *
-   * @param $name
-   *   Field name to go on the form.
-   * @param array $props
-   *   Mix of html attributes and special properties, namely.
-   *   - entity (api entity name, can usually be inferred automatically from the form class)
-   *   - name (field name - only needed if different from name used on the form)
-   *   - option_url - path to edit this option list - usually retrieved automatically - set to NULL to disable link
-   *   - placeholder - set to NULL to disable
-   *   - multiple - bool
-   *   - context - @see CRM_Core_DAO::buildOptionsContext
-   * @param bool $required
-   * @throws \CiviCRM_API3_Exception
-   * @throws \Exception
-   */
-  public function addField($name, $props = array(), $required = FALSE) {
-    // TODO: Handle custom field
-    if (strpos($name, 'custom_') === 0 && is_numeric($name[7])) {
-      throw new Exception("Custom fields are not supported by the addField method. ");
-    }
-    // Resolve context.
-    if (!isset($props['context'])) {
-      $props['context'] = $this->getDefaultContext();
-    }
-    // Resolve entity.
-    if (!isset($props['entity'])) {
-      $props['entity'] = $this->getDefaultEntity();
-    }
-    // Resolve field.
-    if (!isset($props['name'])) {
-      $props['name'] = strrpos($name, '[') ? rtrim(substr($name, 1 + strrpos($name, '[')), ']') : $name;
-    }
-    // Resolve action.
-    if (!isset($props['action'])) {
-      $props['action'] = $this->getApiAction();
-    }
-    // Get field metadata.
-    $fieldSpec = civicrm_api3($props['entity'], 'getfield', $props);
-    $fieldSpec = $fieldSpec['values'];
-    $label = CRM_Utils_Array::value('label', $props, isset($fieldSpec['title']) ? $fieldSpec['title'] : NULL);
-
-    $widget = isset($props['type']) ? $props['type'] : $fieldSpec['html']['type'];
-    if ($widget == 'TextArea' && $props['context'] == 'search') {
-      $widget = 'Text';
-    }
-
-    $isSelect = (in_array($widget, array(
-          'Select',
-          'Multi-Select',
-          'Select State/Province',
-          'Multi-Select State/Province',
-          'Select Country',
-          'Multi-Select Country',
-          'AdvMulti-Select',
-          'CheckBoxGroup',
-          'RadioGroup',
-          'Radio',
-    )));
-
-    if ($isSelect) {
-      // Fetch options from the api unless passed explicitly.
-      if (isset($props['options'])) {
-        $options = $props['options'];
-        // Else this get passed to the form->add method.
-        unset($props['options']);
-      }
-      else {
-        $options = isset($fieldSpec['options']) ? $fieldSpec['options'] : NULL;
-      }
-      //@TODO AdvMulti-Select is deprecated, drop support.
-      if ($props['context'] == 'search' || ($widget !== 'AdvMulti-Select' && strpos($widget, 'Select') !== FALSE)) {
-        $widget = 'Select';
-      }
-      // Set default options-url value.
-      if ((!isset($props['options-url']))) {
-        $props['options-url'] = TRUE;
-      }
-
-      // Add data for popup link.
-      if ((isset($props['options-url']) && $props['options-url']) && ($props['context'] != 'search' && $widget == 'Select' && CRM_Core_Permission::check('administer CiviCRM'))) {
-        $props['data-option-edit-path'] = array_key_exists('option_url', $props) ? $props['option_url'] : $props['data-option-edit-path'] = CRM_Core_PseudoConstant::getOptionEditUrl($fieldSpec);
-        $props['data-api-entity'] = $props['entity'];
-        $props['data-api-field'] = $props['name'];
-        if (isset($props['options-url'])) {
-          unset($props['options-url']);
-        }
-      }
-    }
-    //Use select2 library for following widgets.
-    $isSelect2 = (in_array($widget, array(
-          'Select',
-          'Multi-Select',
-          'Select State/Province',
-          'Multi-Select State/Province',
-          'Select Country',
-          'Multi-Select Country',
-    )));
-    if ($isSelect2) {
-      $props['class'] = (isset($props['class']) ? $props['class'] . ' ' : '') . "crm-select2";
-      if ($props['context'] == 'search' || strpos($widget, 'Multi') !== FALSE) {
-        $props['class'] .= ' huge';
-        $props['multiple'] = 'multiple';
-      }
-      // The placeholder is only used for select-elements.
-      if (!array_key_exists('placeholder', $props)) {
-        $props['placeholder'] = $required ? ts('- select -') : $props['context'] == 'search' ? ts('- any -') : ts('- none -');
-      }
-    }
-    $props += CRM_Utils_Array::value('html', $fieldSpec, array());
-    CRM_Utils_Array::remove($props, 'entity', 'name', 'context', 'label', 'action', 'type');
-    // TODO: refactor switch statement, to separate methods.
-    switch ($widget) {
-      case 'Text':
-      case 'Link':
-        //TODO: Autodetect ranges
-        $props['size'] = isset($props['size']) ? $props['size'] : 60;
-        $this->add('text', $name, $label, $props, $required);
-        break;
-
-      case 'hidden':
-        $this->add('hidden', $name, NULL, $props, $required);
-        break;
-
-      case 'TextArea':
-        //Set default columns and rows for textarea.
-        $props['rows'] = isset($props['rows']) ? $props['rows'] : 4;
-        $props['cols'] = isset($props['cols']) ? $props['cols'] : 60;
-        $this->addElement('textarea', $name, $label, $props, $required);
-        break;
-
-      case 'Select Date':
-        //TODO: add range support
-        //TODO: Add date formats
-        //TODO: Add javascript template for dates.
-        $this->addDate($name, $label, $required, $props);
-        break;
-
-      case 'Radio':
-        $separator = isset($props['separator']) ? $props['separator'] : NULL;
-        unset($props['separator']);
-        if (!isset($props['allowClear'])) {
-          $props['allowClear'] = !$required;
-        }
-        $this->addRadio($name, $label, $options, $props, $separator, $required);
-        break;
-
-      case 'Select':
-        if (empty($props['multiple'])) {
-          $options = array('' => $props['placeholder']) + $options;
-        }
-        $this->add('select', $name, $label, $options, $required, $props);
-        // TODO: Add and/or option for fields that store multiple values
-        break;
-
-      case 'CheckBoxGroup':
-        $this->addCheckBox($name, $label, array_flip($options), $required, $props);
-        break;
-
-      case 'RadioGroup':
-        $this->addRadio($name, $label, $options, $props, NULL, $required);
-        break;
-
-      //case 'AdvMulti-Select':
-      case 'CheckBox':
-        $text = isset($props['text']) ? $props['text'] : NULL;
-        unset($props['text']);
-        $this->addElement('checkbox', $name, $label, $text, $props);
-        break;
-
-      case 'File':
-        // We should not build upload file in search mode.
-        if (isset($props['context']) && $props['context'] == 'search') {
-          return;
-        }
-        $this->add('file', $name, $label, $props, $required);
-        $this->addUploadElement($name);
-        break;
-
-      //case 'RichTextEditor':
-      //TODO: Add javascript template for wysiwyg.
-      case 'Autocomplete-Select':
-      case 'EntityRef':
-        $this->addEntityRef($name, $label, $props, $required);
-        break;
-
-      // Check datatypes of fields
-      // case 'Int':
-      //case 'Float':
-      //case 'Money':
-      //case 'Link':
-      //case read only fields
-      default:
-        throw new Exception("Unsupported html-element " . $widget);
-    }
-  }
-
-  /**
    * Add a widget for selecting/editing/creating/copying a profile form
    *
    * @param string $name
@@ -1376,6 +1128,50 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
       //CRM-15427
       'data-default' => $default,
     ));
+  }
+
+  /**
+   * @param string $name
+   * @param $label
+   * @param $attributes
+   * @param bool $forceTextarea
+   */
+  public function addWysiwyg($name, $label, $attributes, $forceTextarea = FALSE) {
+    // 1. Get configuration option for editor (tinymce, ckeditor, pure textarea)
+    // 2. Based on the option, initialise proper editor
+    $editorID = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
+      'editor_id'
+    );
+    $editor = strtolower(CRM_Utils_Array::value($editorID,
+      CRM_Core_OptionGroup::values('wysiwyg_editor')
+    ));
+    if (!$editor || $forceTextarea) {
+      $editor = 'textarea';
+    }
+    if ($editor == 'joomla default editor') {
+      $editor = 'joomlaeditor';
+    }
+
+    if ($editor == 'drupal default editor') {
+      $editor = 'drupalwysiwyg';
+    }
+
+    //lets add the editor as a attribute
+    $attributes['editor'] = $editor;
+
+    $this->addElement($editor, $name, $label, $attributes);
+    $this->assign('editor', $editor);
+
+    // include wysiwyg editor js files
+    // FIXME: This code does not make any sense
+    $includeWysiwygEditor = FALSE;
+    $includeWysiwygEditor = $this->get('includeWysiwygEditor');
+    if (!$includeWysiwygEditor) {
+      $includeWysiwygEditor = TRUE;
+      $this->set('includeWysiwygEditor', $includeWysiwygEditor);
+    }
+
+    $this->assign('includeWysiwygEditor', $includeWysiwygEditor);
   }
 
   /**
@@ -1807,7 +1603,7 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
 
     $userID = $this->getLoggedInUserContactID();
 
-    if ($tempID == $userID) {
+    if (!is_null($tempID) && $tempID === $userID) {
       return (int) $userID;
     }
 
@@ -1825,7 +1621,7 @@ class CRM_Core_Form extends HTML_QuickForm_Page {
       return $tempID;
     }
 
-    return $userID;
+    return is_numeric($userID) ? $userID : NULL;
   }
 
   /**

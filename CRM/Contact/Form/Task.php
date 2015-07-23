@@ -201,7 +201,7 @@ class CRM_Contact_Form_Task extends CRM_Core_Form {
       // need to perform action on only selected contacts
       $insertString = array();
 
-      // refire sql in case of custom search
+      // refire sql in case of custom seach
       if ($form->_action == CRM_Core_Action::COPY) {
         // selected contacts only
         // need to perform action on only selected contacts
@@ -374,6 +374,7 @@ class CRM_Contact_Form_Task extends CRM_Core_Form {
         array(
           'type' => $backType,
           'name' => ts('Cancel'),
+          'icon' => 'close',
         ),
       )
     );

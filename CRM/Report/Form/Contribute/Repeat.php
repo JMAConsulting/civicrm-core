@@ -220,7 +220,7 @@ class CRM_Report_Form_Contribute_Repeat extends CRM_Report_Form {
           'financial_type_id' => array(
             'title' => ts('Financial Type'),
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes(),
+            'options' => CRM_Contribute_PseudoConstant::financialType(),
           ),
           'contribution_status_id' => array(
             'title' => ts('Contribution Status'),
@@ -358,23 +358,7 @@ LEFT JOIN civicrm_temp_civireport_repeat1 {$this->_aliases['civicrm_contribution
 LEFT JOIN civicrm_temp_civireport_repeat2 {$this->_aliases['civicrm_contribution']}2
        ON $fromAlias.$fromCol = {$this->_aliases['civicrm_contribution']}2.$contriCol";
   }
-  
-  /**
-   * @param string $replaceAliasWith
-   *
-   * @return mixed|string
-   */
-  public function fromContribution($replaceAliasWith = 'contribution1') {
-    $from = " FROM civicrm_contribution {$replaceAliasWith} ";
-    $temp = $this->_aliases['civicrm_contribution'];
-    $this->_aliases['civicrm_contribution'] = $replaceAliasWith;
-    $this->_from = $from;
-    $from .= (string) $this->getPermissionedFTQuery($this, 'civicrm_line_item_report', TRUE);
-    $this->_aliases['civicrm_contribution'] = $temp;    
-    $this->_where = '';
-    return $from;
-  }
-  
+
   /**
    * @param string $replaceAliasWith
    *
@@ -820,23 +804,21 @@ GROUP BY    currency
     }
 
     $subWhere = $this->whereContribution();
-    $from = $this->fromContribution();
     $subContributionQuery1 = "
 SELECT {$subSelect1} contribution1.{$contriCol},
        sum( contribution1.total_amount ) AS total_amount_sum,
        count( * ) AS total_amount_count
-{$from}
+FROM   civicrm_contribution contribution1
 {$subWhere}
 GROUP BY contribution1.{$contriCol}";
 
     $subWhere = $this->whereContribution('contribution2');
-    $from = $this->fromContribution('contribution2');
     $subContributionQuery2 = "
 SELECT {$subSelect2} contribution2.{$contriCol},
        sum( contribution2.total_amount ) AS total_amount_sum,
        count( * ) AS total_amount_count,
        currency
-{$from}
+FROM   civicrm_contribution contribution2
 {$subWhere}
 GROUP BY contribution2.{$contriCol}";
 

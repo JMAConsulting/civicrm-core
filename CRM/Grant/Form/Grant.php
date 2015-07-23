@@ -56,13 +56,6 @@ class CRM_Grant_Form_Grant extends CRM_Core_Form {
   protected $_context;
 
   /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Grant';
-  }
-
-  /**
    * Set variables up before form is built.
    *
    * @return void
@@ -302,6 +295,7 @@ class CRM_Grant_Form_Grant extends CRM_Core_Form {
       CRM_Core_BAO_CustomField::getFields('Grant', FALSE, FALSE, NULL, NULL, TRUE)
     );
     $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
+      $customFields,
       $this->_id,
       'Grant'
     );

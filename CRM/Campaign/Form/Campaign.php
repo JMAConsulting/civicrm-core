@@ -67,13 +67,6 @@ class CRM_Campaign_Form_Campaign extends CRM_Core_Form {
    */
   protected $_campaignId;
 
-  /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Campaign';
-  }
-
   public function preProcess() {
     if (!CRM_Campaign_BAO_Campaign::accessCampaign()) {
       CRM_Utils_System::permissionDenied();
@@ -264,7 +257,7 @@ class CRM_Campaign_Form_Campaign extends CRM_Core_Form {
       )
     );
 
-    $this->add('wysiwyg', 'goal_general', ts('Campaign Goals'), array('rows' => 2, 'cols' => 40));
+    $this->addWysiwyg('goal_general', ts('Campaign Goals'), array('rows' => 2, 'cols' => 40));
     $this->add('text', 'goal_revenue', ts('Revenue Goal'), array('size' => 8, 'maxlength' => 12));
     $this->addRule('goal_revenue', ts('Please enter a valid money value (e.g. %1).',
       array(1 => CRM_Utils_Money::format('99.99', ' '))
@@ -365,6 +358,7 @@ class CRM_Campaign_Form_Campaign extends CRM_Core_Form {
       CRM_Utils_Array::value('campaign_type_id', $params)
     );
     $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
+      $customFields,
       $this->_campaignId,
       'Campaign'
     );

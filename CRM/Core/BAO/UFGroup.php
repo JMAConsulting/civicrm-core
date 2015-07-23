@@ -290,7 +290,8 @@ class CRM_Core_BAO_UFGroup extends CRM_Core_DAO_UFGroup {
     $ctype = NULL,
     $permissionType = CRM_Core_Permission::CREATE,
     $orderBy = 'field_name',
-    $orderProfiles = NULL
+    $orderProfiles = NULL,
+    $eventProfile = FALSE
   ) {
     if (!is_array($id)) {
       $id = CRM_Utils_Type::escape($id, 'Positive');
@@ -316,6 +317,16 @@ class CRM_Core_BAO_UFGroup extends CRM_Core_DAO_UFGroup {
 
     if (!$showAll) {
       $query .= " AND g.is_active = 1";
+    }
+
+    $checkPermission = array(
+      array(
+        'administer CiviCRM',
+        'manage event profiles',
+      ),
+    );
+    if ($eventProfile && CRM_Core_Permission::check($checkPermission)) {
+      $skipPermission = TRUE;
     }
 
     // add permissioning for profiles only if not registration
@@ -1835,14 +1846,13 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
     $selectAttributes = array('class' => 'crm-select2', 'placeholder' => TRUE);
 
     if ($fieldName == 'image_URL' && $mode == CRM_Profile_Form::MODE_EDIT) {
-      $deleteExtra = ts('Are you sure you want to delete contact image.');
+      $deleteExtra = json_encode(ts('Are you sure you want to delete contact image.'));
       $deleteURL = array(
         CRM_Core_Action::DELETE => array(
           'name' => ts('Delete Contact Image'),
           'url' => 'civicrm/contact/image',
           'qs' => 'reset=1&id=%%id%%&gid=%%gid%%&action=delete',
-          'extra' =>
-          'onclick = "if (confirm( \'' . $deleteExtra . '\' ) ) this.href+=\'&amp;confirmed=1\'; else return false;"',
+          'extra' => 'onclick = "' . htmlspecialchars("if (confirm($deleteExtra)) this.href+='&confirmed=1'; else return false;") . '"',
         ),
       );
       $deleteURL = CRM_Core_Action::formLink($deleteURL,
@@ -2012,8 +2022,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
         $subtypeList = $subtypes;
       }
 
-      $sel = $form->add('select', $name, $title, $subtypeList, $required);
-      $sel->setMultiple(TRUE);
+      $form->add('select', $name, $title, $subtypeList, $required, array('class' => 'crm-select2', 'multiple' => TRUE));
     }
     elseif (in_array($fieldName, CRM_Contact_BAO_Contact::$_greetingTypes)) {
       //add email greeting, postal greeting, addressee, CRM-4575
@@ -2089,8 +2098,16 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
       );
     }
     elseif (substr($fieldName, 0, 4) === 'url-') {
-      $form->add('text', $name, $title, CRM_Core_DAO::getAttribute('CRM_Core_DAO_Website', 'url'), $required);
-      $form->addRule($name, ts('Enter a valid web address beginning with \'http://\' or \'https://\'.'), 'url');
+      $form->add('text', $name, $title,
+        array_merge(CRM_Core_DAO::getAttribute('CRM_Core_DAO_Website', 'url'),
+          array(
+            'onfocus' => "if (!this.value) {  this.value='http://';} else return false",
+            'onblur' => "if ( this.value == 'http://') {  this.value='';} else return false",
+          )
+        ), $required
+      );
+
+      $form->addRule($name, ts('Enter a valid Website.'), 'url');
     }
     // Note should be rendered as textarea
     elseif (substr($fieldName, -4) == 'note') {
@@ -2232,7 +2249,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
       $form->add('select', $name, $title, CRM_Core_PseudoConstant::worldRegion(), $required, $selectAttributes);
     }
     elseif ($fieldName == 'signature_html') {
-      $form->add('wysiwyg', $name, $title, CRM_Core_DAO::getAttribute('CRM_Core_DAO_Email', $fieldName));
+      $form->addWysiwyg($name, $title, CRM_Core_DAO::getAttribute('CRM_Core_DAO_Email', $fieldName));
     }
     elseif ($fieldName == 'signature_text') {
       $form->add('textarea', $name, $title, CRM_Core_DAO::getAttribute('CRM_Core_DAO_Email', $fieldName));
@@ -2250,7 +2267,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
       }
     }
     elseif ($fieldName == 'activity_details') {
-      $form->add('wysiwyg', $fieldName, $title, array('rows' => 4, 'cols' => 60), $required);
+      $form->addWysiwyg($fieldName, $title, array('rows' => 4, 'cols' => 60), $required);
     }
     elseif ($fieldName == 'activity_duration') {
       $form->add('text', $name, $title, $attributes, $required);
@@ -2869,7 +2886,7 @@ AND    ( entity_id IS NULL OR entity_id <= 0 )
    * @param int $contactId
    *
    * @return array
-   *   associated formatted array
+   *   assoicated formatted array
    */
   public static function formatFields($params, $contactId = NULL) {
     if ($contactId) {

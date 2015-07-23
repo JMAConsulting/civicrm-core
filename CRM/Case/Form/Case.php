@@ -376,6 +376,7 @@ class CRM_Case_Form_Case extends CRM_Core_Form {
       $customFields = array();
       $params['custom'] = CRM_Core_BAO_CustomField::postProcess(
         $params,
+        $customFields,
         NULL,
         'Case'
       );
@@ -422,6 +423,7 @@ class CRM_Case_Form_Case extends CRM_Core_Form {
         )
       );
       $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
+        $customFields,
         $this->_activityId,
         'Activity'
       );
@@ -432,7 +434,7 @@ class CRM_Case_Form_Case extends CRM_Core_Form {
       $className::endPostProcess($this, $params);
     }
 
-    // 5. auto populate activities
+    // 5. auto populate activites
 
     // 6. set status
     CRM_Core_Session::setStatus($params['statusMsg'], ts('Saved'), 'success');

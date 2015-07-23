@@ -38,16 +38,6 @@ class CRM_Financial_BAO_FinancialType extends CRM_Financial_DAO_FinancialType {
    * Static holder for the default LT.
    */
   static $_defaultContributionType = NULL;
-  
-  /**
-   * Static cache holder of available financial types for this session
-   */
-  static $_availableFinancialTypes = array();
-  
-  /**
-   * Static cache holder of status of ACL-FT enabled/disabled for this session
-   */
-  static $_statusACLFt = array();
 
   /**
    * Class constructor.
@@ -85,7 +75,7 @@ class CRM_Financial_BAO_FinancialType extends CRM_Financial_DAO_FinancialType {
    *   Value we want to set the is_active field.
    *
    * @return Object
-   *   DAO object on success, null otherwise
+   *   DAO object on sucess, null otherwise
    */
   public static function setIsActive($id, $is_active) {
     return CRM_Core_DAO::setFieldValue('CRM_Financial_DAO_FinancialType', $id, 'is_active', $is_active);
@@ -113,15 +103,6 @@ class CRM_Financial_BAO_FinancialType extends CRM_Financial_DAO_FinancialType {
     $financialType->copyValues($params);
     if (!empty($ids['financialType'])) {
       $financialType->id = CRM_Utils_Array::value('financialType', $ids);
-      if (self::isACLFinancialTypeStatus()) {
-        $prevName = CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_FinancialType', $financialType->id, 'name');
-        if ($prevName != $params['name']) {
-          CRM_Core_Session::setStatus(ts("Changing the name of a Financial Type will result in losing the current permissions associated with that Financial Type.
-            Before making this change you should likely note the existing permissions at Administer > Users and Permissions > Permissions (Access Control),
-            then clicking the Access Control link for your Content Management System, then noting down the permissions for 'CiviCRM: {financial type name} view', etc.
-            Then after making the change of name, reset the permissions to the way they were."), ts('Warning'), 'warning');
-        }
-      }
     }
     $financialType->save();
     // CRM-12470
@@ -152,9 +133,9 @@ class CRM_Financial_BAO_FinancialType extends CRM_Financial_DAO_FinancialType {
     $occurrences = $financialType->findReferences();
     if ($occurrences) {
       $tables = array();
-      foreach ($occurrences as $occurrence) {
-        $className = get_class($occurrence);
-        if (!in_array($className, $tables) && !in_array($className, $ignoreTables)) {
+      foreach ($occurrences as $occurence) {
+        $className = get_class($occurence);
+        if (!in_array($className, $ignoreTables)) {
           $tables[] = $className;
         }
       }
@@ -200,159 +181,11 @@ class CRM_Financial_BAO_FinancialType extends CRM_Financial_DAO_FinancialType {
     );
 
     foreach ($financialType as $key => $financialTypeName) {
-      if (!in_array($key, $revenueFinancialType)
-        || (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()
-          && !CRM_Core_Permission::check('add contributions of type ' . $financialTypeName))
-      ) {
+      if (!in_array($key, $revenueFinancialType)) {
         unset($financialType[$key]);
       }
     }
     return $financialType;
-  }
-
-  /**
-   * adding permissions for financial types
-   *
-   *
-   * @param array $permissions
-   *   an array of permissions
-   */
-  public static function permissionedFinancialTypes(&$permissions) {
-    if (!self::isACLFinancialTypeStatus()) {
-      return FALSE;
-    }
-    $financialTypes = CRM_Contribute_PseudoConstant::financialType();
-    $prefix = ts('CiviCRM') . ': ';
-    foreach ($financialTypes as $id => $type) {
-      $permissions['add contributions of type ' . $type] = array(
-        $prefix . ts('add contributions of type ') . $type,
-        ts('Add contributions of type ') . $type,
-      );
-      $permissions['view contributions of type ' . $type] = array(
-        $prefix . ts('view contributions of type ') . $type,
-        ts('View contributions of type ') . $type,
-      );
-      $permissions['edit contributions of type ' . $type] = array(
-        $prefix . ts('edit contributions of type ') . $type,
-        ts('Edit contributions of type ') . $type,
-      );
-      $permissions['delete contributions of type ' . $type] = array(
-        $prefix . ts('delete contributions of type ') . $type,
-        ts('Delete contributions of type ') . $type,
-      );
-    }
-    $permissions['administer CiviCRM Financial Types'] = array(
-      $prefix . ts('administer CiviCRM Financial Types'),
-      ts('Administer access to Financial Types'),
-    );
-  }
-
-  public static function getAvailableFinancialTypes(&$financialTypes = NULL, $action = 'view', $resetCache = FALSE) {
-    if (empty($financialTypes)) {
-      $financialTypes = CRM_Contribute_PseudoConstant::financialType();
-    }
-    if (!self::isACLFinancialTypeStatus()) {
-      return $financialTypes;
-    } 
-    // check cached value
-    if (CRM_Utils_Array::value($action, self::$_availableFinancialTypes) && !$resetCache) {
-      $financialTypes = self::$_availableFinancialTypes[$action];
-      return self::$_availableFinancialTypes[$action];
-    }
-    foreach ($financialTypes as $finTypeId => $type) {
-      if (!CRM_Core_Permission::check($action . ' contributions of type ' . $type)) {
-        unset($financialTypes[$finTypeId]);
-      }
-    }
-    self::$_availableFinancialTypes[$action] = $financialTypes;
-    return $financialTypes;
-  }
-  
-  public static function getAvailableMembershipTypes(&$membershipTypes = NULL, $action = 'view') {
-    if (empty($membershipTypes)) {
-      $membershipTypes = CRM_Member_PseudoConstant::membershipType();
-    }
-    if (!self::isACLFinancialTypeStatus()) {
-      return $membershipTypes;
-    }
-    foreach ($membershipTypes as $memTypeId => $type) {
-      $finTypeId = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_MembershipType', $memTypeId, 'financial_type_id');
-      $finType = CRM_Contribute_PseudoConstant::financialType($finTypeId);
-      if (!CRM_Core_Permission::check($action . ' contributions of type ' . $finType)) {
-        unset($membershipTypes[$memTypeId]);
-      }
-    }
-    return $membershipTypes;
-  }
-
-  public static function buildPermissionedClause(&$whereClauses, $component = NULL, $alias = NULL) {
-    if (!self::isACLFinancialTypeStatus()) {
-      return FALSE;
-    }
-    if (is_array($whereClauses)) {
-      self::getAvailableFinancialTypes($types);
-      if (empty($types)) {
-        $whereClauses[] = ' ' . $alias . '.financial_type_id IN (0)';
-      }
-      else {
-        $whereClauses[] = ' ' . $alias . '.financial_type_id IN (' . implode(',', array_keys($types)) . ')';
-      }
-    }
-    else {
-      if ($component == 'contribution') {
-        self::getAvailableFinancialTypes($types);
-        $column = "financial_type_id";
-      }
-      if ($component == 'membership') {
-        self::getAvailableMembershipTypes($types, 'view');
-        $column = "membership_type_id";
-      }
-      if (empty($types)) {
-        $whereClauses .= " AND civicrm_{$component}.{$column} IN (0)";
-        return;
-      }
-      $whereClauses .= " AND civicrm_{$component}.{$column} IN (" . implode(',', array_keys($types)) . ")";
-    }
-  }
-
-  public static function checkPermissionedLineItems($id, $op, $force = TRUE) {
-    if (!self::isACLFinancialTypeStatus()) {
-      return TRUE;
-    }
-    $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($id);
-    $flag = FALSE;
-    foreach ($lineItems as $items) {
-      if (!CRM_Core_Permission::check($op . ' contributions of type ' . CRM_Contribute_PseudoConstant::financialType($items['financial_type_id']))) {
-        if ($force) {
-          CRM_Core_Error::fatal(ts('You do not have permission to access this page.'));
-          break;
-        }
-        $flag = FALSE;
-        break;
-      }
-      else {
-        $flag = TRUE;
-      }
-    }
-    return $flag;
-  }
-  /**
-   * Check if FT-ACL is turned on or off
-   *
-   * @return bool
-   */
-  public static function isACLFinancialTypeStatus() {
-    if (array_key_exists('acl_financial_type', self::$_statusACLFt)) {
-      return self::$_statusACLFt['acl_financial_type'];
-    }
-    $contributeSettings = CRM_Core_BAO_Setting::getItem(
-      CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME, 'contribution_invoice_settings'
-    );
-    self::$_statusACLFt['acl_financial_type'] = FALSE;
-    if (CRM_Utils_Array::value('acl_financial_type', $contributeSettings)) {
-      self::$_statusACLFt['acl_financial_type'] = TRUE;
-    }
-    return self::$_statusACLFt['acl_financial_type'];
   }
 
 }

@@ -102,6 +102,9 @@ AND    {$this->_componentClause}";
 
   /**
    * Build the form object.
+   *
+   *
+   * @return void
    */
   public function buildQuickForm() {
 

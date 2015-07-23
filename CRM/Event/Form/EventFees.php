@@ -61,7 +61,8 @@ class CRM_Event_Form_EventFees {
     if ($form->_eventId &&
       ($currency = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Event', $form->_eventId, 'currency'))
     ) {
-      CRM_Core_Config::singleton()->defaultCurrency = $currency;
+      $config = CRM_Core_Config::singleton();
+      $config->defaultCurrency = $currency;
     }
   }
 
@@ -117,7 +118,7 @@ class CRM_Event_Form_EventFees {
         $defaults[$form->_pId]['receipt_text'] = $details[$form->_eventId]['confirm_email_text'];
       }
 
-      list($defaults[$form->_pId]['receive_date'], $defaults[$form->_pId]['receive_date_time']) = CRM_Utils_Date::setDateDefaults();
+      list($defaults[$form->_pId]['receive_date']) = CRM_Utils_Date::setDateDefaults();
     }
 
     //CRM-11601 we should keep the record contribution
@@ -410,34 +411,20 @@ SELECT  id, html_type
           $element->freeze();
         }
       }
-      if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()
-        && !CRM_Utils_Array::value('fee',  $form->_values) 
-        && CRM_Utils_Array::value('snippet',  $_REQUEST) == CRM_Core_Smarty::PRINT_NOFORM
-      ) {
-        $form->assign('isFTPermissionDenied', TRUE);
-        return FALSE;
-      }
       if ($form->_mode) {
-        CRM_Core_Payment_Form::buildPaymentForm($form, $form->_paymentProcessor, FALSE);
+        CRM_Core_Payment_Form::buildPaymentForm($form, $form->_paymentProcessor, FALSE, TRUE);
       }
       elseif (!$form->_mode) {
         $form->addElement('checkbox', 'record_contribution', ts('Record Payment?'), NULL,
           array('onclick' => "return showHideByValue('record_contribution','','payment_information','table-row','radio',false);")
         );
-        // Check permissions for financial type first
-        if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()) {
-          CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($financialTypes, 'add');
-        }
-        else {
-          $financialTypes = CRM_Contribute_PseudoConstant::financialType();
-        }
 
         $form->add('select', 'financial_type_id',
           ts('Financial Type'),
-          array('' => ts('- select -')) + $financialTypes
+          array('' => ts('- select -')) + CRM_Contribute_PseudoConstant::financialType()
         );
 
-        $form->addDateTime('receive_date', ts('Received'), FALSE, array('formatType' => 'activityDateTime'));
+        $form->addDate('receive_date', ts('Received'), FALSE, array('formatType' => 'activityDate'));
 
         $form->add('select', 'payment_instrument_id',
           ts('Paid By'),

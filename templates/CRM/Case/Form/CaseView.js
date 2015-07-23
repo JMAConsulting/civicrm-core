@@ -2,7 +2,11 @@
 (function($, CRM) {
 
   function refresh(table) {
-    $('#crm-main-content-wrapper').crmSnippet('refresh');
+    if (table) {
+      $(table).dataTable().fnDraw();
+    } else {
+      $('#crm-main-content-wrapper').crmSnippet('refresh');
+    }
   }
 
   function open(url, options, table) {
@@ -204,7 +208,7 @@
               if (!$(this).val()) {
                 $(this).crmError(ts('Please select a value'));
               }
-            });
+            })
           }
           return submission;
         }
@@ -214,7 +218,7 @@
           resizable: true,
           options: {yes: ts('Save'), no: ts('Cancel')},
           open: function() {
-            if (miniForms[target].pre) miniForms[target].pre.call(this, $el.data());
+            miniForms[target].pre && miniForms[target].pre.call(this, $el.data());
           }
         })
           .on('dialogclose', function() {
@@ -244,4 +248,4 @@
         }
       });
   });
-}(cj, CRM));
+}(cj, CRM))

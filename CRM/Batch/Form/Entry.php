@@ -323,8 +323,10 @@ class CRM_Batch_Form_Entry extends CRM_Core_Form {
     }
     if ($self->_batchInfo['type_id'] == $batchTypes['Pledge Payment']) {
       foreach (array_unique($params["open_pledges"]) as $value) {
-        $duplicateRows = array_keys($params["open_pledges"], $value);
-        if (count($duplicateRows) > 1) {
+        if (!empty($value)) {
+          $duplicateRows = array_keys($params["open_pledges"], $value);
+        }
+        if (!empty($duplicateRows) && count($duplicateRows) > 1) {
           foreach ($duplicateRows as $key) {
             $errors["open_pledges[$key]"] = ts('You can not record two payments for the same pledge in a single batch.');
           }
@@ -480,6 +482,7 @@ class CRM_Batch_Form_Entry extends CRM_Core_Form {
         }
 
         $value['custom'] = CRM_Core_BAO_CustomField::postProcess($value,
+          CRM_Core_DAO::$_nullObject,
           NULL,
           'Contribution'
         );
@@ -690,6 +693,7 @@ class CRM_Batch_Form_Entry extends CRM_Core_Form {
 
         //check for custom data
         $value['custom'] = CRM_Core_BAO_CustomField::postProcess($params['field'][$key],
+          $customFields,
           $key,
           'Membership',
           $membershipTypeId
@@ -790,14 +794,8 @@ class CRM_Batch_Form_Entry extends CRM_Core_Form {
           $membership = CRM_Member_BAO_Membership::renewMembershipFormWrapper(
             $value['contact_id'],
             $value['membership_type_id'],
-            FALSE,
-            $this,
-            NULL,
-            NULL,
-            $value['custom'],
-            1,
-            NULL,
-            FALSE
+            FALSE, $this, NULL, NULL,
+            $value['custom']
           );
 
           // make contribution entry

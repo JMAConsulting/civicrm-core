@@ -632,7 +632,7 @@ class CRM_Contact_BAO_Group extends CRM_Contact_DAO_Group {
 
   /**
    * This function create the hidden smart group when user perform
-   * contact search and want to send mailing to search contacts.
+   * contact seach and want to send mailing to search contacts.
    *
    * @param array $params
    *   ( reference ) an assoc array of name/value pairs.
@@ -861,6 +861,9 @@ class CRM_Contact_BAO_Group extends CRM_Contact_DAO_Group {
           'count' => '0',
         );
         CRM_Core_DAO::storeValues($object, $values[$object->id]);
+        // Wrap with crm-editable. Not an ideal solution.
+        $values[$object->id]['title'] = '<span class="crm-editable crmf-title">' . $values[$object->id]['title'] . '</span>';
+
         if ($object->saved_search_id) {
           $values[$object->id]['title'] .= ' (' . ts('Smart Group') . ')';
           // check if custom search, if so fix view link
@@ -1003,10 +1006,10 @@ class CRM_Contact_BAO_Group extends CRM_Contact_DAO_Group {
     // need to return id, title (w/ spacer), description, visibility
 
     // We need to build a list of tags ordered by hierarchy and sorted by
-    // name. The hierarchy will be communicated by an accumulation of
+    // name. The heirarchy will be communicated by an accumulation of
     // separators in front of the name to give it a visual offset.
     // Instead of recursively making mysql queries, we'll make one big
-    // query and build the hierarchy with the algorithm below.
+    // query and build the heirarchy with the algorithm below.
     $groups = array();
     $args = array(1 => array($groupIdString, 'String'));
     $query = "

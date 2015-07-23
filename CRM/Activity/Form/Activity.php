@@ -123,13 +123,6 @@ class CRM_Activity_Form_Activity extends CRM_Contact_Form_Task {
   protected $unsavedWarn = TRUE;
 
   /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Activity';
-  }
-
-  /**
    * The _fields var can be used by sub class to set/unset/edit the
    * form fields based on their requirement
    */
@@ -157,7 +150,8 @@ class CRM_Activity_Form_Activity extends CRM_Contact_Form_Task {
       'details' => array(
         'type' => 'wysiwyg',
         'label' => ts('Details'),
-        'attributes' => array('class' => 'huge'),
+        // forces a smaller edit window
+        'attributes' => array('rows' => 4, 'cols' => 60),
         'required' => FALSE,
       ),
       'status_id' => array(
@@ -580,7 +574,7 @@ class CRM_Activity_Form_Activity extends CRM_Contact_Form_Task {
       $defaults['target_contact_id'] = $this->_contactIds;
     }
 
-    // CRM-15472 - 50 is around the practical limit of how many items a select2 entityRef can handle
+    // CRM-15472 - 50 is around the practial limit of how many items a select2 entityRef can handle
     if (!empty($defaults['target_contact_id'])) {
       $count = count(is_array($defaults['target_contact_id']) ? $defaults['target_contact_id'] : explode(',', $defaults['target_contact_id']));
       if ($count > 50) {
@@ -663,7 +657,10 @@ class CRM_Activity_Form_Activity extends CRM_Contact_Form_Task {
         $attribute = CRM_Utils_Array::value('attributes', $values);
         $required = !empty($values['required']);
 
-        if ($values['type'] == 'select' && empty($attribute)) {
+        if ($values['type'] == 'wysiwyg') {
+          $this->addWysiwyg($field, $values['label'], $attribute, $required);
+        }
+        elseif ($values['type'] == 'select' && empty($attribute)) {
           $this->addSelect($field, array('entity' => 'activity'), $required);
         }
         elseif ($values['type'] == 'entityRef') {
@@ -908,6 +905,7 @@ class CRM_Activity_Form_Activity extends CRM_Contact_Form_Task {
         )
       );
       $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
+        $customFields,
         $this->_activityId,
         'Activity'
       );

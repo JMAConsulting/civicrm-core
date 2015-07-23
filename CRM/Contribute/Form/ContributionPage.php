@@ -29,10 +29,12 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Contribution Page form.
+ * form to process actions on the group aspect of Custom Data
  */
 class CRM_Contribute_Form_ContributionPage extends CRM_Core_Form {
 
@@ -79,13 +81,6 @@ class CRM_Contribute_Form_ContributionPage extends CRM_Core_Form {
   protected $_priceSetID = NULL;
 
   protected $_values;
-
-  /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Contribution';
-  }
 
   /**
    * Set variables up before form is built.
@@ -136,14 +131,6 @@ class CRM_Contribute_Form_ContributionPage extends CRM_Core_Form {
         CRM_Core_DAO::commonRetrieve('CRM_Contribute_DAO_ContributionPage', $params, $this->_values);
       }
       $this->set('values', $this->_values);
-    }
-
-    // Check permission to edit contribution page
-    if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus() && $this->_action & CRM_Core_Action::UPDATE) {
-      $financialTypeID = CRM_Contribute_PseudoConstant::financialType($this->_values['financial_type_id']);
-      if (!CRM_Core_Permission::check('edit contributions of type ' . $financialTypeID)) {
-        CRM_Core_Error::fatal(ts('You do not have permission to access this page.'));
-      }
     }
 
     // Preload libraries required by the "Profiles" tab

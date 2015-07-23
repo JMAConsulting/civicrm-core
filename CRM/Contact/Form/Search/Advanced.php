@@ -370,11 +370,13 @@ class CRM_Contact_Form_Search_Advanced extends CRM_Contact_Form_Search {
       'contribution_status',
       'contribution_status_id',
       'contribution_source',
+      'membership_type_id',
+      'membership_status_id',
+      'participant_status_id',
       'contribution_trxn_id',
       'activity_type_id',
       'status_id',
       'activity_subject',
-      'contribution_page_id',
     );
     foreach ($specialParams as $element) {
       $value = CRM_Utils_Array::value($element, $this->_formValues);

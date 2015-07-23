@@ -96,9 +96,6 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
         ),
         'grouping' => 'contact-fields',
       ),
-      'civicrm_line_item' => array(
-        'dao' => 'CRM_Price_DAO_LineItem',
-      ),
       'civicrm_phone' => array(
         'dao' => 'CRM_Core_DAO_Phone',
         'fields' => array(
@@ -121,6 +118,9 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
         'dao' => 'CRM_Contribute_DAO_Contribution',
           //'bao'           => 'CRM_Contribute_BAO_Contribution',
         'fields' => array(
+          'contribution_status_id' => array(
+            'title' => ts('Contribution Status'),
+          ),
           'contribution_source' => array('title' => ts('Source')),
           'currency' => array(
             'required' => TRUE,
@@ -130,8 +130,8 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
             'title' => ts('Contribution Amount Stats'),
             'default' => TRUE,
             'statistics' => array(
-              'sum' => ts('Contribution Aggregate'),
               'count' => ts('Contributions'),
+              'sum' => ts('Contribution Aggregate'),
               'avg' => ts('Contribution Avg'),
             ),
           ),
@@ -156,7 +156,7 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
           'financial_type_id' => array(
             'title' => ts('Financial Type'),
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes(),
+            'options' => CRM_Contribute_PseudoConstant::financialType(),
             'type' => CRM_Utils_Type::T_INT,
           ),
           'contribution_page_id' => array(
@@ -194,6 +194,13 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
             'chart' => TRUE,
           ),
           'contribution_source' => NULL,
+          'contribution_status_id' => array(
+            'title' => ts('Contribution Status'),
+            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
+            'options' => CRM_Contribute_PseudoConstant::contributionStatus(),
+            'default' => array(1),
+            'type' => CRM_Utils_Type::T_INT,
+          ),
         ),
       ),
       'civicrm_contribution_soft' => array(
@@ -203,8 +210,8 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
             'title' => ts('Soft Credit Amount Stats'),
             'name' => 'amount',
             'statistics' => array(
-              'sum' => ts('Soft Credit Aggregate'),
               'count' => ts('Soft Credits'),
+              'sum' => ts('Soft Credit Aggregate'),
               'avg' => ts('Soft Credit Avg'),
             ),
           ),
@@ -321,7 +328,7 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
               $this->_columnHeaders["{$tableName}_{$fieldName}_start"]['type'] = $field['type'];
               $this->_columnHeaders["{$tableName}_{$fieldName}_start"]['group_by'] = $this->_params['group_bys_freq'][$fieldName];
 
-              // just to make sure these values are transferred to rows.
+              // just to make sure these values are transfered to rows.
               // since we need that for calculation purpose,
               // e.g making subtotals look nicer or graphs
               $this->_columnHeaders["{$tableName}_{$fieldName}_interval"] = array('no_display' => TRUE);
@@ -388,14 +395,6 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     $ignoreFields = array('total_amount', 'sort_name');
     $errors = $self->customDataFormRule($fields, $ignoreFields);
 
-    if (empty($fields['group_bys']['receive_date'])) {
-      if (!empty($fields['receive_date_relative']) ||
-        CRM_Utils_Date::isDate($fields['receive_date_from']) ||
-        CRM_Utils_Date::isDate($fields['receive_date_to'])
-      ) {
-        $errors['receive_date_relative'] = ts("Do not use filter on Date if group by Receive Date is not used ");
-      }
-    }
     if (empty($fields['fields']['total_amount'])) {
       foreach (array(
                  'total_count_value',
@@ -449,14 +448,13 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
                             {$this->_aliases['civicrm_address']}.contact_id AND
                             {$this->_aliases['civicrm_address']}.is_primary = 1\n";
     }
-    $this->getPermissionedFTQuery($this);
   }
 
   public function groupBy() {
     $this->_groupBy = "";
     $append = FALSE;
-    if (is_array($this->_params['group_bys']) &&
-      !empty($this->_params['group_bys'])
+    if (!empty($this->_params['group_bys']) &&
+      is_array($this->_params['group_bys'])
     ) {
       foreach ($this->_columns as $tableName => $table) {
         if (array_key_exists('group_bys', $table)) {
@@ -511,7 +509,7 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
           unset($this->_havingClauses[$key]);
         }
       }
-    }   
+    }
   }
 
   /**
@@ -728,6 +726,7 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
    */
   public function alterDisplay(&$rows) {
     $entryFound = FALSE;
+    $contributionStatus = CRM_Contribute_PseudoConstant::contributionStatus();
 
     foreach ($rows as $rowNum => $row) {
       // make count columns point to detail report
@@ -797,6 +796,12 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
         );
         $rows[$rowNum]['civicrm_contact_sort_name_link'] = $url;
         $rows[$rowNum]['civicrm_contact_sort_name_hover'] = ts("Lists detailed contribution(s) for this record.");
+        $entryFound = TRUE;
+      }
+
+      // convert contribution status id to status name
+      if ($value = CRM_Utils_Array::value('civicrm_contribution_contribution_status_id', $row)) {
+        $rows[$rowNum]['civicrm_contribution_contribution_status_id'] = $contributionStatus[$value];
         $entryFound = TRUE;
       }
 

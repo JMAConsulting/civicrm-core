@@ -26,7 +26,6 @@
  */
 
 use Civi\Payment\System;
-use Civi\Payment\Exception\PaymentProcessorException;
 
 /**
  * Class CRM_Core_Payment.
@@ -90,7 +89,7 @@ abstract class CRM_Core_Payment {
    * @return CRM_Core_Payment
    * @throws \CRM_Core_Exception
    */
-  public static function singleton($mode = 'test', &$paymentProcessor, &$paymentForm = NULL, $force = FALSE) {
+  public static function &singleton($mode = 'test', &$paymentProcessor, &$paymentForm = NULL, $force = FALSE) {
     // make sure paymentProcessor is not empty
     // CRM-7424
     if (empty($paymentProcessor)) {
@@ -155,24 +154,6 @@ abstract class CRM_Core_Payment {
    * @return bool
    */
   protected function supportsBackOffice() {
-    if ($this->_paymentProcessor['billing_mode'] == 4 || $this->_paymentProcessor['payment_type'] != 1) {
-      return FALSE;
-    }
-    else {
-      return TRUE;
-    }
-  }
-
-  /**
-   * Can more than one transaction be processed at once?
-   *
-   * In general processors that process payment by server to server communication support this while others do not.
-   *
-   * In future we are likely to hit an issue where this depends on whether a token already exists.
-   *
-   * @return bool
-   */
-  protected function supportsMultipleConcurrentPayments() {
     if ($this->_paymentProcessor['billing_mode'] == 4 || $this->_paymentProcessor['payment_type'] != 1) {
       return FALSE;
     }
@@ -500,45 +481,25 @@ abstract class CRM_Core_Payment {
    * The function ensures an exception is thrown & moves some of this logic out of the form layer and makes the forms
    * more agnostic.
    *
-   * Payment processors should set contribution_status_id. This function adds some historical defaults ie. the
-   * assumption that if a 'doDirectPayment' processors comes back it completed the transaction & in fact
-   * doTransferCheckout would not traditionally come back.
-   *
-   * doDirectPayment does not do an immediate payment for Authorize.net or Paypal so the default is assumed
-   * to be Pending.
-   *
    * @param array $params
    *
-   * @param string $component
+   * @param $component
    *
    * @return array
-   *   Result array
-   *
-   * @throws \Civi\Payment\Exception\PaymentProcessorException
+   *   (modified)
+   * @throws CRM_Core_Exception
    */
   public function doPayment(&$params, $component = 'contribute') {
-    $statuses = CRM_Contribute_BAO_Contribution::buildOptions('contribution_status_id');
     if ($this->_paymentProcessor['billing_mode'] == 4) {
       $result = $this->doTransferCheckout($params, $component);
-      if (is_array($result) && !isset($result['contribution_status_id'])) {
-        $result['contribution_status_id'] = array_search('Pending', $statuses);
-      }
     }
     else {
       $result = $this->doDirectPayment($params, $component);
-      if (is_array($result) && !isset($result['contribution_status_id'])) {
-        if (!empty($params['is_recur'])) {
-          // See comment block.
-          $paymentParams['contribution_status_id'] = array_search('Pending', $statuses);
-        }
-        else {
-          $result['contribution_status_id'] = array_search('Completed', $statuses);
-        }
-      }
     }
     if (is_a($result, 'CRM_Core_Error')) {
-      throw new PaymentProcessorException(CRM_Core_Error::getMessages($result));
+      throw new CRM_Core_Exception(CRM_Core_Error::getMessages($result));
     }
+    //CRM-15767 - Submit Credit Card Contribution not being saved
     return $result;
   }
 
@@ -609,6 +570,9 @@ abstract class CRM_Core_Payment {
    * @param string $method
    *   'PaymentNotification' or 'PaymentCron'
    * @param array $params
+   *
+   * @throws \CRM_Core_Exception
+   * @throws \Exception
    */
   public static function handlePaymentMethod($method, $params = array()) {
     if (!isset($params['processor_id']) && !isset($params['processor_name'])) {
@@ -618,7 +582,7 @@ abstract class CRM_Core_Payment {
         $params['processor_id'] = $_GET['processor_id'] = $lastParam;
       }
       else {
-        throw new CRM_Core_Exception("Either 'processor_id' or 'processor_name' param is required for payment callback");
+        throw new CRM_Core_Exception("Either 'processor_id' (recommended) or 'processor_name' (deprecated) is required for payment callback.");
       }
     }
 
@@ -633,7 +597,7 @@ abstract class CRM_Core_Payment {
     if (isset($params['processor_id'])) {
       $sql .= " WHERE pp.id = %2";
       $args[2] = array($params['processor_id'], 'Integer');
-      $notFound = "No active instances of payment processor ID#'{$params['processor_id']}'  were found.";
+      $notFound = ts("No active instances of payment processor %1 were found.", array(1 => $params['processor_id']));
     }
     else {
       // This is called when processor_name is passed - passing processor_id instead is recommended.
@@ -643,7 +607,7 @@ abstract class CRM_Core_Payment {
         'Integer',
       );
       $args[2] = array($params['processor_name'], 'String');
-      $notFound = "No active instances of the '{$params['processor_name']}' payment processor were found.";
+      $notFound = ts("No active instances of payment processor '%1' were found.", array(1 => $params['processor_name']));
     }
 
     $dao = CRM_Core_DAO::executeQuery($sql, $args);
@@ -660,15 +624,11 @@ abstract class CRM_Core_Payment {
     // possible we may get more. Hence, iterate through all instances ..
 
     while ($dao->fetch()) {
-      // Check pp is extension
+      // Check pp is extension - is this still required - surely the singleton below handles it.
       $ext = CRM_Extension_System::singleton()->getMapper();
       if ($ext->isExtensionKey($dao->class_name)) {
         $paymentClass = $ext->keyToClass($dao->class_name, 'payment');
         require_once $ext->classToPath($paymentClass);
-      }
-      else {
-        // Legacy or extension as module instance
-        $paymentClass = 'CRM_Core_' . $dao->class_name;
       }
 
       $processorInstance = Civi\Payment\System::singleton()->getById($dao->processor_id);
@@ -693,10 +653,9 @@ abstract class CRM_Core_Payment {
     }
 
     if (!$extension_instance_found) {
-      CRM_Core_Error::fatal(
-        "No extension instances of the '{$params['processor_name']}' payment processor were found.<br />" .
-        "$method method is unsupported in legacy payment processors."
-      );
+      $message = "No extension instances of the '%1' payment processor were found.<br />" .
+        "%2 method is unsupported in legacy payment processors.";
+      CRM_Core_Error::fatal(ts($message, array(1 => $params['processor_name'], 2 => $method)));
     }
   }
 
