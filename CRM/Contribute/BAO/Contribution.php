@@ -2958,10 +2958,9 @@ WHERE  contribution_id = %1 ";
       $params['trxnParams'] = $trxnParams;
       if (!empty($params['prevContribution'])) {
         //check if line item is changed
-        CRM_Price_BAO_LineItem::updateLineItemParams(
-          CRM_Utils_Array::value('line_item', $params),
-          $params['contribution']->id
-        );
+        if (array_key_exists('line_item', $params)) {
+          CRM_Price_BAO_LineItem::updateLineItemParams($params['line_item'], $params['contribution']->id);
+        }
         $params['trxnParams']['total_amount'] = $trxnParams['total_amount'] = $params['total_amount'] = $params['prevContribution']->total_amount;
         $params['trxnParams']['fee_amount'] = $params['prevContribution']->fee_amount;
         $params['trxnParams']['net_amount'] = $params['prevContribution']->net_amount;
@@ -3265,7 +3264,6 @@ WHERE  contribution_id = %1 ";
             }
             $amount = $diff * $fieldValues['line_total'];
           }
-
           $itemParams = array(
             'transaction_date' => $receiveDate,
             'contact_id' => $params['prevContribution']->contact_id,
