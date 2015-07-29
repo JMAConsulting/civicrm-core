@@ -29,21 +29,15 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ */
+
+/**
+ * Class CRM_Core_Payment_PayPalImpl for paypal pro, paypal standard & paypal express.
  */
 class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
   const CHARSET = 'iso-8859-1';
 
   protected $_mode = NULL;
-
-  /**
-   * We only need one instance of this object. So we use the singleton
-   * pattern and cache the instance in this variable
-   *
-   * @var object
-   */
-  static private $_singleton = NULL;
 
   /**
    * Constructor.
@@ -94,7 +88,7 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
    * @return bool
    */
   protected function supportsPreApproval() {
-    if ($this->_processorName == ts('PayPal_Express')) {
+    if ($this->_processorName == ts('PayPal Express')) {
       return TRUE;
     }
     return FALSE;
@@ -143,6 +137,22 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
         array('class' => 'crm-form-submit')
       );
     }
+  }
+
+  /**
+   * Can recurring contributions be set against pledges.
+   *
+   * In practice all processors that use the baseIPN function to finish transactions or
+   * call the completetransaction api support this by looking up previous contributions in the
+   * series and, if there is a prior contribution against a pledge, and the pledge is not complete,
+   * adding the new payment to the pledge.
+   *
+   * However, only enabling for processors it has been tested against.
+   *
+   * @return bool
+   */
+  protected function supportsRecurContributionsForPledges() {
+    return TRUE;
   }
 
   /**
@@ -228,22 +238,21 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
     }
 
     /* Success */
-
-    $params = array();
-    $params['token'] = $result['token'];
-    $params['payer_id'] = $result['payerid'];
-    $params['payer_status'] = $result['payerstatus'];
-    $params['first_name'] = $result['firstname'];
-    $params['middle_name'] = CRM_Utils_Array::value('middlename', $result);
-    $params['last_name'] = $result['lastname'];
-    $params['street_address'] = $result['shiptostreet'];
-    $params['supplemental_address_1'] = CRM_Utils_Array::value('shiptostreet2', $result);
-    $params['city'] = $result['shiptocity'];
-    $params['state_province'] = $result['shiptostate'];
-    $params['postal_code'] = $result['shiptozip'];
-    $params['country'] = $result['shiptocountrycode'];
-
-    return $params;
+    $fieldMap = array(
+      'token' => 'token',
+      'payer_status' => 'payerstatus',
+      'payer_id' => 'payerid',
+      'first_name' => 'firstname',
+      'middle_name' => 'middlename',
+      'last_name' => 'lastname',
+      'street_address' => 'shiptostreet',
+      'supplemental_address_1' => 'shiptostreet2',
+      'city' => 'shiptocity',
+      'postal_code' => 'shiptozip',
+      'state_province' => 'shiptostate',
+      'country' => 'shiptocountrycode',
+    );
+    return $this->mapPaypalParamsToCivicrmParams($fieldMap, $result);
   }
 
   /**
@@ -257,6 +266,10 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
    *   the result in an nice formatted array (or an error object)
    */
   public function doExpressCheckout(&$params) {
+
+    if (!empty($params['is_recur'])) {
+      return $this->createRecurringPayments($params);
+    }
     $args = array();
 
     $this->initialize($args, 'DoExpressCheckoutPayment');
@@ -302,7 +315,7 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
    */
   public function createRecurringPayments(&$params) {
     $args = array();
-
+    // @todo this function is riddled with enotices - perhaps use $this->mapPaypalParamsToCivicrmParams($fieldMap, $result)
     $this->initialize($args, 'CreateRecurringPaymentsProfile');
 
     $start_time = strtotime(date('m/d/Y'));
@@ -325,7 +338,7 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
     $args['totalbillingcycles'] = $params['installments'];
     $args['version'] = '56.0';
     $args['profilereference'] = "i={$params['invoiceID']}" .
-      "&m=$component" .
+      "&m=" .
       "&c={$params['contactID']}" .
       "&r={$params['contributionRecurID']}" .
       "&b={$params['contributionID']}" .
@@ -641,6 +654,7 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
    *   - redirect_url (if set the browser will be redirected to this.
    */
   public function doPreApproval(&$params) {
+    $this->_component = $params['component'];
     $token = $this->setExpressCheckOut($params);
     return array(
       'pre_approval_parameters' => array('token' => $token),
@@ -920,6 +934,22 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
     }
 
     return $result;
+  }
+
+  /**
+   * Map the paypal params to CiviCRM params using a field map.
+   *
+   * @param array $fieldMap
+   * @param array $paypalParams
+   *
+   * @return array
+   */
+  protected function mapPaypalParamsToCivicrmParams($fieldMap, $paypalParams) {
+    $params = array();
+    foreach ($fieldMap as $civicrmField => $paypalField) {
+      $params[$civicrmField] = isset($paypalParams[$paypalField]) ? $paypalParams[$paypalField] : NULL;
+    }
+    return $params;
   }
 
 }

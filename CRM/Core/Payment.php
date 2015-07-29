@@ -39,7 +39,18 @@ use Civi\Payment\Exception\PaymentProcessorException;
 abstract class CRM_Core_Payment {
 
   /**
-   * How are we getting billing information?
+   * Component - ie. event or contribute.
+   *
+   * This is used for setting return urls.
+   *
+   * @var string
+   */
+  protected $_component;
+
+  /**
+   * How are we getting billing information.
+   *
+   * We are trying to completely deprecate these parameters.
    *
    * FORM   - we collect it on the same page
    * BUTTON - the processor collects it and sends it back to us via some protocol
@@ -192,6 +203,15 @@ abstract class CRM_Core_Payment {
   }
 
   /**
+   * Does this processor support cancelling recurring contributions through code.
+   *
+   * @return bool
+   */
+  protected function supportsCancelRecurring() {
+    return method_exists(CRM_Utils_System::getClassName($this), 'cancelSubscription');
+  }
+
+  /**
    * Does this processor support pre-approval.
    *
    * This would generally look like a redirect to enter credentials which can then be used in a later payment call.
@@ -203,6 +223,22 @@ abstract class CRM_Core_Payment {
    * @return bool
    */
   protected function supportsPreApproval() {
+    return FALSE;
+  }
+
+  /**
+   * Can recurring contributions be set against pledges.
+   *
+   * In practice all processors that use the baseIPN function to finish transactions or
+   * call the completetransaction api support this by looking up previous contributions in the
+   * series and, if there is a prior contribution against a pledge, and the pledge is not complete,
+   * adding the new payment to the pledge.
+   *
+   * However, only enabling for processors it has been tested against.
+   *
+   * @return bool
+   */
+  protected function supportsRecurContributionsForPledges() {
     return FALSE;
   }
 
@@ -624,16 +660,15 @@ abstract class CRM_Core_Payment {
    *
    * Does a server to server payment transaction.
    *
-   * Note that doPayment will throw an exception so the code may need to be modified
-   *
    * @param array $params
    *   Assoc array of input parameters for this transaction.
    *
    * @return array
-   *   the result in an nice formatted array (or an error object)
-   * @abstract
+   *   the result in an nice formatted array (or an error object - but throwing exceptions is preferred)
    */
-  abstract protected function doDirectPayment(&$params);
+  protected function doDirectPayment(&$params) {
+    return $params;
+  }
 
   /**
    * Process payment - this function wraps around both doTransferPayment and doDirectPayment.
@@ -661,6 +696,7 @@ abstract class CRM_Core_Payment {
    * @throws \Civi\Payment\Exception\PaymentProcessorException
    */
   public function doPayment(&$params, $component = 'contribute') {
+    $this->_component = $component;
     $statuses = CRM_Contribute_BAO_Contribution::buildOptions('contribution_status_id');
     if ($this->_paymentProcessor['billing_mode'] == 4) {
       $result = $this->doTransferCheckout($params, $component);
@@ -770,9 +806,7 @@ abstract class CRM_Core_Payment {
         $params['processor_id'] = $_GET['processor_id'] = $lastParam;
       }
       else {
-        throw new CRM_Core_Exception("Either 'processor_id' (recommended) or 'processor_name' (deprecated) is
-        required
-        for payment callback");
+        throw new CRM_Core_Exception("Either 'processor_id' (recommended) or 'processor_name' (deprecated) is required for payment callback.");
       }
     }
 
@@ -787,7 +821,7 @@ abstract class CRM_Core_Payment {
     if (isset($params['processor_id'])) {
       $sql .= " WHERE pp.id = %2";
       $args[2] = array($params['processor_id'], 'Integer');
-      $notFound = "No active instances of payment processor ID#'{$params['processor_id']}'  were found.";
+      $notFound = ts("No active instances of payment processor %1 were found.", array(1 => $params['processor_id']));
     }
     else {
       // This is called when processor_name is passed - passing processor_id instead is recommended.
@@ -797,7 +831,7 @@ abstract class CRM_Core_Payment {
         'Integer',
       );
       $args[2] = array($params['processor_name'], 'String');
-      $notFound = "No active instances of the '{$params['processor_name']}' payment processor were found.";
+      $notFound = ts("No active instances of payment processor '%1' were found.", array(1 => $params['processor_name']));
     }
 
     $dao = CRM_Core_DAO::executeQuery($sql, $args);
@@ -843,15 +877,16 @@ abstract class CRM_Core_Payment {
     }
 
     if (!$extension_instance_found) {
-      CRM_Core_Error::fatal(
-        "No extension instances of the '{$params['processor_name']}' payment processor were found.<br />" .
-        "$method method is unsupported in legacy payment processors."
-      );
+      $message = "No extension instances of the '%1' payment processor were found.<br />" .
+        "%2 method is unsupported in legacy payment processors.";
+      CRM_Core_Error::fatal(ts($message, array(1 => $params['processor_name'], 2 => $method)));
     }
   }
 
   /**
    * Check whether a method is present ( & supported ) by the payment processor object.
+   *
+   * @deprecated - use $paymentProcessor->supports(array('cancelRecurring');
    *
    * @param string $method
    *   Method to check for.

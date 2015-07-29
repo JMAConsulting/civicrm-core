@@ -314,30 +314,30 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
         foreach ($this->_priceSet['fields'] as $key => $val) {
           foreach ($val['options'] as $keys => $values) {
             $opMemTypeId = CRM_Utils_Array::value('membership_type_id', $values);
-            if ($opMemTypeId &&
+            $priceFieldName = 'price_' . $values['price_field_id'];
+            $priceFieldValue = CRM_Price_BAO_PriceSet::getPriceFieldValueFromURL($this, $priceFieldName);
+            if (!empty($priceFieldValue)) {
+              CRM_Price_BAO_PriceSet::setDefaultPriceSetField($priceFieldName, $priceFieldValue, $val['html_type'], $this->_defaults);
+              // break here to prevent overwriting of default due to 'is_default'
+              // option configuration or setting of current membership or
+              // membership for related organization.
+              // The value sent via URL get's higher priority.
+              break;
+            }
+            elseif ($opMemTypeId &&
               in_array($opMemTypeId, $this->_currentMemberships) &&
               !in_array($opMemTypeId, $selectedCurrentMemTypes)
             ) {
-              if ($val['html_type'] == 'CheckBox') {
-                $this->_defaults["price_{$key}"][$keys] = 1;
-              }
-              else {
-                $this->_defaults["price_{$key}"] = $keys;
-              }
+              CRM_Price_BAO_PriceSet::setDefaultPriceSetField($priceFieldName, $keys, $val['html_type'], $this->_defaults);
               $selectedCurrentMemTypes[] = $values['membership_type_id'];
             }
             elseif (!empty($values['is_default']) &&
               !$opMemTypeId &&
-              (!isset($this->_defaults["price_{$key}"]) ||
-                ($val['html_type'] == 'CheckBox' && !isset($this->_defaults["price_{$key}"][$keys]))
-              )
-            ) {
-              if ($val['html_type'] == 'CheckBox') {
-                $this->_defaults["price_{$key}"][$keys] = 1;
-              }
-              else {
-                $this->_defaults["price_{$key}"] = $keys;
-              }
+              (!isset($this->_defaults[$priceFieldName]) ||
+                ($val['html_type'] == 'CheckBox' &&
+                !isset($this->_defaults[$priceFieldName][$keys]))
+              )) {
+                CRM_Price_BAO_PriceSet::setDefaultPriceSetField($priceFieldName, $keys, $val['html_type'], $this->_defaults);
             }
           }
         }
@@ -1302,11 +1302,18 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
       ((float ) $params['amount'] > 0.0 || $memFee > 0.0)
     ) {
       $this->setContributeMode();
-
+      // Really this setting of $this->_params & params within it should be done earlier on in the function
+      // probably the values determined here should be reused in confirm postProcess as there is no opportunity to alter anything
+      // on the confirm page. However as we are dealing with a stable release we go as close to where it is used
+      // as possible.
+      // In general the form has a lack of clarity of the logic of why things are set on the form in some cases &
+      // the logic around when $this->_params is used compared to other params arrays.
+      $this->_params = array_merge($params, $this->_params);
+      $this->setRecurringMembershipParams();
       if ($this->_paymentProcessor &&
         $this->_paymentProcessor['object']->supports('preApproval')
       ) {
-        $this->handlePreApproval($params);
+        $this->handlePreApproval($this->_params);
       }
     }
 
@@ -1351,6 +1358,7 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
   protected function handlePreApproval(&$params) {
     try {
       $payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
+      $params['component'] = 'contribute';
       $result = $payment->doPreApproval($params);
     }
     catch (\Civi\Payment\Exception\PaymentProcessorException $e) {

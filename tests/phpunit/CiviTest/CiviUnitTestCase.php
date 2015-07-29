@@ -119,11 +119,6 @@ class CiviUnitTestCase extends PHPUnit_Extensions_Database_TestCase {
   public static $populateOnce = FALSE;
 
   /**
-   * Allow classes to state E-notice compliance
-   */
-  public $_eNoticeCompliant = TRUE;
-
-  /**
    * @var boolean DBResetRequired allows skipping DB reset
    *               in specific test case. If you still need
    *               to reset single test (method) of such case, call
@@ -433,12 +428,8 @@ class CiviUnitTestCase extends PHPUnit_Extensions_Database_TestCase {
     //flush component settings
     CRM_Core_Component::getEnabledComponents(TRUE);
 
-    if ($this->_eNoticeCompliant) {
-      error_reporting(E_ALL);
-    }
-    else {
-      error_reporting(E_ALL & ~E_NOTICE);
-    }
+    error_reporting(E_ALL);
+
     $this->_sethtmlGlobals();
   }
 
@@ -1464,7 +1455,7 @@ class CiviUnitTestCase extends PHPUnit_Extensions_Database_TestCase {
       'billing_mode' => 1,
     ), $params);
 
-    $result = $this->callAPISuccess('payment_processor', 'create', $params);
+    $result = $this->callAPISuccess('PaymentProcessor', 'create', $params);
     return $result['id'];
   }
 
@@ -3109,10 +3100,6 @@ AND    ( TABLE_NAME LIKE 'civicrm_value_%' )
       'view picked', 'civicrm_group',  $this->_permissionedGroup, 'Edit', 'civicrm_saved_search', {$this->_permissionedDisabledGroup}, 1
       );
       ");
-      //flush cache
-      CRM_ACL_BAO_Cache::resetCache();
-      CRM_Contact_BAO_Group::getPermissionClause(TRUE);
-      CRM_ACL_API::groupPermission('whatever', 9999, NULL, 'civicrm_saved_search', NULL, NULL, TRUE);
     }
 
     $this->_loggedInUser = CRM_Core_Session::singleton()->get('userID');
@@ -3120,6 +3107,13 @@ AND    ( TABLE_NAME LIKE 'civicrm_value_%' )
       'group_id' => $this->_permissionedGroup,
       'contact_id' => $this->_loggedInUser,
     ));
+
+    if (!$isProfile) {
+      //flush cache
+      CRM_ACL_BAO_Cache::resetCache();
+      CRM_Contact_BAO_Group::getPermissionClause(TRUE);
+      CRM_ACL_API::groupPermission('whatever', 9999, NULL, 'civicrm_saved_search', NULL, NULL, TRUE);
+    }
   }
 
   /**
@@ -3217,7 +3211,7 @@ AND    ( TABLE_NAME LIKE 'civicrm_value_%' )
         'contact_id' => $this->_contactID,
         'contribution_page_id' => $this->_contributionPageID,
         'payment_processor_id' => $this->_paymentProcessorID,
-        'is_test' => 1,
+        'is_test' => 0,
       ),
     ));
     $this->_contributionRecurID = $contributionRecur['id'];

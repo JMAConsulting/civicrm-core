@@ -211,89 +211,39 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
     // lineItem isn't set until Register postProcess
     $this->_lineItem = $this->get('lineItem');
     $this->_paymentProcessor = $this->get('paymentProcessor');
-
-    if ($this->_contributeMode == 'express') {
-      // rfp == redirect from paypal
-      $rfp = CRM_Utils_Request::retrieve('rfp', 'Boolean',
-        CRM_Core_DAO::$_nullObject, FALSE, NULL, 'GET'
-      );
-      if ($rfp) {
-        $payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
-        $expressParams = $payment->getPreApprovalDetails($this->get('pre_approval_parameters'));
-
-        $this->_params['payer'] = CRM_Utils_Array::value('payer', $expressParams);
-        $this->_params['payer_id'] = $expressParams['payer_id'];
-        $this->_params['payer_status'] = $expressParams['payer_status'];
-
-        CRM_Core_Payment_Form::mapParams($this->_bltID, $expressParams, $this->_params, FALSE);
-
-        // fix state and country id if present
-        if (!empty($this->_params["billing_state_province_id-{$this->_bltID}"])) {
-          $this->_params["billing_state_province-{$this->_bltID}"] = CRM_Core_PseudoConstant::stateProvinceAbbreviation($this->_params["billing_state_province_id-{$this->_bltID}"]);
-        }
-        if (!empty($this->_params["billing_country_id-{$this->_bltID}"]) && $this->_params["billing_country_id-{$this->_bltID}"]) {
-          $this->_params["billing_country-{$this->_bltID}"] = CRM_Core_PseudoConstant::countryIsoCode($this->_params["billing_country_id-{$this->_bltID}"]);
-        }
-
-        // set a few other parameters for PayPal
-        $this->_params['token'] = $this->get('token');
-
-        $this->_params['amount'] = $this->get('amount');
-
-        if (!empty($this->_membershipBlock)) {
-          $this->_params['selectMembership'] = $this->get('selectMembership');
-        }
-        // we use this here to incorporate any changes made by folks in hooks
-        $this->_params['currencyID'] = $config->defaultCurrency;
-
-        // also merge all the other values from the profile fields
-        $values = $this->controller->exportValues('Main');
-        $skipFields = array(
-          'amount',
-          'amount_other',
-          "billing_street_address-{$this->_bltID}",
-          "billing_city-{$this->_bltID}",
-          "billing_state_province_id-{$this->_bltID}",
-          "billing_postal_code-{$this->_bltID}",
-          "billing_country_id-{$this->_bltID}",
-        );
-        foreach ($values as $name => $value) {
-          // skip amount field
-          if (!in_array($name, $skipFields)) {
-            $this->_params[$name] = $value;
-          }
-        }
-        $this->set('getExpressCheckoutDetails', $this->_params);
-      }
-      else {
-        $this->_params = $this->get('getExpressCheckoutDetails');
-      }
+    $this->_params = $this->controller->exportValues('Main');
+    $this->_params['ip_address'] = CRM_Utils_System::ipAddress();
+    $this->_params['amount'] = $this->get('amount');
+    if (isset($this->_params['amount'])) {
+      $this->setFormAmountFields($this->_params['priceSetId']);
     }
-    else {
-      $this->_params = $this->controller->exportValues('Main');
 
-      if (!empty($this->_params["billing_state_province_id-{$this->_bltID}"])) {
-        $this->_params["billing_state_province-{$this->_bltID}"] = CRM_Core_PseudoConstant::stateProvinceAbbreviation($this->_params["billing_state_province_id-{$this->_bltID}"]);
-      }
-      if (!empty($this->_params["billing_country_id-{$this->_bltID}"])) {
-        $this->_params["billing_country-{$this->_bltID}"] = CRM_Core_PseudoConstant::countryIsoCode($this->_params["billing_country_id-{$this->_bltID}"]);
-      }
+    $this->_params['tax_amount'] = $this->get('tax_amount');
+    $this->_useForMember = $this->get('useForMember');
 
-      if (isset($this->_params['credit_card_exp_date'])) {
-        $this->_params['year'] = CRM_Core_Payment_Form::getCreditCardExpirationYear($this->_params);
-        $this->_params['month'] = CRM_Core_Payment_Form::getCreditCardExpirationMonth($this->_params);
-      }
+    if (isset($this->_params['credit_card_exp_date'])) {
+      $this->_params['year'] = CRM_Core_Payment_Form::getCreditCardExpirationYear($this->_params);
+      $this->_params['month'] = CRM_Core_Payment_Form::getCreditCardExpirationMonth($this->_params);
+    }
 
-      $this->_params['ip_address'] = CRM_Utils_System::ipAddress();
-      $this->_params['amount'] = $this->get('amount');
-      $this->_params['tax_amount'] = $this->get('tax_amount');
+    $this->_params['currencyID'] = $config->defaultCurrency;
 
-      $this->_useForMember = $this->get('useForMember');
+    if (!empty($this->_membershipBlock)) {
+      $this->_params['selectMembership'] = $this->get('selectMembership');
+    }
+    if (!empty($this->_paymentProcessor) &&  $this->_paymentProcessor['object']->supports('preApproval')) {
+      $preApprovalParams = $this->_paymentProcessor['object']->getPreApprovalDetails($this->get('pre_approval_parameters'));
+      $this->_params = array_merge($this->_params, $preApprovalParams);
+    }
 
-      if (isset($this->_params['amount'])) {
-        $this->setFormAmountFields($this->_params['priceSetId']);
-      }
-      $this->_params['currencyID'] = $config->defaultCurrency;
+    // We may have fetched some billing details from the getPreApprovalDetails function so we
+    // want to ensure we set this after that function has been called.
+    CRM_Core_Payment_Form::mapParams($this->_bltID, $this->_params, $this->_params, FALSE);
+    if (!empty($this->_params["billing_state_province_id-{$this->_bltID}"])) {
+      $this->_params["billing_state_province-{$this->_bltID}"] = CRM_Core_PseudoConstant::stateProvinceAbbreviation($this->_params["billing_state_province_id-{$this->_bltID}"]);
+    }
+    if (!empty($this->_params["billing_country_id-{$this->_bltID}"])) {
+      $this->_params["billing_country-{$this->_bltID}"] = CRM_Core_PseudoConstant::countryIsoCode($this->_params["billing_country_id-{$this->_bltID}"]);
     }
 
     $this->_params['is_pay_later'] = $this->get('is_pay_later');
@@ -450,27 +400,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
         }
       }
     }
-
-    // if auto renew checkbox is set, initiate a open-ended recurring membership
-    if ((!empty($this->_params['selectMembership']) || !empty($this->_params['priceSetId'])) && !empty($this->_paymentProcessor['is_recur']) &&
-      CRM_Utils_Array::value('auto_renew', $this->_params) && empty($this->_params['is_recur']) && empty($this->_params['frequency_interval'])
-    ) {
-
-      $this->_params['is_recur'] = $this->_values['is_recur'] = 1;
-      // check if price set is not quick config
-      if (!empty($this->_params['priceSetId']) && !CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceSet', $this->_params['priceSetId'], 'is_quick_config')) {
-        list($this->_params['frequency_interval'], $this->_params['frequency_unit']) = CRM_Price_BAO_PriceSet::getRecurDetails($this->_params['priceSetId']);
-      }
-      else {
-        // FIXME: set interval and unit based on selected membership type
-        $this->_params['frequency_interval'] = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_MembershipType',
-          $this->_params['selectMembership'], 'duration_interval'
-        );
-        $this->_params['frequency_unit'] = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_MembershipType',
-          $this->_params['selectMembership'], 'duration_unit'
-        );
-      }
-    }
+    $this->setRecurringMembershipParams();
 
     if ($this->_pcpId) {
       $params = $this->processPcp($this, $this->_params);
@@ -733,6 +663,8 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
         "_qf_Main_display=true&qfKey={$this->_params['qfKey']}"
       ));
     }
+    // Presumably this is for hooks to access? Not quite clear & perhaps not required.
+    $this->set('params', $this->_params);
   }
 
   /**
@@ -766,7 +698,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
    * @param array $premiumParams
    * @param CRM_Contribute_BAO_Contribution $contribution
    */
-  public function postProcessPremium($premiumParams, $contribution) {
+  protected function postProcessPremium($premiumParams, $contribution) {
     $hour = $minute = $second = 0;
     // assigning Premium information to receipt tpl
     $selectProduct = CRM_Utils_Array::value('selectProduct', $premiumParams);
@@ -1457,6 +1389,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
         'donors_email' => $email,
         'pcpInfoURL' => $pcpInfoURL,
         'is_honor_roll_enabled' => $contributionSoft->pcp_display_in_roll,
+        'currency' => $contributionSoft->currency,
       );
       $domainValues = CRM_Core_BAO_Domain::getNameAndEmail();
       $sendTemplateParams = array(
@@ -1598,7 +1531,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
     $membershipParams, $contactID, &$form, $premiumParams,
     $customFieldsFormatted = NULL, $includeFieldTypes = NULL, $membershipDetails, $membershipTypeIDs, $isPaidMembership, $membershipID,
     $isProcessSeparateMembershipTransaction, $financialTypeID, $membershipLineItems, $isPayLater, $isPending) {
-    $result = $membershipContribution = NULL;
+    $membershipContribution = NULL;
     $isTest = CRM_Utils_Array::value('is_test', $membershipParams, FALSE);
     $errors = $createdMemberships = $paymentResult = array();
 
@@ -1609,21 +1542,16 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
       }
 
       $paymentResult = CRM_Contribute_BAO_Contribution_Utils::processConfirm($form, $membershipParams,
-        $premiumParams, $contactID,
+        $contactID,
         $financialTypeID,
         'membership',
         array(),
         $isTest,
         $isPayLater
       );
-      if (is_a($result[1], 'CRM_Core_Error')) {
-        $errors[1] = CRM_Core_Error::getMessages($paymentResult[1]);
-      }
 
-      if (is_a($paymentResult, 'CRM_Core_Error')) {
-        $errors[1] = CRM_Core_Error::getMessages($paymentResult);
-      }
-      elseif (!empty($paymentResult['contribution'])) {
+      if (!empty($paymentResult['contribution'])) {
+        $this->postProcessPremium($premiumParams, $paymentResult['contribution']);
         //note that this will be over-written if we are using a separate membership transaction. Otherwise there is only one
         $membershipContribution = $paymentResult['contribution'];
         // Save the contribution ID so that I can be used in email receipts
@@ -1757,22 +1685,18 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
     if (count($createdMemberships)) {
       $form->_values['isMembership'] = TRUE;
     }
-    if ($form->_contributeMode == 'notify') {
-      if ($form->_values['is_monetary'] && $form->_amount > 0.0 && !$form->_params['is_pay_later']) {
-        // call postProcess hook before leaving
-        $form->postProcessHook();
-        // this does not return
-        $payment = Civi\Payment\System::singleton()->getByProcessor($form->_paymentProcessor);
-        $payment->doTransferCheckout($form->_params, 'contribute');
-      }
-    }
-
     if (isset($membershipContributionID)) {
       $form->_values['contribution_id'] = $membershipContributionID;
     }
+    if ($form->_contributeMode) {
+      if ($form->_values['is_monetary'] && $form->_amount > 0.0 && !$form->_params['is_pay_later']) {
+        // call postProcess hook before leaving
+        $form->postProcessHook();
+      }
+      $payment = Civi\Payment\System::singleton()->getByProcessor($form->_paymentProcessor);
+      $result = $payment->doPayment($form->_params, 'contribute');
 
-    if ($form->_contributeMode == 'direct') {
-      if (CRM_Utils_Array::value('payment_status_id', $paymentResult) == 1) {
+      if (CRM_Utils_Array::value('payment_status_id', $result) == 1) {
         // Refer to CRM-16737. Payment processors 'should' return payment_status_id
         // to denote the outcome of the transaction.
         try {
@@ -1850,16 +1774,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
       else {
         $payment = $form->_paymentProcessor['object'];
       }
-
-      if ($form->_contributeMode == 'express') {
-        $result = $payment->doExpressCheckout($tempParams);
-        if (is_a($result, 'CRM_Core_Error')) {
-          throw new CRM_Core_Exception(CRM_Core_Error::getMessages($result));
-        }
-      }
-      else {
-        $result = $payment->doPayment($tempParams, 'contribute');
-      }
+      $result = $payment->doPayment($tempParams, 'contribute');
     }
 
     //assign receive date when separate membership payment
@@ -2111,10 +2026,12 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
     if (CRM_Utils_Array::value('id', $this->_paymentProcessor)) {
       $this->_params['payment_processor_id'] = $this->_paymentProcessor['id'];
     }
+
+    $premiumParams = $membershipParams = $params = $this->_params;
     if (!empty($params['image_URL'])) {
       CRM_Contact_BAO_Contact::processImageParams($params);
     }
-    $premiumParams = $membershipParams = $params = $this->_params;
+
     $fields = array('email-Primary' => 1);
 
     // get the add to groups
@@ -2375,7 +2292,7 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
       $financialTypeID = $this->wrangleFinancialTypeID($contributionTypeId);
 
       $result = CRM_Contribute_BAO_Contribution_Utils::processConfirm($this, $paymentParams,
-        $premiumParams, $contactID,
+        $contactID,
         $financialTypeID,
         'contribution',
         $fieldTypes,
@@ -2383,7 +2300,12 @@ class CRM_Contribute_Form_Contribution_Confirm extends CRM_Contribute_Form_Contr
         $isPayLater
       );
 
-      if (CRM_Utils_Array::value('contribution_status_id', $result) == 1) {
+      if (!empty($result['is_payment_failure'])) {
+        return $result;
+      }
+      // @todo move premium processing to complete transaction if it truly is an 'after' action.
+      $this->postProcessPremium($premiumParams, $result['contribution']);
+      if (CRM_Utils_Array::value('payment_status_id', $result) == 1) {
         civicrm_api3('contribution', 'completetransaction', array(
           'id' => $result['contribution']->id,
           'trxn_id' => CRM_Utils_Array::value('trxn_id', $result),

@@ -59,7 +59,7 @@
     || $activityTypeFile EQ 'ChangeCaseStartDate'}
       {include file="CRM/Case/Form/Activity/$activityTypeFile.tpl"}
       <tr class="crm-case-activity-form-block-details">
-        <td class="label">{ts}Notes{/ts}</td>
+        <td class="label">{ts}Details{/ts}</td>
         <td class="view-value">
           {$form.details.html}
         </td>
@@ -155,6 +155,14 @@
                   <td class="view-value">{include file="CRM/common/jcalendar.tpl" elementName=activity_date_time}</td>
                 {/if}
               </tr>
+              {if $action eq 2 && $activityTypeFile eq 'OpenCase'}
+              <tr class="crm-case-activity-form-block-details">
+                <td class="label">{ts}Notes{/ts}</td>
+                <td class="view-value">
+                  {$form.details.html}
+                </td>
+              </tr>
+              {/if}
               <tr>
                 <td colspan="2"><div id="customData"></div></td>
               </tr>
