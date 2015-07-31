@@ -3280,7 +3280,7 @@ WHERE  contribution_id = %1 ";
           );
           CRM_Financial_BAO_FinancialItem::create($itemParams, NULL, $trxnIds);
 
-          if ($fieldValues['tax_amount']) {
+          if (!empty($fieldValues['tax_amount'])) {
             $invoiceSettings = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME, 'contribution_invoice_settings');
             $taxTerm = CRM_Utils_Array::value('tax_term', $invoiceSettings);
             $itemParams['amount'] = $diff * $fieldValues['tax_amount'];
