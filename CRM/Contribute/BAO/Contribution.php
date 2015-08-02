@@ -3229,6 +3229,7 @@ WHERE  contribution_id = %1 ";
       foreach ($params['line_item'] as $fieldId => $fields) {
         foreach ($fields as $fieldValueId => $fieldValues) {
           if (!CRM_Utils_Array::value('id', $fieldValues)) {
+            $params['line_item'][$fieldId][$fieldValueId]['trxnId'] = $trxnIds;
             continue;
           }
           $prevParams['entity_id'] = $fieldValues['id'];
