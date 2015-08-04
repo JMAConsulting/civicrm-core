@@ -164,6 +164,12 @@ class CRM_Financial_DAO_FinancialTrxn extends CRM_Core_DAO
    */
   public $check_number;
   /**
+   * Is payment?
+   *
+   * @var int
+   */
+  public $is_payment;
+  /**
    * class constructor
    *
    * @return civicrm_financial_trxn
@@ -298,6 +304,11 @@ class CRM_Financial_DAO_FinancialTrxn extends CRM_Core_DAO
           'description' => 'user-specified unique processor transaction id, bank id + trans id,... depending on payment_method',
           'maxlength' => 255,
           'size' => CRM_Utils_Type::HUGE,
+        ) ,
+        'is_payment' => array(
+          'name' => 'is_payment',
+          'type' => CRM_Utils_Type::T_INT,
+          'description' => 'Is this entry either a payment or a reversal of a payment?',
         ) ,
         'trxn_result_code' => array(
           'name' => 'trxn_result_code',
