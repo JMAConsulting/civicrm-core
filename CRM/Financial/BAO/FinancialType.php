@@ -224,27 +224,12 @@ class CRM_Financial_BAO_FinancialType extends CRM_Financial_DAO_FinancialType {
     $financialTypes = CRM_Contribute_PseudoConstant::financialType();
     $prefix = ts('CiviCRM') . ': ';
     foreach ($financialTypes as $id => $type) {
-      $permissions['add contributions of type ' . $type] = array(
-        $prefix . ts('add contributions of type ') . $type,
-        ts('Add contributions of type ') . $type,
-      );
-      $permissions['view contributions of type ' . $type] = array(
-        $prefix . ts('view contributions of type ') . $type,
-        ts('View contributions of type ') . $type,
-      );
-      $permissions['edit contributions of type ' . $type] = array(
-        $prefix . ts('edit contributions of type ') . $type,
-        ts('Edit contributions of type ') . $type,
-      );
-      $permissions['delete contributions of type ' . $type] = array(
-        $prefix . ts('delete contributions of type ') . $type,
-        ts('Delete contributions of type ') . $type,
-      );
+      $permissions['add contributions of type ' . $type] = $prefix . ts('add contributions of type ' . $type);
+      $permissions['view contributions of type ' . $type] = $prefix . ts('view contributions of type ' . $type);
+      $permissions['edit contributions of type ' . $type] = $prefix . ts('edit contributions of type ' . $type);
+      $permissions['delete contributions of type ' . $type] = $prefix . ts('delete contributions of type ' . $type);
     }
-    $permissions['administer CiviCRM Financial Types'] = array(
-      $prefix . ts('administer CiviCRM Financial Types'),
-      ts('Administer access to Financial Types'),
-    );
+    $permissions['administer CiviCRM Financial Types'] = $prefix . ts('administer CiviCRM Financial Types');
   }
 
   public static function getAvailableFinancialTypes(&$financialTypes = NULL, $action = 'view', $resetCache = FALSE) {
