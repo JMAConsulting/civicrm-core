@@ -4084,7 +4084,8 @@ CREATE TABLE `civicrm_financial_trxn` (
      `status_id` int unsigned    COMMENT 'pseudo FK to civicrm_option_value of financial_item status option_group',
      `payment_processor_id` int unsigned    COMMENT 'Payment Processor for this financial transaction',
      `payment_instrument_id` int unsigned    COMMENT 'FK to payment_instrument option group values',
-     `check_number` varchar(255)    COMMENT 'Check number' 
+     `check_number` varchar(255)    COMMENT 'Check number',
+     `is_payment` tinyint(4) DEFAULT 0 COMMENT 'Is this entry either a payment or a reversal of a payment?'
 ,
     PRIMARY KEY ( `id` )
  
