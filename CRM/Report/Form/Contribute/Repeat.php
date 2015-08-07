@@ -372,7 +372,7 @@ LEFT JOIN civicrm_temp_civireport_repeat2 {$this->_aliases['civicrm_contribution
     $this->_aliases['civicrm_contribution'] = $temp;
     $this->_where = '';
     return $from;
-  }  
+  }
   /**
    * @param string $replaceAliasWith
    *
