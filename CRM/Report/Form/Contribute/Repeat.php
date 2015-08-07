@@ -358,7 +358,6 @@ LEFT JOIN civicrm_temp_civireport_repeat1 {$this->_aliases['civicrm_contribution
 LEFT JOIN civicrm_temp_civireport_repeat2 {$this->_aliases['civicrm_contribution']}2
        ON $fromAlias.$fromCol = {$this->_aliases['civicrm_contribution']}2.$contriCol";
   }
-  
   /**
    * @param string $replaceAliasWith
    *
@@ -370,11 +369,10 @@ LEFT JOIN civicrm_temp_civireport_repeat2 {$this->_aliases['civicrm_contribution
     $this->_aliases['civicrm_contribution'] = $replaceAliasWith;
     $this->_from = $from;
     $from .= (string) $this->getPermissionedFTQuery($this, 'civicrm_line_item_report', TRUE);
-    $this->_aliases['civicrm_contribution'] = $temp;    
+    $this->_aliases['civicrm_contribution'] = $temp;
     $this->_where = '';
     return $from;
-  }
-  
+  }  
   /**
    * @param string $replaceAliasWith
    *

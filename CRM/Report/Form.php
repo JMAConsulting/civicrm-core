@@ -4322,4 +4322,5 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
     }
     $query->_from .= $from;
   }
+
 }
