@@ -4746,9 +4746,11 @@ SELECT COUNT( conts.total_amount ) as total_count,
     $summary = array();
     $summary['total'] = array();
     $summary['total']['count'] = $summary['total']['amount'] = $summary['total']['avg'] = "n/a";
-    $from .= "LEFT JOIN civicrm_line_item li
+    $from .= " LEFT JOIN civicrm_line_item li
                       ON civicrm_contribution.id = li.contribution_id AND
                          li.entity_table = 'civicrm_contribution' AND li.financial_type_id NOT IN (" . implode(',', array_keys($financialTypes)) . ") ";
+    $innerQuery = "SELECT civicrm_contribution.total_amount, COUNT(civicrm_contribution.total_amount) as civicrm_contribution_total_amount_count,
+      civicrm_contribution.currency $from $completedWhere";
     $query = "$select FROM (
       SELECT civicrm_contribution.total_amount, civicrm_contribution.currency $from $completedWhere
       GROUP BY civicrm_contribution.id
