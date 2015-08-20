@@ -493,10 +493,6 @@ class CRM_Report_Form_Contribute_Detail extends CRM_Report_Form {
                  LEFT JOIN civicrm_batch {$this->_aliases['civicrm_batch']}
                         ON {$this->_aliases['civicrm_batch']}.id = {$this->_aliases['civicrm_entity_batch']}.batch_id";
     }
-<<<<<<< HEAD
-
-=======
->>>>>>> e06a10e... ICM-18 Fixed issues that were reported by Jenkins test
   }
 
   public function groupBy() {
