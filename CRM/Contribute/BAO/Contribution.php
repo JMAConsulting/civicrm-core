@@ -3753,8 +3753,6 @@ WHERE con.id = {$contributionId}
     }
   }
 
-<<<<<<< HEAD
-=======
   /**
    * Update related pledge payment payments.
    *
