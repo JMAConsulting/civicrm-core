@@ -24,6 +24,9 @@
  +--------------------------------------------------------------------+
 *}
 
+{if $cdType }
+   {include file="CRM/Custom/Form/CustomData.tpl"}
+{else}
 <div class="crm-block crm-form-block crm-campaign-survey-main-form-block">
 <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="top"}</div>
   {if $action  eq 1}
@@ -104,6 +107,8 @@
     });
 </script>
 {/literal}
+{* editor has already been included in TabHeader.tpl so set flag true *}
+{include file="CRM/common/customData.tpl" includeWysiwygEditor=true}
 {literal}
   <script type="text/javascript">
     CRM.$(function($) {
@@ -113,3 +118,5 @@
     });
   </script>
 {/literal}
+
+{/if}

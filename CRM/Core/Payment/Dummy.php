@@ -87,13 +87,6 @@ class CRM_Core_Payment_Dummy extends CRM_Core_Payment {
       $params,
       $cookedParams
     );
-    // This means we can test failing transactions by setting a past year in expiry. A full expiry check would
-    // be more complete.
-    if (!empty($params['credit_card_exp_date']['Y']) && date('Y') >
-      CRM_Core_Payment_Form::getCreditCardExpirationYear($params)) {
-      $error = new CRM_Core_Error(ts('transaction failed'));
-      return $error;
-    }
     //end of hook invocation
     if (!empty($this->_doDirectPaymentResult)) {
       $result = $this->_doDirectPaymentResult;
@@ -106,7 +99,7 @@ class CRM_Core_Payment_Dummy extends CRM_Core_Payment {
       $trxn_id = strval(CRM_Core_Dao::singleValueQuery($query, $p));
       $trxn_id = str_replace('test_', '', $trxn_id);
       $trxn_id = intval($trxn_id) + 1;
-      $params['trxn_id'] = 'test_' . $trxn_id . '_' . uniqid();
+      $params['trxn_id'] = sprintf('test_%08d', $trxn_id);
     }
     else {
       $query = "SELECT MAX(trxn_id) FROM civicrm_contribution WHERE trxn_id LIKE 'live_%'";
@@ -114,7 +107,7 @@ class CRM_Core_Payment_Dummy extends CRM_Core_Payment {
       $trxn_id = strval(CRM_Core_Dao::singleValueQuery($query, $p));
       $trxn_id = str_replace('live_', '', $trxn_id);
       $trxn_id = intval($trxn_id) + 1;
-      $params['trxn_id'] = 'live_' . $trxn_id . '_' . uniqid();
+      $params['trxn_id'] = sprintf('live_%08d', $trxn_id);
     }
     $params['gross_amount'] = $params['amount'];
     // Add a fee_amount so we can make sure fees are handled properly in underlying classes.
@@ -129,7 +122,7 @@ class CRM_Core_Payment_Dummy extends CRM_Core_Payment {
    * @return bool
    */
   protected function supportsLiveMode() {
-    return TRUE;
+    return FALSE;
   }
 
   /**

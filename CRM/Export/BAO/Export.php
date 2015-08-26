@@ -160,7 +160,7 @@ class CRM_Export_BAO_Export {
         if (!$fieldName) {
           continue;
         }
-        // get phoneType id and IM service provider id separately
+        // get phoneType id and IM service provider id seperately
         if ($fieldName == 'phone') {
           $phoneTypeId = CRM_Utils_Array::value(3, $value);
         }
@@ -1330,7 +1330,8 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
 
     // early exit for master_id, CRM-12100
     // in the DB it is an ID, but in the export, we retrive the display_name of the master record
-    if ($fieldName == 'master_id') {
+    // also for current_employer, CRM-16939
+    if ($fieldName == 'master_id' || $fieldName == 'current_employer') {
       $sqlColumns[$fieldName] = "$fieldName varchar(128)";
       return;
     }
@@ -1388,7 +1389,7 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
     else {
       if (substr($fieldName, -3, 3) == '_id') {
         // for trxn_id and its variants use a longer buffer
-        // to accommodate different systems - CRM-13739
+        // to accomodate different systems - CRM-13739
         static $notRealIDFields = NULL;
         if ($notRealIDFields == NULL) {
           $notRealIDFields = array('trxn_id', 'componentpaymentfield_transaction_id');

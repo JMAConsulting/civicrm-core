@@ -29,10 +29,12 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * Contribution Page form.
+ * form to process actions on the group aspect of Custom Data
  */
 class CRM_Contribute_Form_ContributionPage extends CRM_Core_Form {
 
@@ -79,13 +81,6 @@ class CRM_Contribute_Form_ContributionPage extends CRM_Core_Form {
   protected $_priceSetID = NULL;
 
   protected $_values;
-
-  /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Contribution';
-  }
 
   /**
    * Set variables up before form is built.

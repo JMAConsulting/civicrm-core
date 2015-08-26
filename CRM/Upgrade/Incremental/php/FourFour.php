@@ -26,10 +26,25 @@
  */
 
 /**
- * Upgrade logic for 4.4
+ *
+ * @package CRM
+ * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
-class CRM_Upgrade_Incremental_php_FourFour extends CRM_Upgrade_Incremental_Base {
+class CRM_Upgrade_Incremental_php_FourFour {
+  const BATCH_SIZE = 5000;
+
   const MAX_WORD_REPLACEMENT_SIZE = 255;
+
+  /**
+   * @param $errors
+   *
+   * @return bool
+   */
+  public function verifyPreDBstate(&$errors) {
+    return TRUE;
+  }
 
   /**
    * Compute any messages which should be displayed beforeupgrade.
@@ -106,7 +121,7 @@ WHERE ceft.entity_table = 'civicrm_contribution' AND cft.payment_instrument_id I
    */
   public function upgrade_4_4_alpha1($rev) {
     // task to process sql
-    $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => '4.4.alpha1')), 'runSql', $rev);
+    $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => '4.4.alpha1')), 'task_4_4_x_runSql', $rev);
 
     // Consolidate activity contacts CRM-12274.
     $this->addTask('Consolidate activity contacts', 'activityContacts');
@@ -118,7 +133,7 @@ WHERE ceft.entity_table = 'civicrm_contribution' AND cft.payment_instrument_id I
    * @param $rev
    */
   public function upgrade_4_4_beta1($rev) {
-    $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => '4.4.beta1')), 'runSql', $rev);
+    $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => '4.4.beta1')), 'task_4_4_x_runSql', $rev);
 
     // add new 'data' column in civicrm_batch
     $query = 'ALTER TABLE civicrm_batch ADD data LONGTEXT NULL COMMENT "cache entered data"';
@@ -239,7 +254,7 @@ VALUES {$insertStatus}";
       CRM_Core_DAO::executeQuery($sql, $p);
     }
 
-    $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => '4.4.1')), 'runSql', $rev);
+    $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => '4.4.1')), 'task_4_4_x_runSql', $rev);
     $this->addTask('Patch word-replacement schema', 'wordReplacements_patch', $rev);
   }
 
@@ -282,7 +297,7 @@ WHERE a.id IS NULL;
     }
 
     // task to process sql
-    $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => '4.4.4')), 'runSql', $rev);
+    $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => '4.4.4')), 'task_4_4_x_runSql', $rev);
 
     // CRM-13892 : add `name` column to dashboard schema
     $query = "
@@ -292,6 +307,7 @@ ALTER TABLE civicrm_dashboard
 
     $dashboard = new CRM_Core_DAO_Dashboard();
     $dashboard->find();
+    $values = '';
     while ($dashboard->fetch()) {
       $urlElements = explode('/', $dashboard->url);
       if ($urlElements[1] == 'dashlet') {
@@ -682,6 +698,16 @@ CREATE TABLE IF NOT EXISTS `civicrm_word_replacement` (
       CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_word_replacement ADD CONSTRAINT UI_domain_find UNIQUE KEY `UI_domain_find` (`domain_id`,`find_word`);");
       CRM_Core_DAO::executeQuery("ALTER TABLE civicrm_word_replacement ADD CONSTRAINT FK_civicrm_word_replacement_domain_id FOREIGN KEY (`domain_id`) REFERENCES `civicrm_domain` (`id`);");
     }
+    return TRUE;
+  }
+
+  /**
+   * (Queue Task Callback)
+   */
+  public static function task_4_4_x_runSql(CRM_Queue_TaskContext $ctx, $rev) {
+    $upgrade = new CRM_Upgrade_Form();
+    $upgrade->processSQL($rev);
+
     return TRUE;
   }
 

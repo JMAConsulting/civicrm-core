@@ -118,7 +118,7 @@
             <!-- end of body -->
             <div class="clear"></div>
           </div>
-          <!-- end of main accordion -->
+          <!-- end of main accordian -->
         </td>
       </tr>
     </table>

@@ -142,7 +142,9 @@ class CRM_Core_Page_AJAX_Attachment {
       }
     }
 
-    CRM_Utils_JSON::output(array_merge($result));
+    header('Content-Type: text/javascript');
+    echo json_encode(array_merge($result));
+    CRM_Utils_System::civiExit();
   }
 
   /**

@@ -36,6 +36,6 @@
   {/if}
 </div>
 
-{include file="CRM/Core/BillingBlockWrapper.tpl"}
+{include file="CRM/Core/BillingBlock.tpl"}
 
 <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"}</div>

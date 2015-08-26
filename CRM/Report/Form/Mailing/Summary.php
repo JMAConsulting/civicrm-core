@@ -146,7 +146,7 @@ class CRM_Report_Form_Mailing_Summary extends CRM_Report_Form {
       'dao' => 'CRM_Mailing_DAO_Mailing',
       'fields' => array(
         'delivered_count' => array(
-          'name' => 'id',
+          'name' => 'event_queue_id',
           'title' => ts('Delivered'),
         ),
         'accepted_rate' => array(
@@ -164,7 +164,7 @@ class CRM_Report_Form_Mailing_Summary extends CRM_Report_Form {
       'dao' => 'CRM_Mailing_DAO_Mailing',
       'fields' => array(
         'bounce_count' => array(
-          'name' => 'id',
+          'name' => 'event_queue_id',
           'title' => ts('Bounce'),
         ),
         'bounce_rate' => array(
@@ -182,7 +182,7 @@ class CRM_Report_Form_Mailing_Summary extends CRM_Report_Form {
       'dao' => 'CRM_Mailing_DAO_Mailing',
       'fields' => array(
         'open_count' => array(
-          'name' => 'id',
+          'name' => 'event_queue_id',
           'title' => ts('Opened'),
         ),
         'open_rate' => array(
@@ -200,7 +200,7 @@ class CRM_Report_Form_Mailing_Summary extends CRM_Report_Form {
       'dao' => 'CRM_Mailing_DAO_Mailing',
       'fields' => array(
         'click_count' => array(
-          'name' => 'id',
+          'name' => 'event_queue_id',
           'title' => ts('Clicks'),
         ),
         'CTR' => array(
@@ -477,7 +477,7 @@ class CRM_Report_Form_Mailing_Summary extends CRM_Report_Form {
       return $errors;
     }
 
-    $criteria = self::getChartCriteria();
+    $criterias = self::getChartCriteria();
     $isError = TRUE;
     foreach ($fields['fields'] as $fld => $isActive) {
       if (in_array($fld, array(
@@ -498,8 +498,8 @@ class CRM_Report_Form_Mailing_Summary extends CRM_Report_Form {
 
     if ($isError) {
       $errors['_qf_default'] = ts('For Chart view, please select at least one field from %1 OR %2.', array(
-          1 => implode(', ', $criteria['count']),
-          2 => implode(', ', $criteria['rate']),
+          1 => implode(', ', $criterias['count']),
+          2 => implode(', ', $criterias['rate']),
         ));
     }
 
@@ -514,7 +514,7 @@ class CRM_Report_Form_Mailing_Summary extends CRM_Report_Form {
       return;
     }
 
-    $criteria = self::getChartCriteria();
+    $criterias = self::getChartCriteria();
 
     $chartInfo = array(
       'legend' => ts('Mail Summary'),
@@ -528,42 +528,42 @@ class CRM_Report_Form_Mailing_Summary extends CRM_Report_Form {
     foreach ($rows as $row) {
       $chartInfo['values'][$row['civicrm_mailing_name']] = array();
       if ($plotCount) {
-        foreach ($criteria['count'] as $criteria => $label) {
+        foreach ($criterias['count'] as $criteria => $label) {
           if (isset($row[$criteria])) {
             $chartInfo['values'][$row['civicrm_mailing_name']][$label] = $row[$criteria];
             $chartInfo['tip'][$label] = "{$label} #val#";
             $plotRate = FALSE;
           }
-          elseif (isset($criteria['count'][$criteria])) {
-            unset($criteria['count'][$criteria]);
+          elseif (isset($criterias['count'][$criteria])) {
+            unset($criterias['count'][$criteria]);
           }
         }
       }
       if ($plotRate) {
-        foreach ($criteria['rate'] as $criteria => $label) {
+        foreach ($criterias['rate'] as $criteria => $label) {
           if (isset($row[$criteria])) {
             $chartInfo['values'][$row['civicrm_mailing_name']][$label] = $row[$criteria];
             $chartInfo['tip'][$label] = "{$label} #val#";
             $plotCount = FALSE;
           }
-          elseif (isset($criteria['rate'][$criteria])) {
-            unset($criteria['rate'][$criteria]);
+          elseif (isset($criterias['rate'][$criteria])) {
+            unset($criterias['rate'][$criteria]);
           }
         }
       }
     }
 
     if ($plotCount) {
-      $criteria = $criteria['count'];
+      $criterias = $criterias['count'];
     }
     else {
-      $criteria = $criteria['rate'];
+      $criterias = $criterias['rate'];
     }
 
-    $chartInfo['criteria'] = array_values($criteria);
+    $chartInfo['criteria'] = array_values($criterias);
 
     // dynamically set the graph size
-    $chartInfo['xSize'] = ((count($rows) * 125) + (count($rows) * count($criteria) * 40));
+    $chartInfo['xSize'] = ((count($rows) * 125) + (count($rows) * count($criterias) * 40));
 
     // build the chart.
     CRM_Utils_OpenFlashChart::buildChart($chartInfo, $this->_params['charts']);

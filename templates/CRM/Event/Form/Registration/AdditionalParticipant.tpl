@@ -32,6 +32,8 @@
 
 {include file="CRM/common/TrackingFields.tpl"}
 
+{capture assign='reqMark'}<span class="marker"  title="{ts}This field is required.{/ts}">*</span>{/capture}
+
 {*CRM-4320*}
 {if $statusMessage}
     <div class="messages status no-popup">

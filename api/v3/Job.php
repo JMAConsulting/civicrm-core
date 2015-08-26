@@ -568,8 +568,6 @@ function civicrm_api3_job_cleanup($params) {
   $prevNext  = CRM_Utils_Array::value('prevNext', $params, TRUE);
   $dbCache   = CRM_Utils_Array::value('dbCache', $params, FALSE);
   $memCache  = CRM_Utils_Array::value('memCache', $params, FALSE);
-  $tplCache  = CRM_Utils_Array::value('tplCache', $params, FALSE);
-  $wordRplc  = CRM_Utils_Array::value('wordRplc', $params, FALSE);
 
   if ($session || $tempTable || $prevNext) {
     CRM_Core_BAO_Cache::cleanup($session, $tempTable, $prevNext);
@@ -579,21 +577,12 @@ function civicrm_api3_job_cleanup($params) {
     CRM_Core_BAO_Job::cleanup();
   }
 
-  if ($tplCache) {
-    $config = CRM_Core_Config::singleton();
-    $config->cleanup(1, FALSE);
-  }
-
   if ($dbCache) {
     CRM_Core_Config::clearDBCache();
   }
 
   if ($memCache) {
     CRM_Utils_System::flushCache();
-  }
-
-  if ($wordRplc) {
-    CRM_Core_BAO_WordReplacement::rebuild();
   }
 }
 

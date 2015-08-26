@@ -381,21 +381,6 @@ class CRM_Core_CodeGen_Specification {
         }
       }
     }
-
-    // in multilingual context popup, we need extra information to create appropriate widget
-    if ($fieldXML->localizable) {
-      if (isset($fieldXML->html)) {
-        $field['widget'] = (array) $fieldXML->html;
-      }
-      else {
-        // default
-        $field['widget'] = array('type' => 'Text');
-      }
-      if (isset($fieldXML->required)) {
-        $field['widget']['required'] = $this->value('required', $fieldXML);
-      }
-    }
-
     $field['pseudoconstant'] = $this->value('pseudoconstant', $fieldXML);
     if (!empty($field['pseudoconstant'])) {
       //ok this is a bit long-winded but it gets there & is consistent with above approach
@@ -412,7 +397,7 @@ class CRM_Core_CodeGen_Specification {
         'nameColumn',
         // Where clause snippet (will be joined to the rest of the query with AND operator)
         'condition',
-        // callback function incase of static arrays
+        // callback funtion incase of static arrays
         'callback',
         // Path to options edit form
         'optionEditPath',
@@ -575,7 +560,7 @@ class CRM_Core_CodeGen_Specification {
       'key' => trim($this->value('key', $foreignXML)),
       'import' => $this->value('import', $foreignXML, FALSE),
       'export' => $this->value('import', $foreignXML, FALSE),
-      // we do this matching in a separate phase (resolveForeignKeys)
+      // we do this matching in a seperate phase (resolveForeignKeys)
       'className' => NULL,
       'onDelete' => $this->value('onDelete', $foreignXML, FALSE),
     );
@@ -660,13 +645,18 @@ class CRM_Core_CodeGen_Specification {
 
   /**
    * Sets the size property of a textfield.
+   * See constants defined in CRM_Utils_Type for possible values
    */
   protected function getSize($fieldXML) {
     // Extract from <size> tag if supplied
     if (!empty($fieldXML->html) && $this->value('size', $fieldXML->html)) {
-      return $this->value('size', $fieldXML->html);
+      $const = 'CRM_Utils_Type::' . strtoupper($fieldXML->html->size);
+      if (defined($const)) {
+        return $const;
+      }
     }
     // Infer from <length> tag if <size> was not explicitly set or was invalid
+
     // This map is slightly different from CRM_Core_Form_Renderer::$_sizeMapper
     // Because we usually want fields to render as smaller than their maxlength
     $sizes = array(

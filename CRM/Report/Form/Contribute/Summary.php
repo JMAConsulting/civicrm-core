@@ -29,8 +29,6 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
  */
 class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
   protected $_addressField = FALSE;
@@ -46,19 +44,7 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
   public $_drilldownReport = array('contribute/detail' => 'Link to Detail Report');
 
   /**
-   * To what frequency group-by a date column
-   *
-   * @var array
-   */
-  protected $_groupByDateFreq = array(
-    'MONTH' => 'Month',
-    'YEARWEEK' => 'Week',
-    'QUARTER' => 'Quarter',
-    'YEAR' => 'Year',
-    'FISCALYEAR' => 'Fiscal Year',
-  );
-
-  /**
+   * Class constructor.
    */
   public function __construct() {
 
@@ -283,19 +269,9 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     parent::__construct();
   }
 
-  public function preProcess() {
-    parent::preProcess();
-  }
-
   /**
-   * @param bool $freeze
-   *
-   * @return array
+   * Set select clause.
    */
-  public function setDefaultValues($freeze = TRUE) {
-    return parent::setDefaultValues($freeze);
-  }
-
   public function select() {
     $select = array();
     $this->_columnHeaders = array();
@@ -321,17 +297,6 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
                 $field['title'] = 'Year';
                 break;
 
-              case 'FISCALYEAR':
-                $config = CRM_Core_Config::singleton();
-                $fy = $config->fiscalYearStart;
-                $fiscal = self::fiscalYearOffset($field['dbAlias']);
-
-                $select[] = "DATE_ADD(MAKEDATE({$fiscal}, 1), INTERVAL ({$fy{'M'}})-1 MONTH) AS {$tableName}_{$fieldName}_start";
-                $select[] = "{$fiscal} AS {$tableName}_{$fieldName}_subtotal";
-                $select[] = "{$fiscal} AS {$tableName}_{$fieldName}_interval";
-                $field['title'] = 'Fiscal Year';
-                break;
-
               case 'MONTH':
                 $select[] = "DATE_SUB({$field['dbAlias']}, INTERVAL (DAYOFMONTH({$field['dbAlias']})-1) DAY) as {$tableName}_{$fieldName}_start";
                 $select[] = "MONTH({$field['dbAlias']}) AS {$tableName}_{$fieldName}_subtotal";
@@ -352,7 +317,7 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
               $this->_columnHeaders["{$tableName}_{$fieldName}_start"]['type'] = $field['type'];
               $this->_columnHeaders["{$tableName}_{$fieldName}_start"]['group_by'] = $this->_params['group_bys_freq'][$fieldName];
 
-              // just to make sure these values are transferred to rows.
+              // just to make sure these values are transfered to rows.
               // since we need that for calculation purpose,
               // e.g making subtotals look nicer or graphs
               $this->_columnHeaders["{$tableName}_{$fieldName}_interval"] = array('no_display' => TRUE);
@@ -406,16 +371,17 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
   }
 
   /**
-   * @param $fields
-   * @param $files
-   * @param $self
+   * Set form rules.
+   *
+   * @param array $fields
+   * @param array $files
+   * @param CRM_Report_Form_Contribute_Summary $self
    *
    * @return array
    */
   public static function formRule($fields, $files, $self) {
-    $errors = $grouping = array();
-    //check for searching combination of dispaly columns and
-    //grouping criteria
+    // Check for searching combination of display columns and
+    // grouping criteria
     $ignoreFields = array('total_amount', 'sort_name');
     $errors = $self->customDataFormRule($fields, $ignoreFields);
 
@@ -434,6 +400,11 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     return $errors;
   }
 
+  /**
+   * Set from clause.
+   *
+   * @param string $entity
+   */
   public function from($entity = NULL) {
     $softCreditJoinType = "LEFT";
     if (!empty($this->_params['fields']['soft_amount']) &&
@@ -474,6 +445,9 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     }
   }
 
+  /**
+   * Set group by clause.
+   */
   public function groupBy() {
     $this->_groupBy = "";
     $append = FALSE;
@@ -498,12 +472,7 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
                 )) {
                   $append = '';
                 }
-                if ($this->_params['group_bys_freq'][$fieldName] == 'FISCALYEAR') {
-                  $this->_groupBy[] = self::fiscalYearOffset($field['dbAlias']);
-                }
-                else {
-                  $this->_groupBy[] = "$append {$this->_params['group_bys_freq'][$fieldName]}({$field['dbAlias']})";
-                }
+                $this->_groupBy[] = "$append {$this->_params['group_bys_freq'][$fieldName]}({$field['dbAlias']})";
                 $append = TRUE;
               }
               else {
@@ -528,6 +497,9 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     }
   }
 
+  /**
+   * Store having clauses as an array.
+   */
   public function storeWhereHavingClauseArray() {
     parent::storeWhereHavingClauseArray();
     if (empty($this->_params['fields']['soft_amount']) &&
@@ -542,7 +514,9 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
   }
 
   /**
-   * @param $rows
+   * Set statistics.
+   *
+   * @param array $rows
    *
    * @return array
    */
@@ -550,18 +524,16 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     $statistics = parent::statistics($rows);
 
     $softCredit = CRM_Utils_Array::value('soft_amount', $this->_params['fields']);
-    $onlySoftCredit = $softCredit &&
-      !CRM_Utils_Array::value('total_amount', $this->_params['fields']);
-    $totalAmount = $average = $softTotalAmount = $softAverage = array();
+    $onlySoftCredit = $softCredit && !CRM_Utils_Array::value('total_amount', $this->_params['fields']);
     $group = "\nGROUP BY {$this->_aliases['civicrm_contribution']}.currency";
 
     $this->from('contribution');
-    $contriQuery = "
+    $contriSQL = "SELECT
 COUNT({$this->_aliases['civicrm_contribution']}.total_amount )        as civicrm_contribution_total_amount_count,
 SUM({$this->_aliases['civicrm_contribution']}.total_amount )          as civicrm_contribution_total_amount_sum,
 ROUND(AVG({$this->_aliases['civicrm_contribution']}.total_amount), 2) as civicrm_contribution_total_amount_avg,
 {$this->_aliases['civicrm_contribution']}.currency                    as currency
-{$this->_from} {$this->_where}";
+{$this->_from} {$this->_where} {$group} {$this->_having}";
 
     if ($softCredit) {
       $this->from();
@@ -573,10 +545,9 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
 {$this->_from} {$this->_where} {$group} {$this->_having}";
     }
 
-    $contriSQL = "SELECT {$contriQuery} {$group} {$this->_having}";
     $contriDAO = CRM_Core_DAO::executeQuery($contriSQL);
 
-    $totalAmount = $average = $mode = $median = $softTotalAmount = $softAverage = array();
+    $totalAmount = $average = $softTotalAmount = $softAverage = array();
     $count = $softCount = 0;
     while ($contriDAO->fetch()) {
       $totalAmount[]
@@ -585,17 +556,6 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
       $average[] = CRM_Utils_Money::format($contriDAO->civicrm_contribution_total_amount_avg, $contriDAO->currency);
       $count += $contriDAO->civicrm_contribution_total_amount_count;
     }
-
-    $groupBy = "\n{$group}, {$this->_aliases['civicrm_contribution']}.total_amount";
-    $orderBy = "\nORDER BY civicrm_contribution_total_amount_count DESC";
-    $modeSQL = "SELECT civicrm_contribution_total_amount_count, amount, currency
-    FROM (SELECT {$this->_aliases['civicrm_contribution']}.total_amount as amount,
-    {$contriQuery} {$groupBy} {$orderBy}) as mode GROUP BY currency";
-
-    $mode = CRM_Contribute_BAO_Contribution::computeStats('mode', $modeSQL);
-
-    $medianSQL = "{$this->_from} {$this->_where}";
-    $median = CRM_Contribute_BAO_Contribution::computeStats('median', $medianSQL, $this->_aliases['civicrm_contribution']);
 
     if ($softCredit) {
       $softDAO = CRM_Core_DAO::executeQuery($softSQL);
@@ -623,16 +583,6 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
         'value' => implode(',  ', $average),
         'type' => CRM_Utils_Type::T_STRING,
       );
-      $statistics['counts']['mode'] = array(
-        'title' => ts('Mode'),
-        'value' => implode(',  ', $mode),
-        'type' => CRM_Utils_Type::T_STRING,
-      );
-      $statistics['counts']['median'] = array(
-        'title' => ts('Median'),
-        'value' => implode(',  ', $median),
-        'type' => CRM_Utils_Type::T_STRING,
-      );
     }
     if ($softCredit) {
       $statistics['counts']['soft_amount'] = array(
@@ -653,11 +603,20 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
     return $statistics;
   }
 
+  /**
+   * Post process function.
+   */
   public function postProcess() {
     $this->buildACLClause($this->_aliases['civicrm_contact']);
     parent::postProcess();
   }
 
+  /**
+   * Build table rows for output.
+   *
+   * @param string $sql
+   * @param array $rows
+   */
   public function buildRows($sql, &$rows) {
     $dao = CRM_Core_DAO::executeQuery($sql);
     if (!is_array($rows)) {
@@ -666,7 +625,7 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
 
     // use this method to modify $this->_columnHeaders
     $this->modifyColumnHeaders();
-
+    $contriRows = array();
     $unselectedSectionColumns = $this->unselectedSectionColumns();
 
     //CRM-16338 if both soft-credit and contribution are enabled then process the contribution's
@@ -716,7 +675,9 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
   }
 
   /**
-   * @param $rows
+   * Build chart.
+   *
+   * @param array $rows
    */
   public function buildChart(&$rows) {
     $graphRows = array();
@@ -801,12 +762,6 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
             break;
 
           case 'year':
-            $dateEnd = date("Ymd", mktime(0, 0, 0, $dateEnd['M'],
-              $dateEnd['d'] - 1, $dateEnd['Y'] + 1
-            ));
-            break;
-
-          case 'fiscalyear':
             $dateEnd = date("Ymd", mktime(0, 0, 0, $dateEnd['M'],
               $dateEnd['d'] - 1, $dateEnd['Y'] + 1
             ));

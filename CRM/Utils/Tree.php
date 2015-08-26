@@ -63,7 +63,7 @@
  * All nodes of the tree (including root and leaf node) contain the following properties
  *       Name      - what is the node name ?
  *       Children  - who are it's children
- *       Data      - any other auxiliary data
+ *       Data      - any other auxillary data
  *
  *
  * Internally all nodes are an array with the following keys

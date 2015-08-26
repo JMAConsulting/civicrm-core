@@ -449,8 +449,6 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
     // To Display Payment Details of pledged amount
     // for pledge payments In Progress
     if (!empty($display)) {
-      $statusId = array_keys(CRM_Core_PseudoConstant::accountOptionValues("contribution_status", NULL, " AND v.name IN  ('Pending', 'Overdue')"));
-      $statusId = implode(',', $statusId);
       $sqlPayment = "
                  SELECT min(payment.scheduled_date) as scheduled_date,
                         payment.pledge_id,
@@ -461,7 +459,7 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
                        LEFT JOIN civicrm_pledge pledge
                                  ON pledge.id = payment.pledge_id
 
-                  WHERE payment.status_id IN ({$statusId})
+                  WHERE payment.status_id = 2
 
                   GROUP BY payment.pledge_id";
 

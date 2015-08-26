@@ -24,7 +24,9 @@
  +--------------------------------------------------------------------+
 *}
 {* this template is used for adding/editing/deleting pledge *}
-{if $showAdditionalInfo and $formType }
+{if $cdType}
+  {include file="CRM/Custom/Form/CustomData.tpl"}
+{elseif $showAdditionalInfo and $formType }
   {include file="CRM/Contribute/Form/AdditionalInfo/$formType.tpl"}
 {else}
 {if !$email and $action neq 8 and $context neq 'standalone'}

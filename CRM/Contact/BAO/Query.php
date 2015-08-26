@@ -1601,7 +1601,9 @@ class CRM_Contact_BAO_Query {
       }
       $result = array($id, 'IN', $values, 0, 0);
     }
-    elseif ($id == 'contact_type') {
+    elseif ($id == 'contact_type' ||
+      (!empty($values) && is_array($values) && !in_array(key($values), CRM_Core_DAO::acceptedSQLOperators(), TRUE))
+    ) {
       $result = array($id, 'IN', $values, 0, $wildcard);
     }
     else {
@@ -1770,17 +1772,11 @@ class CRM_Contact_BAO_Query {
         CRM_Activity_BAO_Query::whereClauseSingle($values, $this);
         return;
 
-      case 'age_low':
-      case 'age_high':
       case 'birth_date_low':
       case 'birth_date_high':
       case 'deceased_date_low':
       case 'deceased_date_high':
         $this->demographics($values);
-        return;
-
-      case 'age_asof_date':
-        // handled by demographics
         return;
 
       case 'log_date_low':
@@ -1871,26 +1867,7 @@ class CRM_Contact_BAO_Query {
         }
         // check for both id and contact_id
         if ($this->_params[$id][0] == 'id' || $this->_params[$id][0] == 'contact_id') {
-          if (
-            $this->_params[$id][1] == 'IS NULL' ||
-            $this->_params[$id][1] == 'IS NOT NULL'
-          ) {
-            $this->_where[0][] = "contact_a.id {$this->_params[$id][1]}";
-          }
-          elseif (is_array($this->_params[$id][2])) {
-            $idList = implode("','", $this->_params[$id][2]);
-            //why on earth do they put ' in the middle & not on the outside? We have to assume it's
-            //to support 'something' so lets add them conditionally to support the api (which is a tested flow
-            // so if you are looking to alter this check api test results
-            if (strpos(trim($idList), "'") > 0) {
-              $idList = "'" . $idList . "'";
-            }
-
-            $this->_where[0][] = "contact_a.id IN ({$idList})";
-          }
-          else {
-            $this->_where[0][] = self::buildClause("contact_a.id", "{$this->_params[$id][1]}", "{$this->_params[$id][2]}");
-          }
+          $this->_where[0][] = self::buildClause("contact_a.id", $this->_params[$id][1], $this->_params[$id][2]);
         }
         else {
           $this->whereClauseSingle($this->_params[$id]);
@@ -2924,6 +2901,9 @@ class CRM_Contact_BAO_Query {
     elseif (strpos($op, 'IN') !== FALSE) {
       $groups = array($op => $groups);
     }
+    elseif (is_array($groups) && count($groups)) {
+      $groups = array('IN' => $groups);
+    }
 
     // Find all the groups that are part of a saved search.
     $smartGroupClause = self::buildClause("id", $op, $groups, 'Int');
@@ -3506,7 +3486,14 @@ WHERE  $smartGroupClause
     }
     else {
       $field = 'civicrm_address.postal_code';
-      $val = CRM_Utils_Type::escape($value, 'String');
+      // Per CRM-17060 we might be looking at an 'IN' syntax so don't case arrays to string.
+      if (!is_array($value)) {
+        $val = CRM_Utils_Type::escape($value, 'String');
+      }
+      else {
+        // Do we need to escape values here? I would expect buildClause does.
+        $val = $value;
+      }
     }
 
     $this->_tables['civicrm_address'] = $this->_whereTables['civicrm_address'] = 1;
@@ -3859,12 +3846,7 @@ WHERE  $smartGroupClause
   public function demographics(&$values) {
     list($name, $op, $value, $grouping, $wildcard) = $values;
 
-    if (($name == 'age_low') || ($name == 'age_high')) {
-      $this->ageRangeQueryBuilder($values,
-        'contact_a', 'age', 'birth_date', ts('Age')
-      );
-    }
-    elseif (($name == 'birth_date_low') || ($name == 'birth_date_high')) {
+    if (($name == 'birth_date_low') || ($name == 'birth_date_high')) {
 
       $this->dateQueryBuilder($values,
         'contact_a', 'birth_date', 'birth_date', ts('Birth Date')
@@ -4727,7 +4709,6 @@ civicrm_relationship.is_permission_a_b = 0
 SELECT COUNT( conts.total_amount ) as total_count,
        SUM(   conts.total_amount ) as total_amount,
        AVG(   conts.total_amount ) as total_avg,
-       conts.total_amount          as amount,
        conts.currency              as currency";
     if ($this->_permissionWhereClause) {
       $where .= " AND " . $this->_permissionWhereClause;
@@ -4742,11 +4723,10 @@ SELECT COUNT( conts.total_amount ) as total_count,
     $summary = array();
     $summary['total'] = array();
     $summary['total']['count'] = $summary['total']['amount'] = $summary['total']['avg'] = "n/a";
-    $innerQuery = "SELECT civicrm_contribution.total_amount, COUNT(civicrm_contribution.total_amount) as civicrm_contribution_total_amount_count,
-      civicrm_contribution.currency $from $completedWhere";
 
     $query = "$select FROM (
-      $innerQuery GROUP BY civicrm_contribution.id
+      SELECT civicrm_contribution.total_amount, civicrm_contribution.currency $from $completedWhere
+      GROUP BY civicrm_contribution.id
     ) as conts
     GROUP BY currency";
 
@@ -4759,27 +4739,12 @@ SELECT COUNT( conts.total_amount ) as total_count,
       $summary['total']['amount'][] = CRM_Utils_Money::format($dao->total_amount, $dao->currency);
       $summary['total']['avg'][] = CRM_Utils_Money::format($dao->total_avg, $dao->currency);
     }
-
-    $orderBy = 'ORDER BY civicrm_contribution_total_amount_count DESC';
-    $groupBy = 'GROUP BY currency, civicrm_contribution.total_amount';
-    $modeSQL = "$select, conts.civicrm_contribution_total_amount_count as civicrm_contribution_total_amount_count FROM ($innerQuery
-    $groupBy $orderBy) as conts
-    GROUP BY currency";
-
-    $summary['total']['mode'] = CRM_Contribute_BAO_Contribution::computeStats('mode', $modeSQL);
-
-    $medianSQL = "{$from} {$completedWhere}";
-    $summary['total']['median'] = CRM_Contribute_BAO_Contribution::computeStats('median', $medianSQL, 'civicrm_contribution');
-    $summary['total']['currencyCount'] = count($summary['total']['median']);
-
     if (!empty($summary['total']['amount'])) {
       $summary['total']['amount'] = implode(',&nbsp;', $summary['total']['amount']);
       $summary['total']['avg'] = implode(',&nbsp;', $summary['total']['avg']);
-      $summary['total']['mode'] = implode(',&nbsp;', $summary['total']['mode']);
-      $summary['total']['median'] = implode(',&nbsp;', $summary['total']['median']);
     }
     else {
-      $summary['total']['amount'] = $summary['total']['avg'] = $summary['total']['median'] = 0;
+      $summary['total']['amount'] = $summary['total']['avg'] = 0;
     }
 
     // soft credit summary
@@ -5166,104 +5131,6 @@ SELECT COUNT( conts.total_amount ) as cancel_count,
     }
   }
 
-
-  /**
-   * @param $values
-   * @param string $tableName
-   * @param string $fieldName
-   * @param string $dbFieldName
-   * @param $fieldTitle
-   * @param null $options
-   */
-  public function ageRangeQueryBuilder(
-    &$values,
-    $tableName, $fieldName,
-    $dbFieldName, $fieldTitle,
-    $options = NULL
-  ) {
-    list($name, $op, $value, $grouping, $wildcard) = $values;
-
-    $asofDateValues = $this->getWhereValues("{$fieldName}_asof_date", $grouping);
-    $asofDate = NULL;  // will be treated as current day
-    if ($asofDateValues) {
-      $asofDate = CRM_Utils_Date::processDate($asofDateValues[2]);
-      $asofDateFormat = CRM_Utils_Date::customFormat(substr($asofDate, 0, 8));
-      $fieldTitle .= ' ' . ts('as of') . ' ' . $asofDateFormat;
-    }
-
-    if ($name == "{$fieldName}_low" ||
-      $name == "{$fieldName}_high"
-    ) {
-      if (isset($this->_rangeCache[$fieldName])) {
-        return;
-      }
-      $this->_rangeCache[$fieldName] = 1;
-
-      $secondOP = $secondPhrase = $secondValue = NULL;
-
-      if ($name == "{$fieldName}_low") {
-        $firstPhrase = ts('greater than or equal to');
-        // NB: age > X means date of birth < Y
-        $firstOP = '<=';
-        $firstDate = self::calcDateFromAge($asofDate, $value, 'min');
-
-        $secondValues = $this->getWhereValues("{$fieldName}_high", $grouping);
-        if (!empty($secondValues)) {
-          $secondOP = '>=';
-          $secondPhrase = ts('less than or equal to');
-          $secondValue = $secondValues[2];
-          $secondDate = self::calcDateFromAge($asofDate, $secondValue, 'max');
-        }
-      }
-      else {
-        $firstOP = '>=';
-        $firstPhrase = ts('less than or equal to');
-        $firstDate = self::calcDateFromAge($asofDate, $value, 'max');
-
-        $secondValues = $this->getWhereValues("{$fieldName}_low", $grouping);
-        if (!empty($secondValues)) {
-          $secondOP = '<=';
-          $secondPhrase = ts('greater than or equal to');
-          $secondValue = $secondValues[2];
-          $secondDate = self::calcDateFromAge($asofDate, $secondValue, 'min');
-        }
-      }
-
-      if ($secondOP) {
-        $this->_where[$grouping][] = "
-( {$tableName}.{$dbFieldName} $firstOP '$firstDate' ) AND
-( {$tableName}.{$dbFieldName} $secondOP '$secondDate' )
-";
-        $displayValue = $options ? $options[$value] : $value;
-        $secondDisplayValue = $options ? $options[$secondValue] : $secondValue;
-
-        $this->_qill[$grouping][]
-          = "$fieldTitle - $firstPhrase \"$displayValue\" " . ts('AND') . " $secondPhrase \"$secondDisplayValue\"";
-      }
-      else {
-        $this->_where[$grouping][] = "{$tableName}.{$dbFieldName} $firstOP '$firstDate'";
-        $displayValue = $options ? $options[$value] : $value;
-        $this->_qill[$grouping][] = "$fieldTitle - $firstPhrase \"$displayValue\"";
-      }
-      $this->_tables[$tableName] = $this->_whereTables[$tableName] = 1;
-      return;
-    }
-  }
-
-  public static function calcDateFromAge($asofDate, $age, $type) {
-    $date = new DateTime($asofDate);
-    if ($type == "min") {
-      // minimum age is $age: dob <= date - age "235959"
-      $date->sub(new DateInterval("P" . $age . "Y"));
-      return $date->format('Ymd') . "235959";
-    }
-    else {
-      // max age is $age: dob >= date - (age + 1y) + 1d "000000"
-      $date->sub(new DateInterval("P" . ($age + 1) . "Y"))->add(new DateInterval("P1D"));
-      return $date->format('Ymd') . "000000";
-    }
-  }
-
   /**
    * Given the field name, operator, value & its data type
    * builds the where Clause for the query
@@ -5298,6 +5165,13 @@ SELECT COUNT( conts.total_amount ) as cancel_count,
         $clause = " (NULLIF($field, '') IS NOT NULL) ";
         return $clause;
 
+      case 'IN':
+      case 'NOT IN':
+        // I feel like this would be escaped properly if passed through $queryString = CRM_Core_DAO::createSqlFilter.
+        if (!empty($value) && is_array($value) && !array_key_exists($op, $value)) {
+          $value = array($op => $value);
+        }
+
       default:
         if (empty($dataType)) {
           $dataType = 'String';
@@ -5321,7 +5195,15 @@ SELECT COUNT( conts.total_amount ) as cancel_count,
               return $queryString;
             }
           }
+          else {
+            $op = 'IN';
+            $dragonPlace = $iAmAnIntentionalENoticeThatWarnsOfAProblemYouShouldReportUsingOldFormat;
+            if (($queryString = CRM_Core_DAO::createSqlFilter($field, array($op => array_keys($value)), $dataType)) != FALSE) {
+              return $queryString;
+            }
+          }
         }
+
         $value = CRM_Utils_Type::escape($value, $dataType);
         // if we don't have a dataType we should assume
         if ($dataType == 'String' || $dataType == 'Text') {
@@ -5675,7 +5557,7 @@ AND   displayRelType.is_active = 1
         // handles pseudoconstant fixes for all component
         elseif (in_array($value['pseudoField'], array('participant_status', 'participant_role'))) {
           $pseudoOptions = $viewValues = array();
-          $pseudoOptions = CRM_Core_PseudoConstant::get('CRM_Event_DAO_Participant', $value['idCol']);
+          $pseudoOptions = CRM_Core_PseudoConstant::get('CRM_Event_DAO_Participant', $value['pseudoField'], array('flip' => 1));
           foreach (explode(CRM_Core_DAO::VALUE_SEPARATOR, $val) as $k => $v) {
             $viewValues[] = $pseudoOptions[$v];
           }
@@ -5781,9 +5663,6 @@ AND   displayRelType.is_active = 1
     }
     elseif ($daoName == 'CRM_Event_DAO_Event' && $fieldName == 'id') {
       $pseduoOptions = CRM_Event_BAO_Event::getEvents(0, $fieldValue, TRUE, TRUE, TRUE);
-    }
-    elseif ($fieldName == 'contribution_product_id') {
-      $pseduoOptions = CRM_Contribute_PseudoConstant::products();
     }
     elseif ($daoName == 'CRM_Contact_DAO_Group' && $fieldName == 'id') {
       $pseduoOptions = CRM_Core_PseudoConstant::group();

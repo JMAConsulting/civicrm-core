@@ -155,15 +155,29 @@
     </tr>
     <tr class="crm-preferences-display-form-block-editor_id">
       <td class="label">{$form.editor_id.label}</td>
-      <td>
-        {$form.editor_id.html}
-        &nbsp;
-        <span class="crm-button crm-icon-button" style="display:inline-block;vertical-align:middle;float:none!important;">
-          <span class="crm-button-icon ui-icon-gear"> </span>
-          {$form.ckeditor_config.html}
-        </span>
-      </td>
+      <td>{$form.editor_id.html}</td>
     </tr>
+    {if $form.wysiwyg_input_format.html}
+      <tr id="crm-preferences-display-form-block-wysiwyg_input_format" style="display:none;">
+        <td class="label">{$form.wysiwyg_input_format.label}</td>
+        <td>
+          {$form.wysiwyg_input_format.html}{literal}
+            <script type="text/javascript">
+              CRM.$(function($) {
+                if ($('#editor_id').val() == 4) {
+                  $('#crm-preferences-display-form-block-wysiwyg_input_format').show();
+                }
+              });
+            </script>
+          {/literal}
+          <br/>
+          <span class="description">
+            {ts}You will need to enable and configure several modules if you want to allow users to upload images while using a Drupal Default Editor.{/ts}
+            {docURL page="Configuring CiviCRM to Use the Default Drupal Editor" resource="wiki"}
+          </span>
+        </td>
+      </tr>
+    {/if}
     <tr class="crm-preferences-display-form-block-description">
       <td>&nbsp;</td>
       <td class="description">
@@ -235,11 +249,6 @@
           placeholder: 'ui-state-highlight',
           update: getSorting
         });
-
-        function showCKEditorConfig() {
-          $('.crm-preferences-display-form-block-editor_id .crm-button').toggle($(this).val() == 'CKEditor');
-        }
-        $('select[name=editor_id]').each(showCKEditorConfig).change(showCKEditorConfig);
       });
     </script>
   {/literal}

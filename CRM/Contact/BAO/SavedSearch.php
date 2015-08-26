@@ -296,7 +296,7 @@ LEFT JOIN civicrm_email ON (contact_a.id = civicrm_email.contact_id AND civicrm_
       $savedSearch->form_values = serialize($params['formValues']);
     }
     else {
-      $savedSearch->form_values = NULL;
+      $savedSearch->form_values = 'null';
     }
 
     $savedSearch->is_active = CRM_Utils_Array::value('is_active', $params, 1);
@@ -307,17 +307,6 @@ LEFT JOIN civicrm_email ON (contact_a.id = civicrm_email.contact_id AND civicrm_
     $savedSearch->save();
 
     return $savedSearch;
-  }
-
-  protected function assignTestValue($fieldName, &$fieldDef, $counter) {
-    if ($fieldName == 'form_values') {
-      // A dummy value for form_values.
-      $this->{$fieldName} = serialize(
-          array('sort_name' => "SortName{$counter}"));
-    }
-    else {
-      parent::assignTestValues($fieldName, $fieldDef, $counter);
-    }
   }
 
 }

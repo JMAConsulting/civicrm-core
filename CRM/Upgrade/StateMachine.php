@@ -34,18 +34,20 @@
  */
 
 /**
- * State machine for managing different states of the upgrade process.
+ * State machine for managing different states of the Import process.
+ *
  */
 class CRM_Upgrade_StateMachine extends CRM_Core_StateMachine {
 
   /**
    * Class constructor.
    *
-   * @param CRM_Upgrade_Controller $controller
-   * @param array $pages
-   * @param int $action
+   * @param object $controller
+   * @param const $pages
+   * @param \const|int $action
    *
-   * @return CRM_Upgrade_StateMachine
+   * @internal param \CRM_Upgrade_Controller_base $object
+   * @return \CRM_Upgrade_StateMachine CRM_Upgrade_StateMachine_Base
    */
   public function __construct(&$controller, &$pages, $action = CRM_Core_Action::NONE) {
     parent::__construct($controller, $action);

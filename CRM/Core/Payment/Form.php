@@ -64,6 +64,13 @@ class CRM_Core_Payment_Form {
       $form->assign('paymentTypeLabel', $paymentTypeLabel);
 
       $form->billingFieldSets[$paymentTypeName]['fields'] = $form->_paymentFields = array_intersect_key(self::getPaymentFieldMetadata($processor), array_flip($paymentFields));
+      if (in_array('cvv2', $paymentFields) && $isBackOffice) {
+        if (!civicrm_api3('setting', 'getvalue', array('name' => 'cvv_backoffice_required', 'group' => 'Contribute Preferences'))) {
+          $form->billingFieldSets[$paymentTypeName]['fields'][array_search('cvv2', $paymentFields)]['required'] = 0;
+        }
+      }
+
+      $form->billingPane = array($paymentTypeName => $paymentTypeLabel);
       $form->assign('paymentFields', $paymentFields);
     }
 
@@ -180,11 +187,31 @@ class CRM_Core_Payment_Form {
   }
 
   /**
+   * Add the payment fields to the template.
+   *
+   * Generally this is the payment processor fields & the billing fields required
+   * for the payment processor. However, this has been complicated by adding
+   * pay later billing fields into this mix
+   *
+   * We now have the situation where the required fields cannot be set as required
+   * on the form level if they are required for the payment processor, as another
+   * processor might be selected and the validation will then be incorrect.
+   *
+   * However, if they are required for pay later we DO set them on the form level,
+   * presumably assuming they will be required whatever happens.
+   *
+   * As a side-note this seems to re-enforce the argument for making pay later
+   * operate as a payment processor rather than as a 'special thing on its own'.
+   *
    * @param CRM_Core_Form $form
+   *   Form that the payment fields are to be added to.
    * @param bool $useRequired
+   *   Effectively this means are the fields required for pay-later - see above.
    * @param array $paymentFields
+   *   Fields that are to be shown on the payment form.
    */
   protected static function addCommonFields(&$form, $useRequired, $paymentFields) {
+    $requiredPaymentFields = array();
     foreach ($paymentFields as $name => $field) {
       if (!empty($field['cc_field'])) {
         if ($field['htmlType'] == 'chainSelect') {
@@ -199,7 +226,13 @@ class CRM_Core_Payment_Form {
           );
         }
       }
+      // CRM-17071 We seem to be tying ourselves in knots around the addition
+      // of requiring billing fields for pay-later. Here we 'tell' the form the
+      // field is required if it is not otherwise marked as required and is
+      // required for the billing block.
+      $requiredPaymentFields[$field['name']] = !$useRequired ? $field['is_required'] : FALSE;
     }
+    $form->assign('requiredPaymentFields', $requiredPaymentFields);
   }
 
   /**
@@ -210,7 +243,7 @@ class CRM_Core_Payment_Form {
    * @return array
    */
   public static function getPaymentFields($paymentProcessor) {
-    $paymentProcessorObject = Civi\Payment\System::singleton()->getByProcessor($paymentProcessor);
+    $paymentProcessorObject = CRM_Core_Payment::singleton(($paymentProcessor['is_test'] ? 'test' : 'live'), $paymentProcessor);
     return $paymentProcessorObject->getPaymentFormFields();
   }
 
@@ -220,7 +253,7 @@ class CRM_Core_Payment_Form {
    * @return array
    */
   public static function getPaymentFieldMetadata($paymentProcessor) {
-    $paymentProcessorObject = Civi\Payment\System::singleton()->getByProcessor($paymentProcessor);
+    $paymentProcessorObject = CRM_Core_Payment::singleton(($paymentProcessor['is_test'] ? 'test' : 'live'), $paymentProcessor);
     return $paymentProcessorObject->getPaymentFormFieldsMetadata();
   }
 
@@ -230,7 +263,7 @@ class CRM_Core_Payment_Form {
    * @return string
    */
   public static function getPaymentTypeName($paymentProcessor) {
-    $paymentProcessorObject = Civi\Payment\System::singleton()->getByProcessor($paymentProcessor);
+    $paymentProcessorObject = CRM_Core_Payment::singleton(($paymentProcessor['is_test'] ? 'test' : 'live'), $paymentProcessor);
     return $paymentProcessorObject->getPaymentTypeName();
   }
 
@@ -240,7 +273,7 @@ class CRM_Core_Payment_Form {
    * @return string
    */
   public static function getPaymentTypeLabel($paymentProcessor) {
-    $paymentProcessorObject = Civi\Payment\System::singleton()->getByProcessor($paymentProcessor);
+    $paymentProcessorObject = CRM_Core_Payment::singleton(($paymentProcessor['is_test'] ? 'test' : 'live'), $paymentProcessor);
     return ts(($paymentProcessorObject->getPaymentTypeLabel()) . ' Information');
   }
 
@@ -253,12 +286,6 @@ class CRM_Core_Payment_Form {
    *   for payment processors that gather payment data on site as rendering the fields as not being required. (not entirely sure why but this
    *   is implemented for back office forms)
    *
-   * @param bool $isBackOffice
-   *   Is this a backoffice form. This could affect the display of the cvn or whether some processors show,
-   *   although the distinction is losing it's meaning as front end forms are used for back office and a permission
-   *   for the 'enter without cvn' is probably more appropriate. Paypal std does not support another user
-   *   entering details but once again the issue is not back office but 'another user'.
-   *
    * @return bool
    */
   public static function buildPaymentForm(&$form, $processor, $isBillingDataOptional, $isBackOffice) {
@@ -268,13 +295,17 @@ class CRM_Core_Payment_Form {
       $form->assign('profileAddressFields', $profileAddressFields);
     }
 
-    if (!empty($processor['object']) && $processor['object']->buildForm($form)) {
+    // $processor->buildForm appears to be an undocumented (possibly unused) option for payment processors
+    // which was previously available only in some form flows
+    if (!empty($form->_paymentProcessor) && !empty($form->_paymentProcessor['object']) && $form->_paymentProcessor['object']->isSupported('buildForm')) {
+      $form->_paymentProcessor['object']->buildForm($form);
       return NULL;
     }
 
     self::setPaymentFieldsByProcessor($form, $processor, empty($isBillingDataOptional), $isBackOffice);
     self::addCommonFields($form, !$isBillingDataOptional, $form->_paymentFields);
     self::addRules($form, $form->_paymentFields);
+    self::addPaypalExpressCode($form);
     return (!empty($form->_paymentFields));
   }
 
@@ -326,7 +357,8 @@ class CRM_Core_Payment_Form {
   public static function validatePaymentInstrument($payment_processor_id, $values, &$errors, $form) {
     // ignore if we don't have a payment instrument to validate (e.g. backend payments)
     if ($payment_processor_id > 0) {
-      $payment = Civi\Payment\System::singleton()->getById($payment_processor_id);
+      $paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($payment_processor_id, 'live');
+      $payment = CRM_Core_Payment::singleton('live', $paymentProcessor, $form);
       $payment->validatePaymentInstrument($values, $errors);
     }
   }

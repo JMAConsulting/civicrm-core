@@ -24,7 +24,9 @@
  +--------------------------------------------------------------------+
 *}
 {* Relationship tab within View Contact - browse, and view relationships for a contact *}
-{if $action neq 16} {* add, update or view *}
+{if !empty($cdType) }
+  {include file="CRM/Custom/Form/CustomData.tpl"}
+{elseif $action neq 16} {* add, update or view *}
   {include file="CRM/Contact/Form/Relationship.tpl"}
 {else}
   <div id="contact-summary-relationship-tab" class="view-content">

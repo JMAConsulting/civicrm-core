@@ -288,14 +288,51 @@ class CRM_Event_Form_Registration extends CRM_Core_Form {
       // check for is_monetary status
       $isMonetary = CRM_Utils_Array::value('is_monetary', $this->_values['event']);
       $isPayLater = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Event', $this->_eventId, 'is_pay_later');
-      //check for various combinations for paylater, payment
+      //check for variour combination for paylater, payment
       //process with paid event.
       if ($isMonetary && (!$isPayLater || !empty($this->_values['event']['payment_processor']))) {
-        $this->_paymentProcessorIDs = explode(CRM_Core_DAO::VALUE_SEPARATOR, CRM_Utils_Array::value('payment_processor',
+        $ppID = CRM_Utils_Array::value('payment_processor',
           $this->_values['event']
-        ));
-        $this->assignPaymentProcessor();
+        );
+        if (!$ppID) {
+          CRM_Core_Error::statusBounce(ts('A payment processor must be selected for this event registration page, or the event must be configured to give users the option to pay later (contact the site administrator for assistance).'), $infoUrl);
+        }
+        $ppIds = explode(CRM_Core_DAO::VALUE_SEPARATOR, $ppID);
+        $this->_paymentProcessors = CRM_Financial_BAO_PaymentProcessor::getPayments($ppIds,
+          $this->_mode
+        );
+        $this->set('paymentProcessors', $this->_paymentProcessors);
 
+        //set default payment processor
+        if (!empty($this->_paymentProcessors) && empty($this->_paymentProcessor)) {
+          foreach ($this->_paymentProcessors as $ppId => $values) {
+            if ($values['is_default'] == 1 || (count($this->_paymentProcessors) == 1)) {
+              $defaultProcessorId = $ppId;
+              break;
+            }
+          }
+        }
+
+        if (isset($defaultProcessorId)) {
+          $this->_paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($defaultProcessorId, $this->_mode);
+        }
+        // make sure we have a valid payment class, else abort
+        if ($this->_values['event']['is_monetary']) {
+          if (!CRM_Utils_System::isNull($this->_paymentProcessors)) {
+            foreach ($this->_paymentProcessors as $eachPaymentProcessor) {
+              // check selected payment processor is active
+              if (!$eachPaymentProcessor) {
+                CRM_Core_Error::fatal(ts('The site administrator must set a Payment Processor for this event in order to use online registration.'));
+              }
+              // ensure that processor has a valid config
+              $payment = CRM_Core_Payment::singleton($this->_mode, $eachPaymentProcessor, $this);
+              $error = $payment->checkConfig();
+              if (!empty($error)) {
+                CRM_Core_Error::fatal($error);
+              }
+            }
+          }
+        }
       }
       //init event fee.
       self::initEventFee($this, $this->_eventId);
@@ -337,8 +374,15 @@ class CRM_Event_Form_Registration extends CRM_Core_Form {
           unset($this->_values['additional_custom_post_id']);
         }
       }
-
-      $this->assignBillingType();
+      // get the billing location type
+      $locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id', array(), 'validate');
+      // CRM-8108 remove ts from Billing as the location type can not be translated in CiviCRM!
+      //$this->_bltID = array_search( ts('Billing'),  $locationTypes );
+      $this->_bltID = array_search('Billing', $locationTypes);
+      if (!$this->_bltID) {
+        CRM_Core_Error::fatal(ts('Please set a location type of %1', array(1 => 'Billing')));
+      }
+      $this->set('bltID', $this->_bltID);
 
       if ($this->_values['event']['is_monetary']) {
         CRM_Core_Payment_Form::setPaymentFieldsByProcessor($this, $this->_paymentProcessor);
@@ -719,6 +763,7 @@ class CRM_Event_Form_Registration extends CRM_Core_Form {
     }
 
     CRM_Core_BAO_CustomValueTable::postProcess($this->_params,
+      CRM_Core_DAO::$_nullArray,
       'civicrm_participant',
       $participant->id,
       'Participant'
@@ -1159,8 +1204,6 @@ WHERE  v.option_group_id = g.id
   /**
    * Reset values for all options those are full.
    *
-   * @param array $optionFullIds
-   * @param $form
    */
   public static function resetElementValue($optionFullIds = array(), &$form) {
     if (!is_array($optionFullIds) ||
@@ -1231,7 +1274,6 @@ WHERE  v.option_group_id = g.id
   /**
    * @param string $elementName
    * @param array $optionIds
-   * @param CRM_Core_form $form
    */
   public static function resetSubmittedValue($elementName, $optionIds = array(), &$form) {
     if (empty($elementName) ||
@@ -1469,18 +1511,16 @@ WHERE  v.option_group_id = g.id
       CRM_Core_Error::statusBounce(ts('Registration for this event begins on %1', array(1 => CRM_Utils_Date::customFormat(CRM_Utils_Array::value('registration_start_date', $this->_values['event'])))), $redirect);
     }
 
-    $endDate = CRM_Utils_Date::processDate(CRM_Utils_Array::value('registration_end_date',
+    $regEndDate = CRM_Utils_Date::processDate(CRM_Utils_Array::value('registration_end_date',
       $this->_values['event']
     ));
     $eventEndDate = CRM_Utils_Date::processDate(CRM_Utils_Array::value('event_end_date', $this->_values['event']));
-    if (
-      $endDate &&
-      $endDate < $now
-    ) {
-      CRM_Core_Error::statusBounce(ts('Registration for this event ended on %1', array(1 => CRM_Utils_Date::customFormat(CRM_Utils_Array::value('registration_end_date', $this->_values['event'])))), $redirect);
-    }
-    if (!empty($eventEndDate) && $eventEndDate < $now) {
-      CRM_Core_Error::statusBounce(ts('Event ended on %1', array(1 => CRM_Utils_Date::customFormat(CRM_Utils_Array::value('event_end_date', $this->_values['event'])))), $redirect);
+    if (($regEndDate && ($regEndDate < $now)) || (empty($regEndDate) && ($eventEndDate < $now))) {
+      $endDate = CRM_Utils_Date::customFormat(CRM_Utils_Array::value('registration_end_date', $this->_values['event']));
+      if (empty($regEndDate)) {
+        $endDate = CRM_Utils_Date::customFormat(CRM_Utils_Array::value('event_end_date', $this->_values['event']));
+      }
+      CRM_Core_Error::statusBounce(ts('Registration for this event ended on %1', array(1 => $endDate)), $redirect);
     }
   }
 

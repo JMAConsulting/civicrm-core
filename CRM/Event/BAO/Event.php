@@ -70,7 +70,7 @@ class CRM_Event_BAO_Event extends CRM_Event_DAO_Event {
    *   Value we want to set the is_active field.
    *
    * @return Object
-   *   DAO object on success, null otherwise
+   *   DAO object on sucess, null otherwise
    */
   public static function setIsActive($id, $is_active) {
     return CRM_Core_DAO::setFieldValue('CRM_Event_DAO_Event', $id, 'is_active', $is_active);
@@ -1923,10 +1923,7 @@ WHERE  ce.loc_block_id = $locBlockId";
     if ($startDate && $startDate >= $now) {
       $validDate = FALSE;
     }
-    if ($endDate && $endDate < $now) {
-      $validDate = FALSE;
-    }
-    if ($eventEnd && $eventEnd < $now) {
+    if ($endDate && $endDate < $now && $eventEnd && $eventEnd < $now) {
       $validDate = FALSE;
     }
 

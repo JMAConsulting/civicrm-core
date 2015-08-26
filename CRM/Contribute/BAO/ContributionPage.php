@@ -431,7 +431,36 @@ class CRM_Contribute_BAO_ContributionPage extends CRM_Contribute_DAO_Contributio
   }
 
   /**
-   * Send the emails for Recurring Contribution Notification.
+   * Construct the message to be sent by the send function.
+   *
+   * @param array $tplParams
+   * @param int $contactID
+   * @param $isTest
+   *
+   * @return array
+   */
+  public function composeMessage($tplParams, $contactID, $isTest) {
+    $sendTemplateParams = array(
+      'groupName' => $tplParams['membershipID'] ? 'msg_tpl_workflow_membership' : 'msg_tpl_workflow_contribution',
+      'valueName' => $tplParams['membershipID'] ? 'membership_online_receipt' : 'contribution_online_receipt',
+      'contactId' => $contactID,
+      'tplParams' => $tplParams,
+      'isTest' => $isTest,
+      'PDFFilename' => 'receipt.pdf',
+    );
+    if ($returnMessageText) {
+      list($sent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplate::sendTemplate($sendTemplateParams);
+      return array(
+        'subject' => $subject,
+        'body' => $message,
+        'to' => $displayName,
+        'html' => $html,
+      );
+    }
+  }
+
+  /**
+   * Send the emails for Recurring Contribution Notication.
    *
    * @param string $type
    *   TxnType.
@@ -445,6 +474,7 @@ class CRM_Contribute_BAO_ContributionPage extends CRM_Contribute_DAO_Contributio
    */
   public static function recurringNotify($type, $contactID, $pageID, $recur, $autoRenewMembership = FALSE) {
     $value = array();
+    $isEmailReceipt = FALSE;
     if ($pageID) {
       CRM_Core_DAO::commonRetrieveAll('CRM_Contribute_DAO_ContributionPage', 'id', $pageID, $value, array(
         'title',
@@ -456,13 +486,12 @@ class CRM_Contribute_BAO_ContributionPage extends CRM_Contribute_DAO_Contributio
       ));
       $isEmailReceipt = CRM_Utils_Array::value('is_email_receipt', $value[$pageID]);
     }
-    elseif ($recur->id) {
-      // This means we are coming from back-office - ie. no page ID, but recurring.
-      // Ideally this information would be passed into the function clearly rather than guessing by convention.
-      $isEmailReceipt = TRUE;
-    }
 
-    if ($isEmailReceipt) {
+    $isOfflineRecur = FALSE;
+    if (!$pageID && $recur->id) {
+      $isOfflineRecur = TRUE;
+    }
+    if ($isEmailReceipt || $isOfflineRecur) {
       if ($pageID) {
         $receiptFrom = '"' . CRM_Utils_Array::value('receipt_from_name', $value[$pageID]) . '" <' . $value[$pageID]['receipt_from_email'] . '>';
 
@@ -518,7 +547,7 @@ class CRM_Contribute_BAO_ContributionPage extends CRM_Contribute_DAO_Contributio
         $template->assign('updateSubscriptionUrl', $url);
       }
 
-      list($sent) = CRM_Core_BAO_MessageTemplate::sendTemplate($templatesParams);
+      list($sent, $subject, $message, $html) = CRM_Core_BAO_MessageTemplate::sendTemplate($templatesParams);
 
       if ($sent) {
         CRM_Core_Error::debug_log_message('Success: mail sent for recurring notification.');

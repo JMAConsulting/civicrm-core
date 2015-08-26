@@ -165,13 +165,8 @@ class CRM_Utils_REST {
     // check if this is a single element result (contact_get etc)
     // or multi element
     if ($hier) {
-      foreach ($result['values'] as $k => $v) {
-        if (is_array($v)) {
-          $xml .= "<Result>\n" . CRM_Utils_Array::xml($v) . "</Result>\n";
-        }
-        elseif (!is_object($v)) {
-          $xml .= "<Result>\n<id>{$k}</id><value>{$v}</value></Result>\n";
-        }
+      foreach ($result['values'] as $n => $v) {
+        $xml .= "<Result>\n" . CRM_Utils_Array::xml($v) . "</Result>\n";
       }
     }
     else {
@@ -519,7 +514,7 @@ class CRM_Utils_REST {
 
     }
     else {
-      $content = "<!-- .tpl file embedded: $tpl -->\n";
+      $content = "<!-- .tpl file embeded: $tpl -->\n";
       CRM_Utils_System::appendTPLFile($tpl, $content);
       echo $content . $smarty->fetch($tpl);
       CRM_Utils_System::civiExit();

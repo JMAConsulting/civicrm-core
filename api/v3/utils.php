@@ -263,8 +263,8 @@ function civicrm_api3_create_success($values = 1, $params = array(), $entity = N
   }
   // Report deprecations.
   $deprecated = _civicrm_api3_deprecation_check($entity, $result);
-  // Always report "setvalue" action as deprecated.
-  if (!is_string($deprecated) && ($action == 'getactions' || $action == 'setvalue')) {
+  // The "setvalue" action is deprecated but still in use, so report it only on "getactions".
+  if (!is_string($deprecated) && $action == 'getactions') {
     $deprecated = ((array) $deprecated) + array('setvalue' => 'The "setvalue" action is deprecated. Use "create" with an id instead.');
   }
   // Always report "update" action as deprecated.
@@ -535,17 +535,6 @@ function _civicrm_api3_get_using_query_object($entity, $params, $additional_opti
   }
 
   $newParams = CRM_Contact_BAO_Query::convertFormValues($inputParams);
-  foreach ($newParams as &$newParam) {
-    if ($newParam[1] == '='  && is_array($newParam[2])) {
-      // we may be looking at an attempt to use the 'IN' style syntax
-      // @todo at time of writing only 'IN' & 'NOT IN' are  supported for the array style syntax
-      $sqlFilter = CRM_Core_DAO::createSqlFilter($newParam[0], $params[$newParam[0]], 'String', NULL, TRUE);
-      if ($sqlFilter) {
-        $newParam[1] = key($newParam[2]);
-        $newParam[2] = $sqlFilter;
-      }
-    }
-  }
 
   $skipPermissions = !empty($params['check_permissions']) ? 0 : 1;
 
@@ -1187,7 +1176,7 @@ function formatCheckBoxField(&$checkboxFieldValue, $customFieldLabel, $entity) {
  * @param string $daoName
  * @param bool $return
  *
- * @daoName string DAO to check params against
+ * @daoName string DAO to check params agains
  *
  * @return bool
  *   Should the missing fields be returned as an array (core error created as default)
@@ -1301,7 +1290,7 @@ function _civicrm_api3_basic_create($bao_name, &$params, $entity = NULL) {
     return civicrm_api3_create_error('Entity not created (' . $fct_name . ')');
   }
   elseif (is_a($bao, 'CRM_Core_Error')) {
-    //some weird circular thing means the error takes itself as an argument
+    //some wierd circular thing means the error takes itself as an argument
     $msg = $bao->getMessages($bao);
     // the api deals with entities on a one-by-one basis. However, the contribution bao pushes entities
     // onto the error object - presumably because the contribution import is not handling multiple errors correctly
@@ -1417,11 +1406,8 @@ function _civicrm_api3_custom_data_get(&$returnArray, $entity, $entity_id, $grou
     CRM_Core_DAO::$_nullObject,
     $entity_id,
     $groupID,
-    NULL,
-    $subName,
-    TRUE,
-    NULL,
-    TRUE
+    $subType,
+    $subName
   );
   $groupTree = CRM_Core_BAO_CustomGroup::formatGroupTree($groupTree, 1, CRM_Core_DAO::$_nullObject);
   $customValues = array();
@@ -1778,14 +1764,6 @@ function _civicrm_api_get_fields($entity, $unique = FALSE, &$params = array()) {
   }
   $d = new $dao();
   $fields = $d->fields();
-
-  // Set html attributes for text fields
-  foreach ($fields as $name => &$field) {
-    if (isset($field['html'])) {
-      $field['html'] += (array) $d::makeAttribute($field);
-    }
-  }
-
   // replace uniqueNames by the normal names as the key
   if (empty($unique)) {
     foreach ($fields as $name => &$field) {
@@ -2063,7 +2041,7 @@ function _civicrm_api3_validate_html(&$params, &$fieldName, $fieldInfo) {
  * @throws Exception
  */
 function _civicrm_api3_validate_string(&$params, &$fieldName, &$fieldInfo, $entity) {
-  list($fieldValue, $op) = _civicrm_api3_field_value_check($params, $fieldName, 'String');
+  list($fieldValue, $op) = _civicrm_api3_field_value_check($params, $fieldName);
   if (strpos($op, 'NULL') !== FALSE || strpos($op, 'EMPTY') !== FALSE || CRM_Utils_System::isNull($fieldValue)) {
     return;
   }
@@ -2202,9 +2180,6 @@ function _civicrm_api3_api_match_pseudoconstant_value(&$value, $options, $fieldN
  *   fieldName or FALSE if the field does not exist
  */
 function _civicrm_api3_api_resolve_alias($entity, $fieldName, $action = 'create') {
-  if (!$fieldName) {
-    return FALSE;
-  }
   if (strpos($fieldName, 'custom_') === 0 && is_numeric($fieldName[7])) {
     return $fieldName;
   }
@@ -2263,22 +2238,18 @@ function _civicrm_api3_deprecation_check($entity, $result = array()) {
  * Get the actual field value.
  *
  * In some case $params[$fieldName] holds Array value in this format Array([operator] => [value])
- * So this function returns the actual field value.
+ * So this function returns the actual field value
  *
  * @param array $params
  * @param string $fieldName
- * @param string $type
  *
  * @return mixed
  */
-function _civicrm_api3_field_value_check(&$params, $fieldName, $type = NULL) {
+function _civicrm_api3_field_value_check(&$params, $fieldName) {
   $fieldValue = CRM_Utils_Array::value($fieldName, $params);
   $op = NULL;
 
-  if (!empty($fieldValue) && is_array($fieldValue) &&
-    (array_search(key($fieldValue), CRM_Core_DAO::acceptedSQLOperators()) ||
-      $type == 'String' && strstr(key($fieldValue), 'EMPTY'))
-  ) {
+  if (!empty($fieldValue) && is_array($fieldValue) && array_search(key($fieldValue), CRM_Core_DAO::acceptedSQLOperators())) {
     $op = key($fieldValue);
     $fieldValue = CRM_Utils_Array::value($op, $fieldValue);
   }

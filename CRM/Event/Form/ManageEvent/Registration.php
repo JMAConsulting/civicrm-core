@@ -314,17 +314,25 @@ class CRM_Event_Form_ManageEvent_Registration extends CRM_Event_Form_ManageEvent
    *
    */
   public function buildRegistrationBlock(&$form) {
-    $attributes = CRM_Core_DAO::getAttribute('CRM_Event_DAO_Event', 'intro_text') + array('class' => 'collapsed');
-    $form->add('wysiwyg', 'intro_text', ts('Introductory Text'), $attributes);
-    $form->add('wysiwyg', 'footer_text', ts('Footer Text'), $attributes);
+    $attributes = CRM_Core_DAO::getAttribute('CRM_Event_DAO_Event');
+    $attributes['intro_text']['click_wysiwyg'] = TRUE;
+    $form->addWysiwyg('intro_text', ts('Introductory Text'), $attributes['intro_text']);
+    // FIXME: This hack forces height of editor to 175px. Need to modify QF classes for editors to allow passing
+    // explicit height and width.
+    $footerAttribs = array(
+      'rows' => 2,
+      'cols' => 40,
+      'click_wysiwyg' => TRUE,
+    );
+    $form->addWysiwyg('footer_text', ts('Footer Text'), $footerAttribs);
 
     extract(self::getProfileSelectorTypes());
     //CRM-15427
-    $form->addProfileSelector('custom_pre_id', ts('Include Profile') . '<br />' . ts('(top of page)'), $allowCoreTypes, $allowSubTypes, $profileEntities, TRUE);
-    $form->addProfileSelector('custom_post_id', ts('Include Profile') . '<br />' . ts('(bottom of page)'), $allowCoreTypes, $allowSubTypes, $profileEntities, TRUE);
+    $form->addProfileSelector('custom_pre_id', ts('Include Profile') . '<br />' . ts('(top of page)'), $allowCoreTypes, $allowSubTypes, $profileEntities, TRUE, $usedFor);
+    $form->addProfileSelector('custom_post_id', ts('Include Profile') . '<br />' . ts('(bottom of page)'), $allowCoreTypes, $allowSubTypes, $profileEntities, TRUE, $usedFor);
 
-    $form->addProfileSelector('additional_custom_pre_id', ts('Profile for Additional Participants') . '<br />' . ts('(top of page)'), $allowCoreTypes, $allowSubTypes, $profileEntities, TRUE);
-    $form->addProfileSelector('additional_custom_post_id', ts('Profile for Additional Participants') . '<br />' . ts('(bottom of page)'), $allowCoreTypes, $allowSubTypes, $profileEntities, TRUE);
+    $form->addProfileSelector('additional_custom_pre_id', ts('Profile for Additional Participants') . '<br />' . ts('(top of page)'), $allowCoreTypes, $allowSubTypes, $profileEntities, TRUE, $usedFor);
+    $form->addProfileSelector('additional_custom_post_id', ts('Profile for Additional Participants') . '<br />' . ts('(bottom of page)'), $allowCoreTypes, $allowSubTypes, $profileEntities, TRUE, $usedFor);
   }
 
   /**
@@ -345,7 +353,7 @@ class CRM_Event_Form_ManageEvent_Registration extends CRM_Event_Form_ManageEvent
     extract((is_null($configs)) ? self::getProfileSelectorTypes() : $configs);
     $element = $prefix . "custom_post_id_multiple[$count]";
     $label .= '<br />' . ts('(bottom of page)');
-    $form->addProfileSelector($element, $label, $allowCoreTypes, $allowSubTypes, $profileEntities, TRUE);
+    $form->addProfileSelector($element, $label, $allowCoreTypes, $allowSubTypes, $profileEntities, TRUE, $usedFor);
   }
 
   /**
@@ -359,6 +367,7 @@ class CRM_Event_Form_ManageEvent_Registration extends CRM_Event_Form_ManageEvent
       'allowCoreTypes' => array(),
       'allowSubTypes' => array(),
       'profileEntities' => array(),
+      'usedFor' => array(),
     );
 
     $configs['allowCoreTypes'] = array_merge(array(
@@ -366,6 +375,9 @@ class CRM_Event_Form_ManageEvent_Registration extends CRM_Event_Form_ManageEvent
         'Individual',
       ), CRM_Contact_BAO_ContactType::subTypes('Individual'));
     $configs['allowCoreTypes'][] = 'Participant';
+    if (CRM_Core_Permission::check('manage event profiles') && !CRM_Core_Permission::check('administer CiviCRM')) {
+      $configs['usedFor'][] = 'CiviEvent';
+    }
     //CRM-15427
     $id = CRM_Utils_Request::retrieve('id', 'Integer');
     if ($id) {
@@ -393,6 +405,7 @@ class CRM_Event_Form_ManageEvent_Registration extends CRM_Event_Form_ManageEvent
    */
   public function buildConfirmationBlock(&$form) {
     $attributes = CRM_Core_DAO::getAttribute('CRM_Event_DAO_Event');
+    $attributes['confirm_text']['click_wysiwyg'] = TRUE;
     // CRM-11182 - Optional confirmation page for free events
     $is_monetary = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_Event', $form->_id, 'is_monetary');
     $form->assign('is_monetary', $is_monetary);
@@ -400,8 +413,15 @@ class CRM_Event_Form_ManageEvent_Registration extends CRM_Event_Form_ManageEvent
       $form->addYesNo('is_confirm_enabled', ts('Use a confirmation screen?'), NULL, NULL, array('onclick' => "return showHideByValue('is_confirm_enabled','','confirm_screen_settings','block','radio',false);"));
     }
     $form->add('text', 'confirm_title', ts('Title'), $attributes['confirm_title']);
-    $form->add('wysiwyg', 'confirm_text', ts('Introductory Text'), $attributes['confirm_text'] + array('class' => 'collapsed'));
-    $form->add('wysiwyg', 'confirm_footer_text', ts('Footer Text'), $attributes['confirm_text'] + array('class' => 'collapsed'));
+    $form->addWysiwyg('confirm_text', ts('Introductory Text'), $attributes['confirm_text']);
+    // FIXME: This hack forces height of editor to 175px. Need to modify QF classes for editors to allow passing
+    // explicit height and width.
+    $footerAttribs = array(
+      'rows' => 2,
+      'cols' => 40,
+      'click_wysiwyg' => TRUE,
+    );
+    $form->addWysiwyg('confirm_footer_text', ts('Footer Text'), $footerAttribs);
   }
 
   /**
@@ -429,9 +449,17 @@ class CRM_Event_Form_ManageEvent_Registration extends CRM_Event_Form_ManageEvent
    */
   public function buildThankYouBlock(&$form) {
     $attributes = CRM_Core_DAO::getAttribute('CRM_Event_DAO_Event');
+    $attributes['thankyou_text']['click_wysiwyg'] = TRUE;
     $form->add('text', 'thankyou_title', ts('Title'), $attributes['thankyou_title']);
-    $form->add('wysiwyg', 'thankyou_text', ts('Introductory Text'), $attributes['thankyou_text'] + array('class' => 'collapsed'));
-    $form->add('wysiwyg', 'thankyou_footer_text', ts('Footer Text'), $attributes['thankyou_text'] + array('class' => 'collapsed'));
+    $form->addWysiwyg('thankyou_text', ts('Introductory Text'), $attributes['thankyou_text']);
+    // FIXME: This hack forces height of editor to 175px. Need to modify QF classes for editors to allow passing
+    // explicit height and width.
+    $footerAttribs = array(
+      'rows' => 2,
+      'cols' => 40,
+      'click_wysiwyg' => TRUE,
+    );
+    $form->addWysiwyg('thankyou_footer_text', ts('Footer Text'), $footerAttribs);
   }
 
   /**

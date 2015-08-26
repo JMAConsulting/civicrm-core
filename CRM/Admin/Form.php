@@ -60,13 +60,6 @@ class CRM_Admin_Form extends CRM_Core_Form {
   protected $_BAOName;
 
   /**
-   * Explicitly declare the form context.
-   */
-  public function getDefaultContext() {
-    return 'create';
-  }
-
-  /**
    * Basic setup.
    */
   public function preProcess() {

@@ -24,7 +24,9 @@
  +--------------------------------------------------------------------+
 *}
 {* this template is used for adding/editing/viewing relationships  *}
-
+{if $cdType }
+  {include file="CRM/Custom/Form/CustomData.tpl"}
+{else}
   {if $action eq 4 } {* action = view *}
     <div class="crm-block crm-content-block crm-relationship-view-block">
       <table class="crm-info-panel">
@@ -137,8 +139,8 @@
     </div>
   {/if}
   {if ($action EQ 1) OR ($action EQ 2) }
-    {*include custom data js file *}
-    {include file="CRM/common/customData.tpl"}
+    {*include custom data js file - setting includeWysiwygEditor=TRUE because it's already been loaded*}
+    {include file="CRM/common/customData.tpl" includeWysiwygEditor=TRUE}
     <script type="text/javascript">
       {literal}
       CRM.$(function($) {
@@ -202,3 +204,5 @@
     </div>
   {/if}
   <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"}</div>
+{/if} {* close of custom data else*}
+

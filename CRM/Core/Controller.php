@@ -431,7 +431,7 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
    *
    * @param CRM_Core_StateMachine $stateMachine
    * @param \const|int $action the mode in which the state machine is operating
-   *                              typically this will be add/view/edit
+   *                              typicaly this will be add/view/edit
    *
    * @return void
    */
@@ -853,23 +853,30 @@ class CRM_Core_Controller extends HTML_QuickForm_Controller {
   }
 
   public function invalidKeyCommon() {
-    $msg = ts("We can't load the requested web page. This page requires cookies to be enabled in your browser settings. Please check this setting and enable cookies (if they are not enabled). Then try again. If this error persists, contact the site administrator for assistance.") . '<br /><br />' . ts('Site Administrators: This error may indicate that users are accessing this page using a domain or URL other than the configured Base URL. EXAMPLE: Base URL is http://example.org, but some users are accessing the page via http://www.example.org or a domain alias like http://myotherexample.org.') . '<br /><br />' . ts('Error type: Could not find a valid session key.');
+    $msg = ts('We can\'t load the requested web page. This page requires cookies to be enabled in your browser settings. Please check this setting and enable cookies (if they are not enabled). Then try again. If this error persists, contact the site adminstrator for assistance.') . '<br /><br />' . ts('Site Administrators: This error may indicate that users are accessing this page using a domain or URL other than the configured Base URL. EXAMPLE: Base URL is http://example.org, but some users are accessing the page via http://www.example.org or a domain alias like http://myotherexample.org.') . '<br /><br />' . ts('Error type: Could not find a valid session key.');
     CRM_Core_Error::fatal($msg);
   }
 
   /**
-   * Instead of outputting a fatal error message, we'll just redirect to the entryURL if present
+   * Instead of outputting a fatal error message, we'll just redirect
+   * to the entryURL if present
    *
    * @return void
    */
   public function invalidKeyRedirect() {
-    if ($this->_entryURL) {
-      CRM_Core_Session::setStatus(ts('Your browser session has expired and we are unable to complete your form submission. We have returned you to the initial step so you can complete and resubmit the form. If you experience continued difficulties, please contact us for assistance.'));
-      return CRM_Utils_System::redirect($this->_entryURL);
+    if ($this->_entryURL && $url_parts = parse_url($this->_entryURL)) {
+      // CRM-16832: Ensure local redirects only.
+      if (!empty($url_parts['path'])) {
+        // Prepend a slash, but don't duplicate it.
+        $redirect_url = '/' . ltrim($url_parts['path'], '/');
+        if (!empty($url_parts['query'])) {
+          $redirect_url .= '?' . $url_parts['query'];
+        }
+        CRM_Core_Session::setStatus(ts('Your browser session has expired and we are unable to complete your form submission. We have returned you to the initial step so you can complete and resubmit the form. If you experience continued difficulties, please contact us for assistance.'));
+        return CRM_Utils_System::redirect($redirect_url);
+      }
     }
-    else {
-      self::invalidKeyCommon();
-    }
+    self::invalidKeyCommon();
   }
 
 }

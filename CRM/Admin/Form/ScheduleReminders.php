@@ -3,8 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright (C) 2011 Marty Wright                                    |
- | Licensed to CiviCRM under the Academic Free License version 3.0.   |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -623,19 +622,6 @@ class CRM_Admin_Form_ScheduleReminders extends CRM_Admin_Form {
       }
     }
     CRM_Core_Session::setStatus($status, ts('Saved'), 'success');
-  }
-
-  /**
-   * List available tokens for this form.
-   *
-   * @return array
-   */
-  public function listTokens() {
-    $tokens = CRM_Core_SelectValues::contactTokens();
-    $tokens = array_merge(CRM_Core_SelectValues::activityTokens(), $tokens);
-    $tokens = array_merge(CRM_Core_SelectValues::eventTokens(), $tokens);
-    $tokens = array_merge(CRM_Core_SelectValues::membershipTokens(), $tokens);
-    return $tokens;
   }
 
 }

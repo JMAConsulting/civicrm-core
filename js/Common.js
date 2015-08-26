@@ -362,6 +362,13 @@ CRM.strings = CRM.strings || {};
    * @param options object
    */
   $.fn.crmSelect2 = function(options) {
+    if (options === 'destroy') {
+      return $(this).each(function() {
+        $(this)
+          .removeClass('crm-ajax-select')
+          .select2('destroy');
+      });
+    }
     return $(this).each(function () {
       var
         $el = $(this),
@@ -396,6 +403,15 @@ CRM.strings = CRM.strings || {};
    * @param options object
    */
   $.fn.crmEntityRef = function(options) {
+    if (options === 'destroy') {
+      return $(this).each(function() {
+        var entity = $(this).data('api-entity') || '';
+        $(this)
+          .off('.crmEntity')
+          .removeClass('crm-form-entityref crm-' + entity.toLowerCase() + '-ref')
+          .crmSelect2('destroy');
+      });
+    }
     options = options || {};
     options.select = options.select || {};
     return $(this).each(function() {
@@ -662,38 +678,6 @@ CRM.strings = CRM.strings || {};
     });
   };
 
-  $.fn.crmAjaxTable = function() {
-    return $(this).each(function() {
-      //Declare the defaults for DataTables
-      var defaults = {
-        "processing": true,
-        "serverSide": true,
-        "dom": '<"crm-datatable-pager-top"lfp>rt<"crm-datatable-pager-bottom"ip>',
-        "pageLength": 25,
-        "drawCallback": function(settings) {
-          //Add data attributes to cells
-          $('thead th', settings.nTable).each( function( index ) {
-            $.each(this.attributes, function() {
-              if(this.name.match("^cell-")) {
-                var cellAttr = this.name.substring(5);
-                var cellValue = this.value;
-                $('tbody tr', settings.nTable).each( function() {
-                  $('td:eq('+ index +')', this).attr( cellAttr, cellValue );
-                });
-              }
-            });
-          });
-          //Reload table after draw
-          $(settings.nTable).trigger('crmLoad');
-        }
-      };
-      //Include any table specific data
-      var settings = $.extend(true, defaults, $(this).data('table'));
-      //Make the DataTables call
-      $(this).DataTable(settings);
-    });
-  };
-
   CRM.utils.formatSelect2Result = function (row) {
     var markup = '<div class="crm-select2-row">';
     if (row.image !== undefined) {
@@ -856,8 +840,6 @@ CRM.strings = CRM.strings || {};
           }
         })
         .find('input.select-row:checked').parents('tr').addClass('crm-row-selected');
-      $('table.crm-sortable', e.target).DataTable();
-      $('table.crm-ajax-table', e.target).crmAjaxTable();
       if ($("input:radio[name=radio_ts]").size() == 1) {
         $("input:radio[name=radio_ts]").prop("checked", true);
       }
@@ -868,16 +850,6 @@ CRM.strings = CRM.strings || {};
       $('form[data-warn-changes] :input', e.target).each(function() {
         $(this).data('crm-initial-value', $(this).is(':checkbox, :radio') ? $(this).prop('checked') : $(this).val());
       });
-      $('textarea.crm-form-wysiwyg', e.target)
-        .not('.crm-wysiwyg-enabled')
-        .addClass('crm-wysiwyg-enabled')
-        .each(function() {
-          if ($(this).hasClass("collapsed")) {
-            CRM.wysiwyg.createCollapsed(this);
-          } else {
-            CRM.wysiwyg.create(this);
-          }
-        });
     })
     .on('dialogopen', function(e) {
       var $el = $(e.target);
@@ -1357,7 +1329,12 @@ CRM.strings = CRM.strings || {};
 
     $().crmtooltip();
   });
-
+  /**
+   * @deprecated
+   */
+  $.fn.crmAccordions = function () {
+    CRM.console('warn', 'Warning: $.crmAccordions was called. This function is deprecated and should not be used.');
+  };
   /**
    * Collapse or expand an accordion
    * @param speed
@@ -1377,7 +1354,7 @@ CRM.strings = CRM.strings || {};
   /**
    * Clientside currency formatting
    * @param number value
-   * @param [optional] boolean onlyNumber - if true, we return formatted amount without currency sign
+   * @param [optional] boolean onlyNumber - if true, we return formated amount without currency sign
    * @param [optional] string format - currency representation of the number 1234.56
    * @return string
    */

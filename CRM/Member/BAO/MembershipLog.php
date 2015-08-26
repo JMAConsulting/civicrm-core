@@ -38,13 +38,17 @@ class CRM_Member_BAO_MembershipLog extends CRM_Member_DAO_MembershipLog {
    * Add the membership log record.
    *
    * @param array $params
-   *   Properties of the log item.
+   *   Reference array contains the values submitted by the form.
+   * @param array $ids
+   *   Reference array contains the id.
    *
-   * @return CRM_Member_DAO_MembershipLog|CRM_Core_Error
+   *
+   * @return object
    */
-  public static function add($params) {
+  public static function add(&$params, &$ids) {
     $membershipLog = new CRM_Member_DAO_MembershipLog();
     $membershipLog->copyValues($params);
+
     $membershipLog->save();
     $membershipLog->free();
 
@@ -65,8 +69,6 @@ class CRM_Member_BAO_MembershipLog extends CRM_Member_DAO_MembershipLog {
   }
 
   /**
-   * Reset the modified ID to NULL for log items by the given contact ID.
-   *
    * @param int $contactID
    */
   public static function resetModifiedID($contactID) {

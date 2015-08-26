@@ -391,6 +391,11 @@ class CRM_Event_Cart_Form_Checkout_Payment extends CRM_Event_Cart_Form_Cart {
     $errors = array();
 
     if ($self->payment_required && empty($self->_submitValues['is_pay_later'])) {
+      $payment = CRM_Core_Payment::singleton($self->_mode, $self->_paymentProcessor, CRM_Core_DAO::$_nullObject);
+      $error = $payment->checkConfig($self->_mode);
+      if ($error) {
+        $errors['_qf_default'] = $error;
+      }
       CRM_Core_Form::validateMandatoryFields($self->_fields, $fields, $errors);
 
       // validate payment instrument values (e.g. credit card number)
@@ -570,19 +575,21 @@ class CRM_Event_Cart_Form_Checkout_Payment extends CRM_Event_Cart_Form_Cart {
     }
     $params['ip_address'] = CRM_Utils_System::ipAddress();
     $params['currencyID'] = $config->defaultCurrency;
+    $params['payment_action'] = 'Sale';
 
-    $payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
+    $payment = &CRM_Core_Payment::singleton($this->_mode, $this->_paymentProcessor, $this);
     CRM_Core_Payment_Form::mapParams($this->_bltID, $params, $params, TRUE);
     $params['month'] = $params['credit_card_exp_date']['M'];
     $params['year'] = $params['credit_card_exp_date']['Y'];
-    try {
-      $result = $payment->doPayment($params);
-    }
-    catch (\Civi\Payment\Exception\PaymentProcessorException $e) {
+    $result = &$payment->doDirectPayment($params);
+    if (is_a($result, 'CRM_Core_Error')) {
       CRM_Core_Error::displaySessionError($result);
       CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/event/cart_checkout', "_qf_Payment_display=1&qfKey={$this->controller->_key}", TRUE, NULL, FALSE));
+      return NULL;
     }
-
+    elseif (!$result['trxn_id']) {
+      CRM_Core_Error::fatal(ts("Financial institution didn't return a transaction id."));
+    }
     $trxnDetails = array(
       'trxn_id' => $result['trxn_id'],
       'trxn_date' => $result['now'],

@@ -100,14 +100,18 @@ class CRM_Member_Form_Task_PDFLetter extends CRM_Member_Form_Task {
   }
 
   /**
-   * List available tokens for this form.
-   *
+   * List available tokens, at time of writing these were
+   * {membership.id} => Membership ID
+   * {membership.status} => Membership Status
+   * {membership.type} => Membership Type
+   * {membership.start_date} => Membership Start Date
+   * {membership.join_date} => Membership Join Date
+   * {membership.end_date} => Membership End Date
+   * {membership.fee} => Membership Fee
    * @return array
    */
   public function listTokens() {
-    $tokens = CRM_Core_SelectValues::contactTokens();
-    $tokens = array_merge(CRM_Core_SelectValues::membershipTokens(), $tokens);
-    return $tokens;
+    return CRM_Core_SelectValues::membershipTokens();
   }
 
 }

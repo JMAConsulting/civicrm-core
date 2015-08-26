@@ -113,21 +113,7 @@ class CRM_Activity_Form_Task extends CRM_Core_Form {
       );
       $query->_distinctComponentClause = '( civicrm_activity.id )';
       $query->_groupByComponentClause = " GROUP BY civicrm_activity.id ";
-
-      // CRM-12675
-      $activityClause = NULL;
-
-      $components = CRM_Core_Component::getNames();
-      $componentClause = array();
-      foreach ($components as $componentID => $componentName) {
-        if (!CRM_Core_Permission::check("access $componentName")) {
-          $componentClause[] = " (activity_type.component_id IS NULL OR activity_type.component_id <> {$componentID}) ";
-        }
-      }
-      if (!empty($componentClause)) {
-        $activityClause = implode(' AND ', $componentClause);
-      }
-      $result = $query->searchQuery(0, 0, NULL, FALSE, FALSE, FALSE, FALSE, FALSE, $activityClause);
+      $result = $query->searchQuery(0, 0, NULL);
 
       while ($result->fetch()) {
         if (!empty($result->activity_id)) {

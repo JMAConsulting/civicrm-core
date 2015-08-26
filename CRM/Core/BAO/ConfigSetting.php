@@ -113,7 +113,7 @@ class CRM_Core_BAO_ConfigSetting {
       }
     }
 
-    //keep user preferred language up to date, CRM-7746
+    //keep user preferred language upto date, CRM-7746
     $session = CRM_Core_Session::singleton();
     $lcMessages = CRM_Utils_Array::value('lcMessages', $params);
     if ($lcMessages && $session->get('userID')) {
@@ -347,10 +347,12 @@ class CRM_Core_BAO_ConfigSetting {
       if (!empty($enableComponents)) {
         $defaults['enableComponents'] = $enableComponents;
 
-        $components = CRM_Core_Component::getComponents();
+        // Lookup component IDs. Note: Do *not* instantiate components.
+        // Classloading may not be fully setup yet.
+        $components = CRM_Core_Component::getComponentIDs();
         $enabledComponentIDs = array();
         foreach ($defaults['enableComponents'] as $name) {
-          $enabledComponentIDs[] = $components[$name]->componentID;
+          $enabledComponentIDs[] = $components[$name];
         }
         $defaults['enableComponentIDs'] = $enabledComponentIDs;
       }

@@ -91,7 +91,7 @@ class ChainSubscriber implements EventSubscriberInterface {
 
     // We don't need to worry about nested api in the getfields/getoptions
     // actions, so just return immediately.
-    if (in_array($action, array('getfields', 'getfield', 'getoptions'))) {
+    if (in_array($action, array('getfields', 'getoptions'))) {
       return;
     }
 
@@ -156,7 +156,7 @@ class ChainSubscriber implements EventSubscriberInterface {
           if ($entity != 'Contact' && \CRM_Utils_Array::value(strtolower($subEntity . "_id"), $parentAPIValues)) {
             //e.g. if event_id is in the values returned & subentity is event
             //then pass in event_id as 'id' don't do this for contact as it
-            //does some weird things like returning primary email &
+            //does some wierd things like returning primary email &
             //thus limiting the ability to chain email
             //TODO - this might need the camel treatment
             $subParams['id'] = $parentAPIValues[$subEntity . "_id"];
@@ -183,7 +183,7 @@ class ChainSubscriber implements EventSubscriberInterface {
             foreach ($newparams as $entityparams) {
               $subParams = array_merge($genericParams, $entityparams);
               _civicrm_api_replace_variables($subParams, $result['values'][$idIndex], $separator);
-              $result['values'][$result['id']][$field][] = $apiKernel->run($subEntity, $subaction, $subParams);
+              $result['values'][$idIndex][$field][] = $apiKernel->run($subEntity, $subaction, $subParams);
               if ($result['is_error'] === 1) {
                 throw new \Exception($subEntity . ' ' . $subaction . 'call failed with' . $result['error_message']);
               }

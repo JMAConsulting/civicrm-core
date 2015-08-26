@@ -24,6 +24,9 @@
  +--------------------------------------------------------------------+
 *}
 {* this template is used for adding/editing other (custom) activities. *}
+{if $cdType }
+  {include file="CRM/Custom/Form/CustomData.tpl"}
+{else}
   {if $action eq 4}
     <div class="crm-block crm-content-block crm-activity-view-block">
   {else}
@@ -152,11 +155,13 @@
     <td class="label">{$form.details.label}</td>
     {if $activityTypeName eq "Print PDF Letter"}
       <td class="view-value">
-      {$form.details.html}
+      {* If using plain textarea, assign class=huge to make input large enough. *}
+      {if $defaultWysiwygEditor eq 0}{$form.details.html|crmAddClass:huge}{else}{$form.details.html}{/if}
       </td>
       {else}
       <td class="view-value">
-       {$form.details.html|crmStripAlternatives}
+      {* If using plain textarea, assign class=huge to make input large enough. *}
+       {if $defaultWysiwygEditor eq 0}{$form.details.html|crmStripAlternatives|crmAddClass:huge}{else}{$form.details.html|crmStripAlternatives}{/if}
       </td>
     {/if}
   </tr>
@@ -214,7 +219,34 @@
   {if $action neq 4} {* Don't include "Schedule Follow-up" section in View mode. *}
   <tr class="crm-activity-form-block-schedule_followup">
     <td colspan="2">
-      {include file="CRM/Activity/Form/FollowUp.tpl" type=""}
+      <div class="crm-accordion-wrapper collapsed">
+        <div class="crm-accordion-header">
+          {ts}Schedule Follow-up{/ts}
+        </div><!-- /.crm-accordion-header -->
+        <div class="crm-accordion-body">
+          <table class="form-layout-compressed">
+            <tr><td class="label">{ts}Schedule Follow-up Activity{/ts}</td>
+              <td>{$form.followup_activity_type_id.html}&nbsp;&nbsp;{ts}on{/ts}
+              {include file="CRM/common/jcalendar.tpl" elementName=followup_date}
+              </td>
+            </tr>
+            <tr>
+              <td class="label">{$form.followup_activity_subject.label}</td>
+              <td>{$form.followup_activity_subject.html|crmAddClass:huge}</td>
+            </tr>
+              <tr>
+                  <td class="label">
+                    {$form.followup_assignee_contact_id.label}
+                    {edit}
+                    {/edit}
+                  </td>
+                  <td>
+                    {$form.followup_assignee_contact_id.html}
+                  </td>
+              </tr>
+          </table>
+        </div><!-- /.crm-accordion-body -->
+      </div><!-- /.crm-accordion-wrapper -->
       {literal}
         <script type="text/javascript">
           CRM.$(function($) {
@@ -291,5 +323,5 @@
     {/literal}
   {/if}
   </div>{* end of form block*}
-
+{/if} {* end of snippet if*}
 {include file="CRM/Event/Form/ManageEvent/ConfirmRepeatMode.tpl" entityID=$activityId entityTable="civicrm_activity"}

@@ -45,6 +45,8 @@ class CRM_Contribute_Form_Contribution_ThankYou extends CRM_Contribute_Form_Cont
 
   /**
    * Set variables up before form is built.
+   *
+   * @return void
    */
   public function preProcess() {
     parent::preProcess();
@@ -172,7 +174,8 @@ class CRM_Contribute_Form_Contribution_ThankYou extends CRM_Contribute_Form_Cont
       $this->assign('membership_amount', $membershipAmount);
       $this->assign('renewal_mode', $renewalMode);
 
-      $this->buildMembershipBlock(
+      CRM_Member_BAO_Membership::buildMembershipBlock($this,
+        $this->_id,
         $this->_membershipContactID,
         FALSE,
         $membershipTypeID,

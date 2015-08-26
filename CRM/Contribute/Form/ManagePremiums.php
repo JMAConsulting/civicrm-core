@@ -40,7 +40,10 @@
 class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
 
   /**
-   * Pre process the form.
+   * Pre  process the form.
+   *
+   *
+   * @return void
    */
   public function preProcess() {
     parent::preProcess();

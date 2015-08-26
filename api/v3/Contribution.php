@@ -256,9 +256,7 @@ function _civicrm_api3_contribution_get_spec(&$params) {
     'api.default' => 0,
     'type' => CRM_Utils_Type::T_BOOLEAN,
     'title' => 'Get Test Contributions?',
-    'api.aliases' => array('is_test'),
   );
-
   $params['financial_type_id']['api.aliases'] = array('contribution_type_id');
   $params['payment_instrument_id']['api.aliases'] = array('contribution_payment_instrument', 'payment_instrument');
   $params['contact_id'] = $params['contribution_contact_id'];
@@ -327,7 +325,16 @@ function civicrm_api3_contribution_transact($params) {
   $params['invoice_id'] = CRM_Utils_Array::value('invoice_id', $params, md5(uniqid(rand(), TRUE)));
 
   $paymentProcessor = CRM_Financial_BAO_PaymentProcessor::getPayment($params['payment_processor'], $params['payment_processor_mode']);
-  $paymentProcessor['object']->doPayment($params);
+  if (civicrm_error($paymentProcessor)) {
+    return $paymentProcessor;
+  }
+
+  $payment = CRM_Core_Payment::singleton($params['payment_processor_mode'], $paymentProcessor);
+  if (civicrm_error($payment)) {
+    return $payment;
+  }
+
+  $transaction = $payment->doPayment($params);
 
   $params['payment_instrument_id'] = CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_PaymentProcessorType', $paymentProcessor['payment_processor_type_id'], 'payment_type') == 1 ? 'Credit Card' : 'Debit Card';
   return civicrm_api('Contribution', 'create', $params);
@@ -416,19 +423,16 @@ function civicrm_api3_contribution_completetransaction(&$params) {
   if (!$contribution->id == $params['id']) {
     throw new API_Exception('A valid contribution ID is required', 'invalid_data');
   }
-  try {
-    if (!$contribution->loadRelatedObjects($input, $ids, FALSE, TRUE)) {
-      throw new API_Exception('failed to load related objects');
-    }
-    elseif ($contribution->contribution_status_id == CRM_Core_OptionGroup::getValue('contribution_status', 'Completed', 'name')) {
-      throw new API_Exception(ts('Contribution already completed'));
-    }
-    $input['trxn_id'] = !empty($params['trxn_id']) ? $params['trxn_id'] : $contribution->trxn_id;
-    $params = _ipn_process_transaction($params, $contribution, $input, $ids);
+
+  if (!$contribution->loadRelatedObjects($input, $ids, FALSE, TRUE)) {
+    throw new API_Exception('failed to load related objects');
   }
-  catch(Exception $e) {
-    throw new API_Exception('failed to load related objects' . $e->getMessage() . "\n" . $e->getTraceAsString());
+  elseif ($contribution->contribution_status_id == CRM_Core_OptionGroup::getValue('contribution_status', 'Completed', 'name')) {
+    throw new API_Exception(ts('Contribution already completed'), 'contribution_completed');
   }
+  $input['trxn_id'] = !empty($params['trxn_id']) ? $params['trxn_id'] : $contribution->trxn_id;
+  $params = _ipn_process_transaction($params, $contribution, $input, $ids);
+
 }
 
 /**

@@ -319,13 +319,7 @@ class CRM_Core_BAO_Mapping extends CRM_Core_DAO_Mapping {
 
     $contactType = array('Individual', 'Household', 'Organization');
     foreach ($contactType as $value) {
-      if ($mappingType == 'Search Builder') {
-        // get multiple custom group fields in this context
-        $contactFields = CRM_Contact_BAO_Contact::exportableFields($value, FALSE, $required, FALSE, TRUE);
-      }
-      else {
-        $contactFields = CRM_Contact_BAO_Contact::exportableFields($value, FALSE, $required);
-      }
+      $contactFields = CRM_Contact_BAO_Contact::exportableFields($value, FALSE, $required);
       $contactFields = array_merge($contactFields, CRM_Contact_BAO_Query_Hook::singleton()->getFields());
 
       // exclude the address options disabled in the Address Settings
@@ -563,7 +557,7 @@ class CRM_Core_BAO_Mapping extends CRM_Core_DAO_Mapping {
 
     foreach ($sel1 as $key => $sel) {
       if ($key) {
-        // sort everything BUT the contactType which is sorted separately by
+        // sort everything BUT the contactType which is sorted seperately by
         // an initial commit of CRM-13278 (check ksort above)
         if (!in_array($key, $contactType)) {
           asort($mapperFields[$key]);
@@ -1024,8 +1018,6 @@ class CRM_Core_BAO_Mapping extends CRM_Core_DAO_Mapping {
           $value = $params['value'][$key][$k];
           if ($fldName == 'group' || $fldName == 'tag') {
             $value = trim($value);
-            $value = str_replace('(', '', $value);
-            $value = str_replace(')', '', $value);
 
             $v = explode(',', $value);
             $value = array();
@@ -1043,8 +1035,8 @@ class CRM_Core_BAO_Mapping extends CRM_Core_DAO_Mapping {
           }
 
           // CRM-14983: verify if values are comma separated convert to array
-          if (!is_array($value) && (strpos($value, ',') !== FALSE || strstr($value, '(')) && substr($fldName, 0, 7) != 'custom_' && $params['operator'][$key][$k] == 'IN') {
-            $value = explode(',', trim($value, "(..)"));
+          if (!is_array($value) && strstr($params['operator'][$key][$k], 'IN')) {
+            $value = explode(',', $value);
             $value = array($params['operator'][$key][$k] => $value);
           }
 

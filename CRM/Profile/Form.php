@@ -183,13 +183,6 @@ class CRM_Profile_Form extends CRM_Core_Form {
   protected $_session = NULL;
 
   /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Profile';
-  }
-
-  /**
    * Pre processing work done here.
    *
    * gets session variables for table name, id of entity in table, type of entity and stores them.
@@ -327,7 +320,7 @@ class CRM_Profile_Form extends CRM_Core_Form {
             $this->_recordId = NULL;
             $this->set('recordId', NULL);
           }
-          //record id is necessary for _multiRecord view and update/edit action
+          //record id is neccessary for _multiRecord view and update/edit action
           if (!$this->_recordId
             && ($this->_multiRecord == CRM_Core_Action::UPDATE || $this->_multiRecord == CRM_Core_Action::DELETE)
           ) {

@@ -27,6 +27,36 @@
 {if $snippet and !empty($isOnBehalfCallback)}
   {include file="CRM/Contribute/Form/Contribution/OnBehalfOf.tpl" context="front-end"}
 
+{* Callback snippet: Load payment processor *}
+{elseif $snippet}
+{include file="CRM/Core/BillingBlock.tpl"}
+  {if $is_monetary}
+  {* Put PayPal Express button after customPost block since it's the submit button in this case. *}
+    {if $paymentProcessor.payment_processor_type EQ 'PayPal_Express'}
+    <div id="paypalExpress">
+      {assign var=expressButtonName value='_qf_Main_upload_express'}
+      <fieldset class="crm-group paypal_checkout-group">
+        <legend>{ts}Checkout with PayPal{/ts}</legend>
+        <div class="section">
+          <div class="crm-section paypalButtonInfo-section">
+            <div class="content">
+              <span class="description">{ts}Click the PayPal button to continue.{/ts}</span>
+            </div>
+            <div class="clear"></div>
+          </div>
+          <div class="crm-section {$expressButtonName}-section">
+            <div class="content">
+              {$form.$expressButtonName.html} <span class="description">Checkout securely. Pay without sharing your financial information. </span>
+            </div>
+            <div class="clear"></div>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+    {/if}
+  {/if}
+
+{* Main Form *}
 {else}
   {literal}
   <script type="text/javascript">
@@ -67,6 +97,7 @@
 
   {include file="CRM/common/TrackingFields.tpl"}
 
+  {capture assign='reqMark'}<span class="marker" title="{ts}This field is required.{/ts}">*</span>{/capture}
   <div class="crm-contribution-page-id-{$contributionPageID} crm-block crm-contribution-main-form-block">
 
   {if $contact_id}
@@ -228,13 +259,13 @@
   </fieldset>
   {/if}
 
-  {if $form.payment_processor_id.label}
+  {if $form.payment_processor.label}
   {* PP selection only works with JS enabled, so we hide it initially *}
   <fieldset class="crm-group payment_options-group" style="display:none;">
     <legend>{ts}Payment Options{/ts}</legend>
     <div class="crm-section payment_processor-section">
-      <div class="label">{$form.payment_processor_id.label}</div>
-      <div class="content">{$form.payment_processor_id.html}</div>
+      <div class="label">{$form.payment_processor.label}</div>
+      <div class="content">{$form.payment_processor.html}</div>
       <div class="clear"></div>
     </div>
   </fieldset>
@@ -256,7 +287,7 @@
   <div id="billing-payment-block">
     {* If we have a payment processor, load it - otherwise it happens via ajax *}
     {if $paymentProcessorID or $isBillingAddressRequiredForPayLater}
-      {include file="CRM/Financial/Form/Payment.tpl" snippet=4}
+      {include file="CRM/Contribute/Form/Contribution/Main.tpl" snippet=4}
     {/if}
   </div>
   {include file="CRM/common/paymentBlock.tpl"}
@@ -387,7 +418,34 @@
   {/if}
   {literal}
 
+  function toggleConfirmButton(flag) {
+    var payPalExpressId = "{/literal}{$payPalExpressId}{literal}";
+    var elementObj = cj('input[name="payment_processor"]');
+    if ( elementObj.attr('type') == 'hidden' ) {
+      var processorTypeId = elementObj.val( );
+    }
+    else {
+      var processorTypeId = elementObj.filter(':checked').val();
+    }
+
+    if (payPalExpressId !=0 && payPalExpressId == processorTypeId && flag === false) {
+      cj("#crm-submit-buttons").hide();
+      cj("#paypalExpress").show();
+    }
+    else {
+      cj("#crm-submit-buttons").show();
+      if (flag === true) {
+        cj("#paypalExpress").hide();
+      }
+    }
+  }
+
+  cj('input[name="payment_processor"]').change( function() {
+    toggleConfirmButton(false);
+  });
+
   CRM.$(function($) {
+    toggleConfirmButton(false);
     enableHonorType();
     showRecurHelp();
     skipPaymentMethod();
@@ -412,8 +470,6 @@
       payment_options.hide();
       payment_processor.hide();
       payment_information.hide();
-      // also unset selected payment methods
-      cj('input[name="payment_processor"]').removeProp('checked');
     }
     else {
       payment_options.show();
@@ -421,24 +477,34 @@
       payment_information.show();
     }
   }
-
+  
   function skipPaymentMethod() {
     var flag = false;
-    cj('.price-set-option-content input[data-amount]').each( function(){
-      currentTotal = cj(this).attr('data-amount').replace(/[^\/\d]/g,'');
-      if( cj(this).is(':checked') && currentTotal == 0 ) {
+    // If price-set is used then calculate the Total Amount
+    if (cj('#pricevalue').length !== 0) {
+      currentTotal = cj('#pricevalue').text().replace(/[^\/\d]/g,'');
+      flag = (currentTotal == 0) ? true : false;
+    }
+    // Else quick-config w/o other-amount scenarios
+    else {
+      cj('.price-set-option-content input').each( function() {
+        currentTotal = cj(this).is('[data-amount]') ? cj(this).attr('data-amount').replace(/[^\/\d]/g,'') : 0;
+        if( cj(this).is(':checked') &&  currentTotal == 0 ) {
           flag = true;
-      }
-    });
-
-    cj('.price-set-option-content input[data-amount]').change( function () {
-      if (cj(this).attr('data-amount').replace(/[^\/\d]/g,'') == 0 ) {
-        flag = true;
-      } else {
-        flag = false;
-      }
-      showHidePayment(flag);
-    });
+        }
+      });
+      cj('.price-set-option-content input, .other_amount-content input').change( function () {
+        currentTotal = cj(this).is('[data-amount]') ? cj(this).attr('data-amount').replace(/[^\/\d]/g,'') : (cj(this).val() ? cj(this).val() : 0);
+        if (currentTotal == 0 ) {
+          flag = true;
+        } else {
+          flag = false;
+        }
+        toggleConfirmButton(flag);
+        showHidePayment(flag);
+      });
+    }
+    toggleConfirmButton(flag);
     showHidePayment(flag);
   }
 

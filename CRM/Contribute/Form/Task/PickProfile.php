@@ -29,10 +29,12 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2015
+ * $Id$
+ *
  */
 
 /**
- * This class provides the functionality for batch profile update for contributions.
+ * This class provides the functionality for batch profile update for contribution
  */
 class CRM_Contribute_Form_Task_PickProfile extends CRM_Contribute_Form_Task {
 

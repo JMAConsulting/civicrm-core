@@ -54,20 +54,6 @@ abstract class CRM_Contact_Form_Inline extends CRM_Core_Form {
   public $_contactSubType;
 
   /**
-   * Explicitly declare the form context.
-   */
-  public function getDefaultContext() {
-    return 'create';
-  }
-
-  /**
-   * Explicitly declare the entity api name.
-   */
-  public function getDefaultEntity() {
-    return 'Contact';
-  }
-
-  /**
    * Common preprocess: fetch contact ID and contact type
    */
   public function preProcess() {
@@ -88,8 +74,6 @@ abstract class CRM_Contact_Form_Inline extends CRM_Core_Form {
     }
 
     $this->assign('contactType', $this->_contactType);
-
-    $this->setAction(CRM_Core_Action::UPDATE);
   }
 
   /**

@@ -41,20 +41,9 @@
     {if $contributionSummary }
       <tr>
           {if $contributionSummary.total.amount}
-            {if $contributionSummary.total.currencyCount gt 1}
-              <th class="contriTotalLeft right">{ts}Total{/ts} - {$contributionSummary.total.amount}</th>
-              <th class="left contriTotalRight"> &nbsp; {ts}# Completed{/ts} - {$contributionSummary.total.count}</th>
-            </tr><tr>
-              <th class="contriTotalLeft">{ts}Avg{/ts} - {$contributionSummary.total.avg}</th>
-              <th class="right"> &nbsp; {ts}Median{/ts} - {$contributionSummary.total.median}</th>
-              <th class="right contriTotalRight"> &nbsp; {ts}Mode{/ts} - {$contributionSummary.total.mode}</th>
-            {else}
-              <th class="contriTotalLeft right">{ts}Total{/ts} - {$contributionSummary.total.amount}</th>
-              <th class="right"> &nbsp; {ts}# Completed{/ts} - {$contributionSummary.total.count}</th>
-              <th class="right"> &nbsp; {ts}Avg{/ts} - {$contributionSummary.total.avg}</th>
-              <th class="right"> &nbsp; {ts}Median{/ts} - {$contributionSummary.total.median}</th>
-              <th class="right contriTotalRight"> &nbsp; {ts}Mode{/ts} - {$contributionSummary.total.mode}</th>
-            {/if}
+            <th class="contriTotalLeft right">{ts}Total Amount{/ts} - {$contributionSummary.total.amount}</th>
+            <th class="right"> &nbsp; {ts}# Completed Contributions{/ts} - {$contributionSummary.total.count}</th>
+            <th class="right contriTotalRight"> &nbsp; {ts}Avg Amount{/ts} - {$contributionSummary.total.avg}</th>
           {/if}
           {if $contributionSummary.cancel.amount}
             <th class="disabled right contriTotalRight"> &nbsp; {ts}Total Cancelled Amount{/ts} - {$contributionSummary.cancel.amount}</th>

@@ -1231,7 +1231,7 @@ WHERE   line_item_civireport.id IS NOT NULL
     }
     $contactID = $row['civicrm_contact_id'];
     return "<div id=contact-{$contactID} class='crm-entity'>
-           <span class='crm-editable crmf-nick_name crm-editable-enabled'>
+           <span class='crm-editable crmf-nick_name crm-editable-enabled' data-action='create'>
            " . $value . "</span></div>";
   }
 

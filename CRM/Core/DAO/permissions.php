@@ -495,7 +495,7 @@ function _civicrm_api3_permissions($entity, $action, &$params) {
       ),
     ),
   );
-  $permissions['uf_field'] = $permissions['uf_group'];
+  $permissions['uf_field'] = $permissions['uf_join'] = $permissions['uf_group'];
   $permissions['uf_field']['delete'] = array(
     'access CiviCRM',
     array(
@@ -505,6 +505,12 @@ function _civicrm_api3_permissions($entity, $action, &$params) {
   );
   $permissions['option_value'] = $permissions['uf_group'];
   $permissions['option_group'] = $permissions['option_value'];
+
+  $permissions['message_template'] = array(
+    'get' => array('access CiviCRM'),
+    'create' => array('edit message templates'),
+    'update' => array('edit message templates'),
+  );
 
   // Translate 'create' action to 'update' if id is set
   if ($action == 'create' && (!empty($params['id']) || !empty($params[$entity . '_id']))) {

@@ -65,12 +65,8 @@
        </tr>
    </table>
 </fieldset>
-<fieldset><legend>{ts}Calendar{/ts}</legend>
+<fieldset><legend>{ts}Fiscal Year{/ts}</legend>
    <table class="form-layout-compressed">
-       <tr class="crm-date-form-block-weekBegins">
-         <td class="label">{$form.weekBegins.label}</td>
-         <td>{$form.weekBegins.html}</td>
-       </tr>
        <tr class="crm-date-form-block-fiscalYearStart">
           <td class="label">{$form.fiscalYearStart.label}</td>
           <td>{$form.fiscalYearStart.html}</td>

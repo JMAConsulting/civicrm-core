@@ -28,6 +28,8 @@
   {include file="CRM/Contact/Form/Contact.tpl"}
 {else}
 
+  {include file="CRM/common/wysiwyg.tpl" includeWysiwygEditor=true}
+
   <div class="crm-summary-contactname-block crm-inline-edit-container">
     <div class="crm-summary-block" id="contactname-block">
       {include file="CRM/Contact/Page/Inline/ContactName.tpl"}

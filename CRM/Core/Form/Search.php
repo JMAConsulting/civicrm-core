@@ -95,7 +95,14 @@ class CRM_Core_Form_Search extends CRM_Core_Form {
    * Common buildform tasks required by all searches
    */
   public function buildQuickform() {
-    CRM_Core_Resources::singleton()
+    $resources = CRM_Core_Resources::singleton();
+
+    if ($resources->ajaxPopupsEnabled) {
+      // Script needed by some popups
+      $this->assign('includeWysiwygEditor', TRUE);
+    }
+
+    $resources
       ->addScriptFile('civicrm', 'js/crm.searchForm.js', 1, 'html-header')
       ->addStyleFile('civicrm', 'css/searchForm.css', 1, 'html-header');
 

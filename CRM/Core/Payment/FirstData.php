@@ -118,7 +118,7 @@ class CRM_Core_Payment_FirstData extends CRM_Core_Payment {
     $requestFields['transactionorigin'] = "Eci";
     #32 character string
     $requestFields['invoice_number'] = $params['invoiceID'];
-    $requestFields['ordertype'] = 'Sale';
+    $requestFields['ordertype'] = $params['payment_action'];
     $requestFields['comments'] = $params['description'];
     //**********************set 'result' for live testing **************************
     //  $requestFields[       'result'  ]      =    "";  #set to "Good", "Decline" or "Duplicate"
@@ -178,7 +178,7 @@ class CRM_Core_Payment_FirstData extends CRM_Core_Payment {
     //----------------------------------------------------------------------------------------------------
     // Check to see if we have a duplicate before we send
     //----------------------------------------------------------------------------------------------------
-    if ($this->checkDupe($params['invoiceID'], CRM_Utils_Array::value('contributionID', $params))) {
+    if ($this->_checkDupe($params['invoiceID'])) {
       return self::errorExit(9003, 'It appears that this transaction is a duplicate.  Have you already submitted the form once?  If so there may have been a connection problem.  Check your email for a receipt from eWAY.  If you do not receive a receipt within 2 hours you can try your transaction again.  If you continue to have problems please contact the site administrator.');
     }
     //----------------------------------------------------------------------------------------------------
@@ -301,6 +301,21 @@ class CRM_Core_Payment_FirstData extends CRM_Core_Payment {
   // end function doDirectPayment
 
   /**
+   * Checks to see if invoice_id already exists in db.
+   *
+   * @param int $invoiceId
+   *   The ID to check.
+   *
+   * @return bool
+   *   True if ID exists, else false
+   */
+  public function _checkDupe($invoiceId) {
+    $contribution = new CRM_Contribute_DAO_Contribution();
+    $contribution->invoice_id = $invoiceId;
+    return $contribution->find();
+  }
+
+  /**
    * Produces error message and returns from class.
    */
   public function &errorExit($errorCode = NULL, $errorMessage = NULL) {
@@ -313,6 +328,13 @@ class CRM_Core_Payment_FirstData extends CRM_Core_Payment {
       $e->push(9000, 0, NULL, 'Unknown System Error.');
     }
     return $e;
+  }
+
+  /**
+   * NOTE: 'doTransferCheckout' not implemented
+   */
+  public function doTransferCheckout(&$params, $component) {
+    CRM_Core_Error::fatal(ts('This function is not implemented'));
   }
 
   /**

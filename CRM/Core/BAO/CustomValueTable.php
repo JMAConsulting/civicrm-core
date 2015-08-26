@@ -85,7 +85,7 @@ class CRM_Core_BAO_CustomValueTable {
                 $value = CRM_Core_DAO::VALUE_SEPARATOR . implode(CRM_Core_DAO::VALUE_SEPARATOR, $value) . CRM_Core_DAO::VALUE_SEPARATOR;
                 $type = 'String';
               }
-              elseif (!is_numeric($value)) {
+              elseif (!is_numeric($value) && !strstr($value, CRM_Core_DAO::VALUE_SEPARATOR)) {
                 //fix for multi select state, CRM-3437
                 $mulValues = explode(',', $value);
                 $validStates = array();
@@ -101,7 +101,7 @@ class CRM_Core_BAO_CustomValueTable {
                       CRM_Core_PseudoConstant::stateProvinceAbbreviation(), TRUE
                     );
                   }
-                  $validStates[] = $states['state_province_id'];
+                  $validStates[] = CRM_Utils_Array::value('state_province_id', $states);
                 }
                 $value = implode(CRM_Core_DAO::VALUE_SEPARATOR,
                   $validStates
@@ -115,15 +115,19 @@ class CRM_Core_BAO_CustomValueTable {
                 $value = NULL;
                 $type = 'Timestamp';
               }
+              else {
+                $type = 'String';
+              }
               break;
 
             case 'Country':
               $type = 'Integer';
+              $mulValues = explode(',', $value);
               if (is_array($value)) {
                 $value = CRM_Core_DAO::VALUE_SEPARATOR . implode(CRM_Core_DAO::VALUE_SEPARATOR, $value) . CRM_Core_DAO::VALUE_SEPARATOR;
                 $type = 'String';
               }
-              elseif (!is_numeric($value)) {
+              elseif (!is_numeric($value) && !strstr($value, CRM_Core_DAO::VALUE_SEPARATOR)) {
                 //fix for multi select country, CRM-3437
                 $mulValues = explode(',', $value);
                 $validCountries = array();
@@ -138,7 +142,7 @@ class CRM_Core_BAO_CustomValueTable {
                       CRM_Core_PseudoConstant::countryIsoCode(), TRUE
                     );
                   }
-                  $validCountries[] = $countries['country_id'];
+                  $validCountries[] = CRM_Utils_Array::value('country_id', $states);
                 }
                 $value = implode(CRM_Core_DAO::VALUE_SEPARATOR,
                   $validCountries
@@ -151,6 +155,9 @@ class CRM_Core_BAO_CustomValueTable {
                 // gross but effective hack
                 $value = NULL;
                 $type = 'Timestamp';
+              }
+              else {
+                $type = 'String';
               }
               break;
 
@@ -354,12 +361,14 @@ class CRM_Core_BAO_CustomValueTable {
    * Post process function.
    *
    * @param array $params
+   * @param $customFields
    * @param $entityTable
    * @param int $entityID
    * @param $customFieldExtends
    */
-  public static function postProcess(&$params, $entityTable, $entityID, $customFieldExtends) {
+  public static function postProcess(&$params, &$customFields, $entityTable, $entityID, $customFieldExtends) {
     $customData = CRM_Core_BAO_CustomField::postProcess($params,
+      $customFields,
       $entityID,
       $customFieldExtends
     );
@@ -614,7 +623,7 @@ AND    cf.id IN ( $fieldIDList )
    * To get the values of custom fields with IDs 13 and 43 for contact ID 1327, use:
    * $params = array( 'entityID' => 1327, 'custom_13' => 1, 'custom_43' => 1 );
    *
-   * Entity Type will be inferred by the custom fields you request
+   * Entity Type will be infered by the custom fields you request
    * Specify $params['entityType'] if you do not supply any custom fields to return
    * and entity type is other than Contact
    *
