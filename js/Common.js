@@ -712,11 +712,13 @@ CRM.strings = CRM.strings || {};
       createLinks = params.contact_type ? _.where(CRM.config.entityRef.contactCreate, {type: params.contact_type}) : CRM.config.entityRef.contactCreate;
     }
     _.each(createLinks, function(link) {
-      markup += ' <a class="crm-add-entity crm-hover-button" href="' + link.url + '">';
-      if (link.type) {
-        markup += '<span class="icon ' + link.type + '-profile-icon"></span> ';
+      if (link.type != 'Household') {
+        markup += ' <a class="crm-add-entity crm-hover-button" href="' + link.url + '">';
+        if (link.type) {
+          markup += '<span class="icon ' + link.type + '-profile-icon"></span> ';
+        }
+        markup += link.label + '</a>';
       }
-      markup += link.label + '</a>';
     });
     markup += '</div>';
     return markup;
