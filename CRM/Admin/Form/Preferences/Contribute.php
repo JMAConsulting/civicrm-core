@@ -37,6 +37,13 @@
 class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
   protected $_settings = array(
     'cvv_backoffice_required' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
+    'acl_financial_type' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
+    'deferred_revenue_enabled' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
+    'default_invoice_page' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
+    'financial_account_bal_enable' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
+    'financial_year_end' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
+    'period_closing_date' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
+    'invoicing' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
   );
 
   /**
@@ -118,29 +125,48 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
    * Build the form object.
    */
   public function buildQuickForm() {
-    //CRM-16691: Changes made related to settings of 'CVV'.
+    $htmlFields = array();
     foreach ($this->_settings as $setting => $group) {
       $settingMetaData = civicrm_api3('setting', 'getfields', array('name' => $setting));
       $props = $settingMetaData['values'][$setting];
       if (isset($props['quick_form_type'])) {
         $add = 'add' . $props['quick_form_type'];
         if ($add == 'addElement') {
-          $this->$add(
-            $props['html_type'],
-            $setting,
-            ts($props['title']),
-            CRM_Utils_Array::value($props['html_type'] == 'select' ? 'option_values' : 'html_attributes', $props, array()),
-            $props['html_type'] == 'select' ? CRM_Utils_Array::value('html_attributes', $props) : NULL
-          );
+          if (in_array($props['html_type'], array('checkbox', 'textarea'))) {
+            $this->add($props['html_type'],
+              $setting,
+              $props['title']
+            );
+          }
+          else {
+            if ($props['html_type'] == 'select') {
+              $functionName = CRM_Utils_Array::value('name', CRM_Utils_Array::value('pseudoconstant', $props));
+              if ($functionName) {
+                $props['option_values'] = array('' => ts('- select -')) + CRM_Contribute_PseudoConstant::$functionName();
+              }
+            }
+            $this->$add(
+              $props['html_type'],
+              $setting,
+              ts($props['title']),
+              CRM_Utils_Array::value($props['html_type'] == 'select' ? 'option_values' : 'html_attributes', $props, array()),
+              $props['html_type'] == 'select' ? CRM_Utils_Array::value('html_attributes', $props) : NULL
+            );
+          }
+        }
+        elseif ($add == 'addMonthDay') {
+          $this->add('date', $setting, ts($props['title']), CRM_Core_SelectValues::date(NULL, 'F d'));
+        }
+        elseif ($add == 'addDate') {
+          $this->addDate($setting, ts($props['title']), FALSE, array('formatType' => $props['type']));
         }
         else {
           $this->$add($setting, ts($props['title']));
         }
       }
-      $this->assign("{$setting}_description", ts($props['description']));
+      $htmlFields[$setting] = ts($props['description']);
     }
-    $this->add('checkbox', 'invoicing', ts('Enable Tax and Invoicing'));
-    $this->add('checkbox', 'acl_financial_type', ts('Enable Access Control by Financial Type'));
+    $this->assign('htmlFields', $htmlFields);
     parent::buildQuickForm();
   }
 
@@ -152,12 +178,12 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
   public function setDefaultValues() {
     $defaults = Civi::settings()->get('contribution_invoice_settings');
     //CRM-16691: Changes made related to settings of 'CVV'.
-    foreach ($this->_settings as $setting => $group) {
+    foreach (array('cvv_backoffice_required') as $setting) {
       $settingMetaData = civicrm_api3('setting', 'getfields', array('name' => $setting));
       $defaults[$setting] = civicrm_api3('setting', 'getvalue',
         array(
           'name' => $setting,
-          'group' => $group,
+          'group' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
           'default_value' => CRM_Utils_Array::value('default', $settingMetaData['values'][$setting]),
         )
       );
@@ -196,8 +222,7 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
         CRM_Core_DAO::VALUE_SEPARATOR;
       Civi::settings()->set('user_dashboard_options', $settingName);
     }
-    //CRM-16691: Changes made related to settings of 'CVV'.
-    $settings = array_intersect_key($params, $this->_settings);
+    $settings = array_intersect_key($params, array('cvv_backoffice_required' => 1));
     $result = civicrm_api3('setting', 'create', $settings);
     CRM_Core_Session::setStatus(ts('Your changes have been saved.'), ts('Changes Saved'), "success");
   }
