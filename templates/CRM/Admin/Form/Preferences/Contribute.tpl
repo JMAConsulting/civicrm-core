@@ -24,3 +24,25 @@
  +--------------------------------------------------------------------+
 *}
 {include file="CRM/Form/basicForm.tpl"}
+{literal}
+  <script type="text/javascript">
+    cj(document).ready(function() {
+    showHideElement('deferred_revenue_enabled', 'default_invoice_page');
+    cj("#deferred_revenue_enabled").click(function() {
+      showHideElement('deferred_revenue_enabled', 'default_invoice_page');
+    });
+    showHideElement('financial_account_bal_enable', 'financial_year_end');
+    cj("#financial_account_bal_enable").click(function() {
+      showHideElement('financial_account_bal_enable', 'financial_year_end');
+    });
+    function showHideElement(checkEle, toHide) {
+      if (cj('#' + checkEle).prop('checked')) {
+        cj("tr.crm-preferences-form-block-" + toHide).show();
+      }
+      else {
+        cj("tr.crm-preferences-form-block-" + toHide).hide();
+      }
+    }
+    });
+  </script>
+{/literal}
