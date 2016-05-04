@@ -749,6 +749,11 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       FALSE
     );
 
+    // CRM-16189, add Revenue Recognition Date
+    if (CRM_Contribute_PseudoConstant::checkContributeSettings('deferred_revenue_enabled')) {
+      $this->addDate('revenue_recognition_date', ts('Revenue Recognition Date'), FALSE, array('formatType' => 'activityDate'));
+    }
+
     // add various dates
     $this->addDateTime('receive_date', ts('Received'), FALSE, array('formatType' => 'activityDateTime'));
 
