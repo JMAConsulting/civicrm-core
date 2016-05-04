@@ -104,6 +104,12 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
       $element->freeze();
     }
 
+    //CRM-16189
+    if (CRM_Contribute_PseudoConstant::checkContributeSettings('financial_account_bal_enable')) {
+      $this->add('text', 'opening_balance', ts('Opening Balance'), $attributes['opening_balance']);
+      $this->add('text', 'current_period_opening_balance', ts('Current Period Opening Balance'), $attributes['current_period_opening_balance']);
+    }
+
     $financialAccountType = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialAccount', 'financial_account_type_id');
     if (!empty($financialAccountType)) {
       $element = $this->add('select', 'financial_account_type_id', ts('Financial Account Type'),
@@ -174,6 +180,8 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
     $defaults = parent::setDefaultValues();
     if ($this->_action & CRM_Core_Action::ADD) {
       $defaults['contact_id'] = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_Domain', CRM_Core_Config::domainID(), 'contact_id');
+      $defaults['opening_balance'] = 
+        $defaults['current_period_opening_balance'] = '0.00';
     }
     return $defaults;
   }
