@@ -279,6 +279,7 @@ WHERE cft.id = %1
       'Premiums Inventory Account is' => 'Asset',
       'Discounts Account is' => 'Revenue',
       'Sales Tax Account is' => 'Liability',
+      'Is Deferred Revenue Account' => 'Liability',
     );
     if (!$flip) {
       foreach ($Links as $accountRelation => $accountType) {
