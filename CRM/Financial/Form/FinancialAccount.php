@@ -108,6 +108,16 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
     if (CRM_Contribute_PseudoConstant::checkContributeSettings('financial_account_bal_enable')) {
       $this->add('text', 'opening_balance', ts('Opening Balance'), $attributes['opening_balance']);
       $this->add('text', 'current_period_opening_balance', ts('Current Period Opening Balance'), $attributes['current_period_opening_balance']);
+      $financialAccountType = CRM_Core_PseudoConstant::get(
+        'CRM_Financial_DAO_FinancialAccount',
+        'financial_account_type_id',
+        array('labelColumn' => 'name')
+      );
+      $limitedAccount = array(
+        array_search('Asset', $financialAccountType),
+        array_search('Liability', $financialAccountType),
+      );
+      $this->assign('limitedAccount', json_encode($limitedAccount));
     }
 
     $financialAccountType = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialAccount', 'financial_account_type_id');
