@@ -31,9 +31,9 @@
     cj("#deferred_revenue_enabled").click(function() {
       showHideElement('deferred_revenue_enabled', 'default_invoice_page');
     });
-    showHideElement('financial_account_bal_enable', 'financial_year_end');
+    showHideElement('financial_account_bal_enable', 'fiscalYearStart');
     cj("#financial_account_bal_enable").click(function() {
-      showHideElement('financial_account_bal_enable', 'financial_year_end');
+      showHideElement('financial_account_bal_enable', 'fiscalYearStart');
     });
     function showHideElement(checkEle, toHide) {
       if (cj('#' + checkEle).prop('checked')) {
