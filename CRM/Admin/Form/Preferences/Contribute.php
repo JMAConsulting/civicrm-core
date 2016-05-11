@@ -41,7 +41,6 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
     'deferred_revenue_enabled' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
     'default_invoice_page' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
     'financial_account_bal_enable' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
-    'financial_year_end' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
     'period_closing_date' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
     'invoicing' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
   );
