@@ -41,6 +41,7 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
     'deferred_revenue_enabled' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
     'default_invoice_page' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
     'financial_account_bal_enable' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
+    'fiscalYearStart' => CRM_Core_BAO_Setting::LOCALIZATION_PREFERENCES_NAME,
     'period_closing_date' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
     'invoicing' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
   );
@@ -154,7 +155,7 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
           }
         }
         elseif ($add == 'addMonthDay') {
-          $this->add('date', $setting, ts($props['title']), CRM_Core_SelectValues::date(NULL, 'F d'));
+          $this->add('date', $setting, ts($props['title']), CRM_Core_SelectValues::date(NULL, 'M d'));
         }
         elseif ($add == 'addDate') {
           $this->addDate($setting, ts($props['title']), FALSE, array('formatType' => $props['type']));
@@ -187,6 +188,8 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
         )
       );
     }
+
+    $defaults['fiscalYearStart'] = Civi::settings()->get('fiscalYearStart');
     return $defaults;
   }
 
@@ -199,6 +202,7 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
     unset($params['qfKey']);
     unset($params['entryURL']);
     Civi::settings()->set('contribution_invoice_settings', $params);
+    Civi::settings()->set('fiscalYearStart', $params['fiscalYearStart']);
 
     // to set default value for 'Invoices / Credit Notes' checkbox on display preferences
     $values = CRM_Core_BAO_Setting::getItem("CiviCRM Preferences");
