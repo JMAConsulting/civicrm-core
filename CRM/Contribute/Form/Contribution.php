@@ -431,6 +431,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       'receipt_date',
       'cancel_date',
       'thankyou_date',
+      'revenue_recognition_date',
     );
     foreach ($dates as $key) {
       if (!empty($defaults[$key])) {
@@ -1641,6 +1642,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         'receive_date',
         'receipt_date',
         'cancel_date',
+        'revenue_recognition_date',
       );
 
       foreach ($dates as $d) {
