@@ -107,3 +107,27 @@
 {/if}
   <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="botttom"}</div>
 </div>
+{if $form.opening_balance}
+{literal}
+  <script type="text/javascript">
+    cj(document).ready(function() {
+      cj('#financial_account_type_id').change(function() {
+        showHideElement();
+      });
+      showHideElement();
+      function showHideElement() {
+        var financialAccountType = cj('#financial_account_type_id').val();
+        var financialAccountTypes = '{/literal}{$limitedAccount}{literal}';
+	if (cj.inArray(financialAccountType, financialAccountTypes) > -1) {
+	  cj('tr.crm-contribution-form-block-current_period_opening_balance').show();
+	  cj('tr.crm-contribution-form-block-opening_balance').show();
+	}
+	else {
+	  cj('tr.crm-contribution-form-block-current_period_opening_balance').hide();
+	  cj('tr.crm-contribution-form-block-opening_balance').hide();
+	}
+      }
+    });
+  </script>
+{/literal}
+{/if}
