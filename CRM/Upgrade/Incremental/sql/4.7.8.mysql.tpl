@@ -20,7 +20,7 @@ SELECT @option_group_id_arel_val := MAX(CAST( `value` AS UNSIGNED )) FROM civicr
 INSERT INTO
    `civicrm_option_value` (`option_group_id`, {localize field='label'}label{/localize}, `value`, `name`, `grouping`, `filter`, `is_default`, `weight`, {localize field='description'}`description`{/localize}, `is_optgroup`, `is_reserved`, `is_active`, `component_id`, `visibility_id`)
 VALUES
-(@option_group_id_arel, {localize}'{ts escape="sql"}Is Deferred Revenue Account{/ts}'{/localize}, @option_group_id_arel_val+1, 'Is Deferred Revenue Account', NULL, 0, 0, @option_group_id_arel_wt+1, {localize}'Is Deferred Revenue Account'{/localize}, 0, 1, 1, 2, NULL);
+(@option_group_id_arel, {localize}'{ts escape="sql"}Deferred Revenue Account is{/ts}'{/localize}, @option_group_id_arel_val+1, 'Deferred Revenue Account is', NULL, 0, 0, @option_group_id_arel_wt+1, {localize}'Deferred Revenue Account is'{/localize}, 0, 1, 1, 2, NULL);
 
 -- CRM-16189
 ALTER TABLE civicrm_contribution
