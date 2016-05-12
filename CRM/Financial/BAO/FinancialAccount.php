@@ -296,5 +296,68 @@ WHERE cft.id = %1
     }
     return $financialAccountLinks;
   }
+  /**
+   * Get Deferred Financial type
+   *
+   *
+   * @return array
+   *
+   */
+  public static function getDeferredFinancialType() {
+    $deferredFinancialType = array();
+    $query = "SELECT ce.entity_id FROM civicrm_entity_financial_account ce
+LEFT JOIN civicrm_option_value cv ON ce.account_relationship = cv.value
+LEFT JOIN civicrm_option_group cg ON cg.id= cv.option_group_id AND cg.name = 'account_relationship'
+WHERE `entity_table` = 'civicrm_financial_type' AND cv.name = 'Deferred Revenue Account is'";
+    $dao = CRM_Core_DAO::executeQuery($query);
+    while ($dao->fetch()) {
+      $deferredFinancialType[] = $dao->entity_id;
+    }
+    return $deferredFinancialType;
+  }
+
+  /**
+   * Validate if Deferred Account is set for Financial Type
+   * when Deferred Revenue is enabled
+   *
+   * @return string
+   *
+   */
+  public static function validateTogglingDeferredRevenue() {
+    $deferredFinancialType = self::getDeferredFinancialType();
+    $message = ' Is Deferred Revenue Account relationship must be defined for the following
+    All financial types associated with Membership sales, including
+     -- via Admin > CiviMember > Membership Types, edit
+      -- the default financial type associated with a complex price set
+       -- the financial type for a membership price set field option when the membership type is non-blank
+    All financial types associated with an event:
+        -- through quick price set
+        -- as the default financial type associated with a complex price set
+        -- as the financial type for a price set field with participant count > 0
+        -- as the financial type for a price set field option with participant count > 0 ';
+    $tables = array(
+      'civicrm_membership_type',
+      'civicrm_price_set',
+      'civicrm_price_field_value',
+      'civicrm_event',
+    );
+    $params[2] = array('', 'String');
+    if (!empty($deferredFinancialType)) {
+      $params[2] = array(' AND financial_type_id NOT IN (' . implode(',', $deferredFinancialType) . ') ', 'Text');
+    }
+    $query_1 = 'SELECT id FROM %1 WHERE is_active = 1';
+    $query_2 = $query_1 . ' %2';
+    foreach ($tables as $table) {
+      $params[1] = array($table, 'Text');
+      $dao = CRM_Core_DAO::executeQuery($query_1, $params);
+      if ($dao->N) {
+        $dao = CRM_Core_DAO::executeQuery($query_2, $params);
+        if ($dao->N) {
+          return $message;
+        }
+      }
+    }
+    return NULL;
+  }
 
 }
