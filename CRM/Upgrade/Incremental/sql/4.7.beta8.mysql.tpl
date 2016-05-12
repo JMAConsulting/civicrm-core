@@ -10,3 +10,13 @@ UPDATE civicrm_payment_processor pp, civicrm_payment_processor_type ppt SET pp.i
 -- CRM-17815
 {include file='../CRM/Upgrade/4.7.beta8.msg_template/civicrm_msg_template.tpl'}
 
+-- CRM-16189
+SELECT @contributionNavId := id, @domainID := domain_id FROM civicrm_navigation name = 'Contributions';
+SELECT @navMaxWeight := MAX(ROUND(weight))+1 from civicrm_navigation WHERE parent_id = @contributionNavId;
+
+UPDATE civicrm_navigation SET has_separator = 1 WHERE name = 'Manage Price Sets' AND parent_id = @contributionNavId;
+
+INSERT INTO civicrm_navigation
+( domain_id, url, label, name, permission, permission_operator, parent_id, is_active, has_separator, weight )
+VALUES
+( @domainID, 'civicrm/admin/contribute/closeaccperiod?reset=1', '{ts escape="sql" skip="true"}Close Accounting Period{/ts}', 'Close Accounting Period', 'access CiviContribute,administer CiviCRM,administer Accounting', 'AND', @contributionNavId, '1', NULL, @navMaxWeight );
