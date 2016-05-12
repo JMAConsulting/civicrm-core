@@ -168,6 +168,29 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
     }
     $this->assign('htmlFields', $htmlFields);
     parent::buildQuickForm();
+    $this->addFormRule(array('CRM_Admin_Form_Preferences_Contribute', 'formRule'), $this);
+  }
+
+  /**
+   * Global validation rules for the form.
+   *
+   * @param array $values
+   *   posted values of the form
+   * @param $files
+   * @param $self
+   *
+   * @return array
+   *   list of errors to be posted back to the form
+   */
+  public static function formRule($values, $files, $self) {
+    $errors = array();
+    if (CRM_Utils_Array::value('deferred_revenue_enabled', $values)) {
+      $errorMessage = CRM_Financial_BAO_FinancialAccount::validateTogglingDeferredRevenue();
+      if ($errorMessage) {
+        $errors['deferred_revenue_enabled'] = $errorMessage;
+      }
+    }
+    return $errors;
   }
 
   /**
