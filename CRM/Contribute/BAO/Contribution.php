@@ -3111,7 +3111,13 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
         'Pending',
         'In Progress',
       );
-      if (in_array($contributionStatus, $pendingStatus)) {
+      if (!empty($params['revenue_recognition_date'])) {
+        $params['to_financial_account_id'] = CRM_Financial_BAO_FinancialAccount::getFinancialAccountForFinancialTypeByRelationship(
+          $params['financial_type_id'],
+          'Deferred Revenue Account is'
+        );
+      }
+      elseif (in_array($contributionStatus, $pendingStatus)) {
         $params['to_financial_account_id'] = CRM_Financial_BAO_FinancialAccount::getFinancialAccountForFinancialTypeByRelationship(
           $params['financial_type_id'],
           'Accounts Receivable Account is'
