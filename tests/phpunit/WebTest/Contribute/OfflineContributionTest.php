@@ -538,7 +538,7 @@ class WebTest_Contribute_OfflineContributionTest extends CiviSeleniumTestCase {
     $this->type("total_amount", "100");
 
     // revenue recognition date (CRM-16189)
-    $this->webtestFillDate('revenue_recognition_date', 'now+4');
+    $this->webtestFillDate('revenue_recognition_date', 'now');
 
     // select payment instrument type = Check and enter chk number
     $this->select("payment_instrument_id", "value=4");
