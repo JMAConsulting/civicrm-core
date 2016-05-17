@@ -26,6 +26,20 @@
 {include file="CRM/Form/basicForm.tpl"}
 {literal}
   <script type="text/javascript">
+    function checkPeriod() {
+      var smonth = cj('#prior_financial_period_M option:selected').val();
+      var sday = cj('#prior_financial_period_d option:selected').val();
+      var hmonth = cj('input[name=prior_financial_period_M_hidden]').val();
+      var hday = cj('input[name=prior_financial_period_d_hidden]').val();
+      if (smonth != hmonth || sday != hday) {
+        if (confirm('Changing the Prior Financial Period may result in problems calculating closing account balances accurately and / or exporting of financial transactions. Do you want to proceed?')) {
+	  return true;
+        } else {
+          return false;
+        }
+      }
+    }
+
     cj(document).ready(function() {
     showHideElement('deferred_revenue_enabled', 'default_invoice_page');
     cj("#deferred_revenue_enabled").click(function() {

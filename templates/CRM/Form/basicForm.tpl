@@ -42,19 +42,17 @@
               {else}
                 <td class="label">{$form.$htmlField.label}&nbsp;{if $htmlField eq 'acl_financial_type'}{help id="$htmlField"}{/if}</td>
                 <td>
-		  {if $htmlField eq 'period_closing_date'}
-		    {include file="CRM/common/jcalendar.tpl" elementName=$htmlField}
-		  {else}
-                    {$form.$htmlField.html}
-                  {/if}
+                  {$form.$htmlField.html}
                   {if $desc}
-                     <br /><span class="description">{$desc}</span>
+                    <br /><span class="description">{$desc}</span>
                   {/if}
                 </td>
               {/if}
             </tr>
           {/if}
         {/foreach}
+	{$form.prior_financial_period_M_hidden.html}
+	{$form.prior_financial_period_d_hidden.html}
       </table>
     {/if}
     <table class="form-layout" id="invoicing_blocks">
