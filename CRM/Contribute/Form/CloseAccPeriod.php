@@ -36,13 +36,38 @@ class CRM_Contribute_Form_CloseAccPeriod extends CRM_Core_Form {
    * @return array
    */
   public function setDefaultValues() {
+    $defaults = $period = array();
+    $period = Civi::settings()->get('closing_date');
+    if (empty($period)) {
+      $period = CRM_Contribute_PseudoConstant::checkContributeSettings('prior_financial_period');
+    }
+    else {
+      $defaults['closing_date'] = $period;
+      return $defaults;
+    }
+    if (!empty($period)) {
+      if ($period['M'] == 1) {
+        $period['M'] = 12;
+      }
+      else {
+        $period['M']--;
+      }
+      $defaults['closing_date'] = $period;
+    }
+    else {
+      $defaults['closing_date'] = array(
+        'M' => date('m', strtotime("-1 month")),
+        'd' => date('d'),
+      );
+    }
+    return $defaults;
   }
 
   /**
    * Build the form object.
    */
   public function buildQuickForm() {
-    $this->addDate('closing_date', ts('Closing Date'), TRUE, array('formatType' => 'activityDate'));
+    $this->add('date', 'closing_date', ts('Accounting Period to Close'), CRM_Core_SelectValues::date(NULL, 'M d'), TRUE);
     $confirmClose = ts('Are you sure you want to close accounting period?');
 
     $this->addButtons(array(
@@ -78,6 +103,27 @@ class CRM_Contribute_Form_CloseAccPeriod extends CRM_Core_Form {
    * Process the form submission.
    */
   public function postProcess() {
+    // store the submitted values in an array
+    $params = $this->controller->exportValues($this->_name);
+    // Create activity
+    $activityType = CRM_Core_OptionGroup::getValue('activity_type',
+      'Close Accounting Period',
+      'name'
+    );
+    $activityParams = array(
+      'source_contact_id' => CRM_Core_Session::singleton()->get('userID'),
+      'assignee_contact_id' => CRM_Core_Session::singleton()->get('userID'),
+      'activity_type_id' => $activityType,
+      'subject' => 'Close Accounting Period',
+      'activity_date_time' => date('YmdHis'),
+    );
+    CRM_Activity_BAO_Activity::create($activityParams);
+
+    // Set Prior Financial Period
+    Civi::settings()->set('prior_financial_period', $params['closing_date']);
+    // Set closing date
+    Civi::settings()->set('closing_date', $params['closing_date']);
+    CRM_Core_Session::setStatus(ts("Accounting Period has been closed successfully!"), ts('Success'), 'success');
   }
 
 }
