@@ -42,7 +42,7 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
     'default_invoice_page' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
     'financial_account_bal_enable' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
     'fiscalYearStart' => CRM_Core_BAO_Setting::LOCALIZATION_PREFERENCES_NAME,
-    'period_closing_date' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
+    'prior_financial_period' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
     'invoicing' => CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME,
   );
 
@@ -167,7 +167,23 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
       $htmlFields[$setting] = ts($props['description']);
     }
     $this->assign('htmlFields', $htmlFields);
+    $this->addElement('hidden', 'prior_financial_period_M_hidden');
+    $this->addElement('hidden', 'prior_financial_period_d_hidden');
     parent::buildQuickForm();
+
+    $this->addButtons(array(
+        array(
+          'type' => 'next',
+          'name' => ts('Save'),
+          'js' => array('onclick' => "return checkPeriod();"),
+          'isDefault' => TRUE,
+        ),
+        array(
+          'type' => 'cancel',
+          'name' => ts('Cancel'),
+        ),
+      )
+    );
   }
 
   /**
@@ -190,6 +206,9 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
     }
 
     $defaults['fiscalYearStart'] = Civi::settings()->get('fiscalYearStart');
+    $period = CRM_Contribute_PseudoConstant::checkContributeSettings('prior_financial_period');
+    $defaults['prior_financial_period_M_hidden'] = $period['M'];
+    $defaults['prior_financial_period_d_hidden'] = $period['d'];
     return $defaults;
   }
 
