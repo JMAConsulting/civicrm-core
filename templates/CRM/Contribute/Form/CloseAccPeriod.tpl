@@ -27,7 +27,7 @@
 <table class="form-layout-compressed">
   <tr>
     <td class="label">{$form.closing_date.label}</td>
-    <td class="content">{if $hideCalender neq true}{include file="CRM/common/jcalendar.tpl" elementName=closing_date}{else}{$form.closing_date|crmDate}{/if}</td>
+    <td class="content">{$form.closing_date.html}</td>
   </tr>
 </table>
 
