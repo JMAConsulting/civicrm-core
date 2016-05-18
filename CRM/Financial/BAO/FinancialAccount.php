@@ -325,16 +325,16 @@ WHERE `entity_table` = 'civicrm_financial_type' AND cv.name = 'Deferred Revenue 
    */
   public static function validateTogglingDeferredRevenue() {
     $deferredFinancialType = self::getDeferredFinancialType();
-    $message = ' Is Deferred Revenue Account relationship must be defined for the following
-    All financial types associated with Membership sales, including
-     -- via Admin > CiviMember > Membership Types, edit
-      -- the default financial type associated with a complex price set
-       -- the financial type for a membership price set field option when the membership type is non-blank
-    All financial types associated with an event:
-        -- through quick price set
-        -- as the default financial type associated with a complex price set
-        -- as the financial type for a price set field with participant count > 0
-        -- as the financial type for a price set field option with participant count > 0 ';
+    $message = ' Is Deferred Revenue Account relationship must be defined for the following<br><br>
+    All financial types associated with Membership sales, including<br>
+     -- via Admin > CiviMember > Membership Types, edit<br>
+      -- the default financial type associated with a complex price set<br>
+       -- the financial type for a membership price set field option when the membership type is non-blank<br>
+    All financial types associated with an event:<br>
+        -- through quick price set<br>
+        -- as the default financial type associated with a complex price set<br>
+        -- as the financial type for a price set field with participant count > 0<br>
+        -- as the financial type for a price set field option with participant count > 0 <br>';
     $tables = array(
       'civicrm_membership_type',
       'civicrm_price_set',
