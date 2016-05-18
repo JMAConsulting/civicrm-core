@@ -345,12 +345,21 @@ WHERE `entity_table` = 'civicrm_financial_type' AND cv.name = 'Deferred Revenue 
     if (!empty($deferredFinancialType)) {
       $params[2] = array(' AND financial_type_id NOT IN (' . implode(',', $deferredFinancialType) . ') ', 'Text');
     }
-    $query_1 = 'SELECT id FROM %1 WHERE is_active = 1';
+    $query_1 = 'SELECT %5.id FROM %4 WHERE %5.is_active = 1';
     $query_2 = $query_1 . ' %2';
     foreach ($tables as $table) {
-      $params[1] = array($table, 'Text');
+      $params[4] = array($table, 'Text');
+      $params[5] = array($table, 'Text');
       $dao = CRM_Core_DAO::executeQuery($query_1, $params);
       if ($dao->N) {
+        if (in_array($table, array('civicrm_price_set', 'civicrm_price_field_value'))) {
+          $query_2 .= " AND civicrm_price_set.name NOT IN ('default_contribution_amount', 'default_membership_type_amount') AND (civicrm_price_set.extends LIKE '%1%' OR civicrm_price_set.extends like '3')";
+          if ($table == 'civicrm_price_field_value') {
+            $string = $table . ' INNER JOIN civicrm_price_field ON civicrm_price_field.id = civicrm_price_field_value.price_field_id INNER JOIN civicrm_price_set ON civicrm_price_set.id = civicrm_price_field.price_set_id ';
+            $params[4] = array($string, 'Text');
+            $params[2][0] = str_replace('financial_type_id', "{$table}.financial_type_id", $params[2][0]);
+          }
+        }
         $dao = CRM_Core_DAO::executeQuery($query_2, $params);
         if ($dao->N) {
           return $message;
