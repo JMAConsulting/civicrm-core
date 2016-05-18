@@ -156,7 +156,7 @@ class CRM_Financial_BAO_FinancialItem extends CRM_Financial_DAO_FinancialItem {
 
       $result = array();
       CRM_Financial_BAO_FinancialTypeAccount::retrieve($searchParams, $result);
-      $params['to_financial_account_id'] = CRM_Utils_Array::value('financial_account_id', $result);
+      $trxnParams['to_financial_account_id'] = CRM_Utils_Array::value('financial_account_id', $result);
       $financialTxn = CRM_Core_BAO_FinancialTrxn::create($trxnParams);
     }
     return $financialItem;
