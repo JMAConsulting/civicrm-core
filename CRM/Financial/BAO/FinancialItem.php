@@ -109,7 +109,7 @@ class CRM_Financial_BAO_FinancialItem extends CRM_Financial_DAO_FinancialItem {
     }
     else {
       $accountRelName = 'Income Account is';
-      if ($contribution->revenue_recognition_date) {
+      if (property_exists($contribution, 'revenue_recognition_date') && $contribution->revenue_recognition_date) {
         $accountRelName = 'Deferred Revenue Account is';
       }
       $accountRel = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE '{$accountRelName}' "));
@@ -130,7 +130,36 @@ class CRM_Financial_BAO_FinancialItem extends CRM_Financial_DAO_FinancialItem {
       $trxnId['id'] = $trxn['financialTrxnId'];
     }
 
-    return self::create($params, NULL, $trxnId);
+    $financialItem = self::create($params, NULL, $trxnId);
+    if ($contribution->revenue_recognition_date) {
+      //build financial transaction params
+      $trxnParams = array(
+        'contribution_id' => $contribution->id,
+        'from_financial_account_id' => $params['financial_account_id'],
+        'trxn_date' => $contribution->revenue_recognition_date,
+        'total_amount' => $params['amount'],
+        'fee_amount' => '0.00',
+        'net_amount' => $params['amount'],
+        'currency' => $contribution->currency,
+        'trxn_id' => $contribution->trxn_id,
+        'status_id' => $contribution->contribution_status_id,
+        'payment_instrument_id' => $contribution->payment_instrument_id,
+        'check_number' => $contribution->check_number,
+        'is_payment' => 1,
+      );
+      $accountRel = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE 'Income Account is' "));
+      $searchParams = array(
+        'entity_table' => 'civicrm_financial_type',
+        'entity_id' => $lineItem->financial_type_id,
+        'account_relationship' => $accountRel,
+      );
+
+      $result = array();
+      CRM_Financial_BAO_FinancialTypeAccount::retrieve($searchParams, $result);
+      $trxnParams['to_financial_account_id'] = CRM_Utils_Array::value('financial_account_id', $result);
+      $financialTxn = CRM_Core_BAO_FinancialTrxn::create($trxnParams);
+    }
+    return $financialItem;
   }
 
   /**
