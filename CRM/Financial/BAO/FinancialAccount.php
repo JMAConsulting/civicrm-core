@@ -305,13 +305,14 @@ WHERE cft.id = %1
    */
   public static function getDeferredFinancialType() {
     $deferredFinancialType = array();
-    $query = "SELECT ce.entity_id FROM civicrm_entity_financial_account ce
+    $query = "SELECT ce.entity_id, cft.name FROM civicrm_entity_financial_account ce
 LEFT JOIN civicrm_option_value cv ON ce.account_relationship = cv.value
 LEFT JOIN civicrm_option_group cg ON cg.id= cv.option_group_id AND cg.name = 'account_relationship'
-WHERE `entity_table` = 'civicrm_financial_type' AND cv.name = 'Deferred Revenue Account is'";
+LEFT JOIN civicrm_financial_type cft ON ce.entity_id = cft.id
+WHERE `entity_table` = 'civicrm_financial_type' AND cv.name = 'Deferred Revenue Account is' AND cft.is_active = 1";
     $dao = CRM_Core_DAO::executeQuery($query);
     while ($dao->fetch()) {
-      $deferredFinancialType[] = $dao->entity_id;
+      $deferredFinancialType[$dao->entity_id] = $dao->name;
     }
     return $deferredFinancialType;
   }
@@ -325,16 +326,17 @@ WHERE `entity_table` = 'civicrm_financial_type' AND cv.name = 'Deferred Revenue 
    */
   public static function validateTogglingDeferredRevenue() {
     $deferredFinancialType = self::getDeferredFinancialType();
-    $message = ' Is Deferred Revenue Account relationship must be defined for the following<br><br>
-    All financial types associated with Membership sales, including<br>
-     -- via Admin > CiviMember > Membership Types, edit<br>
-      -- the default financial type associated with a complex price set<br>
-       -- the financial type for a membership price set field option when the membership type is non-blank<br>
-    All financial types associated with an event:<br>
-        -- through quick price set<br>
-        -- as the default financial type associated with a complex price set<br>
-        -- as the financial type for a price set field with participant count > 0<br>
-        -- as the financial type for a price set field option with participant count > 0 <br>';
+    $message = ' Please revise the error message to the following:
+Before Deferred Revenue can be enabled, a Deferred Revenue Account relationship must be defined for all financial types currently used for Memberships and Events, including
+<ul>
+<li>those specified for each membership type at Admin > CiviMember > Membership Types, edit</li>
+<li>on the Fees tab when managing events</li>
+<li>the default financial type associated with a membership or event price set</li>
+<li>the financial type for a membership price set field option when the membership type is non-blank</li>
+<li>as the financial type for a price set field with participant count > 0</li>
+<li>as the financial type for a price set field option with participant count > 0</li>
+</ul>
+In other words, please create deferred revenue accounts at Administer > CiviContribute > Financial Accounts, then configure them for the following financial types at Administer > CiviContribute > Financial Types, accounts:';
     $tables = array(
       'civicrm_membership_type',
       'civicrm_price_set',
@@ -343,7 +345,7 @@ WHERE `entity_table` = 'civicrm_financial_type' AND cv.name = 'Deferred Revenue 
     );
     $params[2] = array('', 'String');
     if (!empty($deferredFinancialType)) {
-      $params[2] = array(' AND financial_type_id NOT IN (' . implode(',', $deferredFinancialType) . ') ', 'Text');
+      $params[2] = array(' AND financial_type_id NOT IN (' . implode(',', array_keys($deferredFinancialType)) . ') ', 'Text');
     }
     $query_1 = 'SELECT %5.id FROM %4 WHERE %5.is_active = 1';
     $query_2 = $query_1 . ' %2';
@@ -362,6 +364,13 @@ WHERE `entity_table` = 'civicrm_financial_type' AND cv.name = 'Deferred Revenue 
         }
         $dao = CRM_Core_DAO::executeQuery($query_2, $params);
         if ($dao->N) {
+          $message .= '<ul>';
+          $financialTypes = CRM_Contribute_PseudoConstant::financialType();
+          $financialTypes = array_diff_key($financialTypes, $deferredFinancialType);
+          foreach ($financialTypes as $financialType) {
+            $message .= "<li>{$financialType}</li>";
+          }
+          $message .= '</ul>';
           return $message;
         }
       }
