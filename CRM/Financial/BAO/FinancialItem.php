@@ -109,7 +109,7 @@ class CRM_Financial_BAO_FinancialItem extends CRM_Financial_DAO_FinancialItem {
     }
     else {
       $accountRelName = 'Income Account is';
-      if ($contribution->revenue_recognition_date) {
+      if (property_exists($contribution, 'revenue_recognition_date') && $contribution->revenue_recognition_date) {
         $accountRelName = 'Deferred Revenue Account is';
       }
       $accountRel = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE '{$accountRelName}' "));
@@ -131,7 +131,7 @@ class CRM_Financial_BAO_FinancialItem extends CRM_Financial_DAO_FinancialItem {
     }
 
     $financialItem = self::create($params, NULL, $trxnId);
-    if ($contribution->revenue_recognition_date) {
+    if (property_exists($contribution, 'revenue_recognition_date') && $contribution->revenue_recognition_date) {
       //build financial transaction params
       $trxnParams = array(
         'contribution_id' => $contribution->id,
