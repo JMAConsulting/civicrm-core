@@ -24,7 +24,7 @@
  +--------------------------------------------------------------------+
 *}
 {* this template is used for batch transaction screen, assign/remove transactions to batch  *}
-{if $statusID eq 1}
+{if $statusID eq 1 or $statusID eq 4}
 <div class="crm-form-block crm-search-form-block">
   <div class="crm-accordion-wrapper crm-batch_transaction_search-accordion collapsed">
     <div class="crm-accordion-header crm-master-accordion-header">
@@ -59,7 +59,7 @@
     </div>
   </div>
 </div>
-{if $statusID eq 1}
+{if $statusID eq 1 or $statusID eq 4}
 <div class="form-layout-compressed">{$form.trans_assign.html}&nbsp;{$form.submit.html}</div><br/>
 {/if}
 <div id="ltype">
@@ -95,7 +95,7 @@ CRM.$(function($) {
   });
   var batchStatus = {/literal}{$statusID}{literal};
   // build transaction listing only for open batches
-  if (batchStatus == 1) {
+  if (batchStatus == 1 || batchStatus == 4) {
     var paymentInstrumentID = {/literal}{if $paymentInstrumentID neq null}{$paymentInstrumentID}{else}'null'{/if}{literal};
     if (paymentInstrumentID != 'null') {
       buildTransactionSelectorAssign( true );

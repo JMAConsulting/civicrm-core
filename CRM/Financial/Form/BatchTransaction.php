@@ -81,7 +81,7 @@ class CRM_Financial_Form_BatchTransaction extends CRM_Contribute_Form {
     }
 
     // do not build rest of form unless it is open batch
-    if ($this->_batchStatusId != 1) {
+    if (!in_array($this->_batchStatusId, array(1,4))) {
       return;
     }
 
