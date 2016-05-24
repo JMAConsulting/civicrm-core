@@ -1004,7 +1004,11 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         $errors['trxn_id'] = ts('Transaction ID\'s must be unique. Transaction \'%1\' already exists in your database.', array(1 => $fields['trxn_id']));
       }
     }
-
+    // CRM-16189
+    $errorMessage = CRM_Financial_BAO_FinancialAccount::checkForValidFinancialType($fields, $self->_id, $self);
+    if ($errorMessage) {
+      $errors['financial_type_id'] = $errorMessage;
+    }
     $errors = array_merge($errors, $softErrors);
     return $errors;
   }
