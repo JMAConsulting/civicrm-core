@@ -52,7 +52,17 @@ class CRM_Financial_Form_BatchTransaction extends CRM_Contribute_Form {
     $this->assign('entityID', self::$_entityID);
     if (isset(self::$_entityID)) {
       $this->_batchStatusId = CRM_Core_DAO::getFieldValue('CRM_Batch_BAO_Batch', self::$_entityID, 'status_id');
+      $this->batchStatuses = CRM_Core_OptionGroup::values('batch_status', TRUE);
       $this->assign('statusID', $this->_batchStatusId);
+      $validStatuses = array(
+        $this->batchStatuses['Open'],
+        $this->batchStatuses['Reopened'],
+      );
+      $this->assign('batchStatuses', $validStatuses);
+      $this->assign('validStatus', FALSE);
+      if (in_array($this->_batchStatusId, array($this->batchStatuses['Open'], $this->batchStatuses['Reopened']))) {
+        $this->assign('validStatus', TRUE);
+      }
 
       $batchTitle = CRM_Core_DAO::getFieldValue('CRM_Batch_BAO_Batch', self::$_entityID, 'title');
       CRM_Utils_System::setTitle(ts('Accounting Batch - %1', array(1 => $batchTitle)));
@@ -76,12 +86,12 @@ class CRM_Financial_Form_BatchTransaction extends CRM_Contribute_Form {
    * Build the form object.
    */
   public function buildQuickForm() {
-    if ($this->_batchStatusId == 2) {
+    if ($this->_batchStatusId == $this->batchStatuses['Closed']) {
       $this->add('submit', 'export_batch', ts('Export Batch'));
     }
 
-    // do not build rest of form unless it is open batch
-    if (!in_array($this->_batchStatusId, array(1,4))) {
+    // do not build rest of form unless it is open/reopened batch
+    if (!in_array($this->_batchStatusId, array($this->batchStatuses['Open'], $this->batchStatuses['Reopened']))) {
       return;
     }
 
@@ -158,8 +168,8 @@ class CRM_Financial_Form_BatchTransaction extends CRM_Contribute_Form {
   }
 
   public function setDefaultValues() {
-    // do not setdefault unless it is open batch
-    if ($this->_batchStatusId != 1) {
+    // do not setdefault unless it is open/reopened batch
+    if (!in_array($this->_batchStatusId, array($this->batchStatuses['Open'], $this->batchStatuses['Reopened']))) {
       return;
     }
     if (isset(self::$_entityID)) {
