@@ -42,7 +42,11 @@
               {else}
                 <td class="label">{$form.$htmlField.label}&nbsp;{if $htmlField eq 'acl_financial_type'}{help id="$htmlField"}{/if}</td>
                 <td>
-                  {$form.$htmlField.html}
+                  {if $htmlField eq 'prior_financial_period'}
+                    {include file="CRM/common/jcalendar.tpl" elementName=$htmlField}
+ 		  {else}
+                     {$form.$htmlField.html}
+                  {/if}
                   {if $desc}
                     <br /><span class="description">{$desc}</span>
                   {/if}
