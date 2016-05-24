@@ -27,11 +27,9 @@
 {literal}
   <script type="text/javascript">
     function checkPeriod() {
-      var smonth = cj('#prior_financial_period_M option:selected').val();
-      var sday = cj('#prior_financial_period_d option:selected').val();
-      var hmonth = cj('input[name=prior_financial_period_M_hidden]').val();
-      var hday = cj('input[name=prior_financial_period_d_hidden]').val();
-      if (smonth != hmonth || sday != hday) {
+      var speriod = cj('#prior_financial_period').val();
+      var hperiod = cj('input[name=prior_financial_period_hidden]').val();
+      if (((hperiod && speriod == '') || (hperiod && speriod != '')) && (speriod != hperiod)) {
         if (confirm('Changing the Prior Financial Period may result in problems calculating closing account balances accurately and / or exporting of financial transactions. Do you want to proceed?')) {
 	  return true;
         } else {
