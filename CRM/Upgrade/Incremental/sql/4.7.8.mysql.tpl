@@ -34,3 +34,23 @@ ADD `revenue_recognition_date` datetime DEFAULT NULL COMMENT 'Stores the date wh
 ALTER TABLE civicrm_financial_account
 ADD `opening_balance` decimal(20,2) DEFAULT '0.00' COMMENT 'Contains the opening balance for this financial account',
 ADD `current_period_opening_balance` decimal(20,2) DEFAULT '0.00' COMMENT 'Contains the opening balance for the current period for this financial account';
+
+SELECT @option_group_id_fat := max(id) from civicrm_option_group where name = 'financial_account_type';
+SELECT @opLiability := value FROM civicrm_option_value WHERE name = 'Liability' and option_group_id = @option_group_id_fat;
+SELECT @domainContactId := contact_id from civicrm_domain where id = {$domainID};
+INSERT IGNORE INTO
+   `civicrm_financial_account` (`name`, `contact_id`, `financial_account_type_id`, `description`, `accounting_code`, `account_type_code`, `is_reserved`, `is_active`, `is_deductible`, `is_default`)
+VALUES
+  ('{ts escape="sql"}Deferred Revenue - Event Fee{/ts}', @domainContactId, @opLiability, 'Event revenue to be recognized in future months when the events occur', '2730', 'OCLIAB', 0, 1, 0, 0),
+  ('{ts escape="sql"}Deferred Revenue - Member Dues{/ts}', @domainContactId, @opLiability, 'Membership revenue to be recognized in future months', '2740', 'OCLIAB', 0, 1, 0, 0);
+SELECT @financial_account_id_dref := max(id) FROM civicrm_financial_account WHERE name = '{ts escape="sql"}Deferred Revenue - Event Fee{/ts}';
+SELECT @financial_account_id_drmd := max(id) FROM civicrm_financial_account WHERE name = '{ts escape="sql"}Deferred Revenue - Member Dues{/ts}';
+SELECT @option_value_rel_id_dr := value FROM civicrm_option_value WHERE option_group_id = @option_group_id_arel AND name = 'Deferred Revenue Account is';
+SELECT @financial_type_id_md := max(id) FROM civicrm_financial_type WHERE name = '{ts escape="sql"}Member Dues{/ts}';
+SELECT @financial_type_id_ef := max(id) FROM civicrm_financial_type WHERE name = '{ts escape="sql"}Event Fee{/ts}';
+
+INSERT INTO `civicrm_entity_financial_account`
+     ( entity_table, entity_id, account_relationship, financial_account_id )
+VALUES
+     ( 'civicrm_financial_type', @financial_type_id_ef, @option_value_rel_id_dr, @financial_account_id_dref ),
+     ( 'civicrm_financial_type', @financial_type_id_md, @option_value_rel_id_dr, @financial_account_id_drmd );
