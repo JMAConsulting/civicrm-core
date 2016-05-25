@@ -281,7 +281,11 @@ class CRM_Member_Form_MembershipType extends CRM_Member_Form_MembershipConfig {
         $errors['fixed_period_rollover_day'] = ts('Please enter valid Fixed Period Rollover Day');
       }
     }
-
+    // CRM-16189
+    $errorMessage = CRM_Financial_BAO_FinancialAccount::validateFinancialType($params['financial_type_id']);
+    if ($errorMessage) {
+      $errors['financial_type_id'] = $errorMessage;
+    }
     return empty($errors) ? TRUE : $errors;
   }
 

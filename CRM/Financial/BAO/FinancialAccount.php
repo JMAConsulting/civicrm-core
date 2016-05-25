@@ -402,7 +402,7 @@ In other words, please create deferred revenue accounts at Administer > CiviCont
       'civicrm_price_field_value',
       'civicrm_event',
     );
-    $params[2] = array('', 'String');
+    $params[2] = array('', 'Text');
     if (!empty($deferredFinancialType)) {
       $params[2] = array(' AND financial_type_id NOT IN (' . implode(',', array_keys($deferredFinancialType)) . ') ', 'Text');
     }
@@ -435,6 +435,50 @@ In other words, please create deferred revenue accounts at Administer > CiviCont
       }
     }
     return NULL;
+  }
+
+  /**
+   * check if financial type has Deferred Revenue Account is relationship
+   * with Financial Account
+   *
+   * @param $financialTypeId Integer
+   *
+   * @return string
+   *
+   */
+  public static function validateFinancialType($financialTypeId, $entityID = NULL, $entity = NULL) {
+    if (!$financialTypeId) {
+      return FALSE;
+    }
+    if (!CRM_Contribute_PseudoConstant::checkContributeSettings('deferred_revenue_enabled')) {
+      return FALSE;
+    }
+    if ($entityID) {
+      $query = ' SELECT ps.extends FROM civicrm_price_set ps %3 WHERE %1.id = %2';
+      $params = array(
+        1 => array('ps', 'Text'),
+        2 => array($entityID, 'Integer'),
+      );
+      if ($entity == 'PriceField') {
+        $params[1] = array('pf', 'Text');
+        $params[3] = array(
+         ' INNER JOIN civicrm_price_field pf ON pf.price_set_id = ps.id ',
+         'Text'
+        );
+      }
+      $extends = CRM_Core_DAO::singleValueQuery($query, $params);
+      $extends = explode('', $extends);
+      if (!(in_array(CRM_Core_Component::getComponentID('CiviEvent'), $extends)
+        || in_array(CRM_Core_Component::getComponentID('CiviMember'), $extends))
+      ) {
+        return FALSE;
+      }
+    }
+    $deferredFinancialType = self::getDeferredFinancialType();
+    if (!array_key_exists($financialTypeId, $deferredFinancialType)) {
+      return ts('Deferred revenue account is not configured for selected financial type. Please have an administrator set up the deferred revenue account at Administer > CiviContribute > Financial Accounts, then configure it for financial types at Administer > CiviContribution > Financial Types, Accounts');
+    }
+    return FALSE;
   }
 
 }
