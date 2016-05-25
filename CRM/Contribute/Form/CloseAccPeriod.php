@@ -128,7 +128,8 @@ class CRM_Contribute_Form_CloseAccPeriod extends CRM_Core_Form {
     CRM_Activity_BAO_Activity::create($activityParams);
 
     // Set Prior Financial Period
-    Civi::settings()->set('prior_financial_period', $params['closing_date']);
+    $priorFinPeriod = $params['closing_date']['M'] . '/' . $params['closing_date']['d'] . '/' . date('Y');
+    Civi::settings()->set('prior_financial_period', date('m/d/Y', strtotime($priorFinPeriod)));
     // Set closing date
     Civi::settings()->set('closing_date', $params['closing_date']);
     CRM_Core_Session::setStatus(ts("Accounting Period has been closed successfully!"), ts('Success'), 'success');
