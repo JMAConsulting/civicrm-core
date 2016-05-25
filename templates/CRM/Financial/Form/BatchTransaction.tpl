@@ -24,7 +24,7 @@
  +--------------------------------------------------------------------+
 *}
 {* this template is used for batch transaction screen, assign/remove transactions to batch  *}
-{if in_array($statusID, $batchStatuses)}
+{if in_array($batchStatus, array('Open', 'Reopened'))}
 <div class="crm-form-block crm-search-form-block">
   <div class="crm-accordion-wrapper crm-batch_transaction_search-accordion collapsed">
     <div class="crm-accordion-header crm-master-accordion-header">
@@ -59,7 +59,7 @@
     </div>
   </div>
 </div>
-{if in_array($statusID, $batchStatuses)}
+{if in_array($batchStatus, array('Open', 'Reopened'))}
 <div class="form-layout-compressed">{$form.trans_assign.html}&nbsp;{$form.submit.html}</div><br/>
 {/if}
 <div id="ltype">
@@ -94,9 +94,8 @@ CRM.$(function($) {
     CRM.$('.crm-batch_transaction_search-accordion:not(.collapsed)').crmAccordionToggle();
   });
   var batchStatus = {/literal}{$statusID}{literal};
-  var validStatus = {/literal}{$validStatus}{literal};
-  // build transaction listing only for open/reopened batches
-  if (validStatus) {
+  {/literal}{if $validStatus}{literal}
+    // build transaction listing only for open/reopened batches
     var paymentInstrumentID = {/literal}{if $paymentInstrumentID neq null}{$paymentInstrumentID}{else}'null'{/if}{literal};
     if (paymentInstrumentID != 'null') {
       buildTransactionSelectorAssign( true );
@@ -159,10 +158,9 @@ CRM.$(function($) {
         CRM.$("#crm-transaction-selector-remove-{/literal}{$entityID}{literal} input[id^='mark_y_']").prop('checked',false);
       }
     });
-  }
-  else {
+  {/literal}{else}{literal}
     buildTransactionSelectorRemove();
-  }
+  {/literal}{/if}{literal}
 });
 
 function enableActions( type ) {
