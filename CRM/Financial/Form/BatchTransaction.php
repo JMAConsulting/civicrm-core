@@ -44,6 +44,12 @@ class CRM_Financial_Form_BatchTransaction extends CRM_Contribute_Form {
    */
   protected $_batchStatusId;
 
+  /**
+   * Batch status name.
+   * @string
+   */
+  protected $_batchStatus;
+
   public function preProcess() {
     // This reuses some styles from search forms
     CRM_Core_Resources::singleton()->addStyleFile('civicrm', 'css/searchForm.css', 1, 'html-header');
@@ -52,15 +58,12 @@ class CRM_Financial_Form_BatchTransaction extends CRM_Contribute_Form {
     $this->assign('entityID', self::$_entityID);
     if (isset(self::$_entityID)) {
       $this->_batchStatusId = CRM_Core_DAO::getFieldValue('CRM_Batch_BAO_Batch', self::$_entityID, 'status_id');
-      $this->batchStatuses = CRM_Core_OptionGroup::values('batch_status', TRUE);
+      $batchStatuses = CRM_Core_PseudoConstant::get('CRM_Batch_DAO_Batch', 'status_id', array('labelColumn' => 'name', 'condition' => " v.value={$this->_batchStatusId}"));
+      $this->_batchStatus = $batchStatuses[$this->_batchStatusId];
       $this->assign('statusID', $this->_batchStatusId);
-      $validStatuses = array(
-        $this->batchStatuses['Open'],
-        $this->batchStatuses['Reopened'],
-      );
-      $this->assign('batchStatuses', $validStatuses);
+      $this->assign('batchStatus', $this->_batchStatus);
       $this->assign('validStatus', FALSE);
-      if (in_array($this->_batchStatusId, array($this->batchStatuses['Open'], $this->batchStatuses['Reopened']))) {
+      if (in_array($this->_batchStatus, array('Open', 'Reopened'))) {
         $this->assign('validStatus', TRUE);
       }
 
@@ -86,12 +89,12 @@ class CRM_Financial_Form_BatchTransaction extends CRM_Contribute_Form {
    * Build the form object.
    */
   public function buildQuickForm() {
-    if ($this->_batchStatusId == $this->batchStatuses['Closed']) {
+    if ($this->_batchStatus == 'Closed') {
       $this->add('submit', 'export_batch', ts('Export Batch'));
     }
 
     // do not build rest of form unless it is open/reopened batch
-    if (!in_array($this->_batchStatusId, array($this->batchStatuses['Open'], $this->batchStatuses['Reopened']))) {
+    if (!in_array($this->_batchStatus, array('Open', 'Reopened'))) {
       return;
     }
 
@@ -169,7 +172,7 @@ class CRM_Financial_Form_BatchTransaction extends CRM_Contribute_Form {
 
   public function setDefaultValues() {
     // do not setdefault unless it is open/reopened batch
-    if (!in_array($this->_batchStatusId, array($this->batchStatuses['Open'], $this->batchStatuses['Reopened']))) {
+    if (!in_array($this->_batchStatus, array('Open', 'Reopened'))) {
       return;
     }
     if (isset(self::$_entityID)) {
