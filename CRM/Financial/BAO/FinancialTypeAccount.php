@@ -248,7 +248,7 @@ WHERE cog.name = 'payment_instrument' ";
         'account_type_code' => 'INC',
         'is_active' => 1,
       );
-      $financialAccount = CRM_Financial_BAO_FinancialAccount::add($params, CRM_Core_DAO::$_nullArray);
+      $financialAccount = CRM_Financial_BAO_FinancialAccount::add($params);
     }
     else {
       $existingFinancialAccount[$dao->financial_account_type_id] = $dao->id;
