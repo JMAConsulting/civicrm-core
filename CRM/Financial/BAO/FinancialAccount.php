@@ -84,18 +84,24 @@ class CRM_Financial_BAO_FinancialAccount extends CRM_Financial_DAO_FinancialAcco
    *
    * @param array $params
    *   Reference array contains the values submitted by the form.
-   * @param array $ids
-   *   Reference array contains the id.
    *
    * @return CRM_Financial_DAO_FinancialAccount
    */
-  public static function add(&$params, &$ids = array()) {
+  public static function add(&$params) {
     if (empty($params['id'])) {
       $params['is_active'] = CRM_Utils_Array::value('is_active', $params, FALSE);
       $params['is_deductible'] = CRM_Utils_Array::value('is_deductible', $params, FALSE);
       $params['is_tax'] = CRM_Utils_Array::value('is_tax', $params, FALSE);
       $params['is_header_account'] = CRM_Utils_Array::value('is_header_account', $params, FALSE);
       $params['is_default'] = CRM_Utils_Array::value('is_default', $params, FALSE);
+    }
+    if (!empty($params['financial_account_type_id'])
+      && CRM_Financial_BAO_FinancialAccount::validateFinancialAccount(
+        CRM_Utils_Array::value('id', $params),
+        $params['financial_account_type_id']
+      )
+    ) {
+      throw new CRM_Core_Exception(ts('You cannot change the account type since this financial account refers to a financial item having an account type of Revenue/Liability.'));
     }
     if (!empty($params['is_default'])) {
       $query = 'UPDATE civicrm_financial_account SET is_default = 0 WHERE financial_account_type_id = %1';
@@ -105,8 +111,8 @@ class CRM_Financial_BAO_FinancialAccount extends CRM_Financial_DAO_FinancialAcco
 
     // action is taken depending upon the mode
     $financialAccount = new CRM_Financial_DAO_FinancialAccount();
-    if (!empty($ids['contributionType'])) {
-      $financialAccount->id = CRM_Utils_Array::value('contributionType', $ids);
+    if (!empty($params['id'])) {
+      $financialAccount->id = $params['id'];
       $financialAccount->find(TRUE);
     }
     
@@ -435,6 +441,35 @@ In other words, please create deferred revenue accounts at Administer > CiviCont
       }
     }
     return NULL;
+  }
+
+  /**
+   * check if financial account is referenced by financial item
+   *
+   * @param $financialAccountId Integer
+   *
+   * @param $financialAccountTypeID Integer
+   *
+   * @return bool
+   *
+   */
+  public static function validateFinancialAccount($financialAccountId, $financialAccountTypeID = NULL) {
+    if (!$financialAccountId) {
+      return FALSE;
+    }
+    $sql = "SELECT f.financial_account_type_id FROM civicrm_financial_account f
+INNER JOIN civicrm_financial_item fi ON fi.financial_account_id = f.id
+INNER JOIN civicrm_option_value cv ON cv.value = f.financial_account_type_id AND cv.name IN ('Revenue', 'Liability')
+INNER JOIN civicrm_option_group cg ON cg.id = cv.option_group_id
+AND  cg.name = 'financial_account_type'
+WHERE f.id = %1
+LIMIT 1";
+    $params = array(1 => array($financialAccountId, 'Integer'));
+    $result = CRM_Core_DAO::singleValueQuery($sql, $params);
+    if ($result && $result != $financialAccountTypeID) {
+      return TRUE;
+    }
+    return FALSE;
   }
 
   /**
