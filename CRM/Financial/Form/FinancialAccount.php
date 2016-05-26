@@ -129,6 +129,9 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
         $elementAccounting->freeze();
         $elementActive->freeze();
       }
+      elseif (CRM_Financial_BAO_FinancialAccount::validateFinancialAccount($this->_id)) {
+        $element->freeze();
+      }
     }
 
     if ($this->_action == CRM_Core_Action::UPDATE &&
@@ -205,16 +208,15 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
       CRM_Core_Session::setStatus(ts('Selected Financial Account has been deleted.'));
     }
     else {
-      $ids = array();
       // store the submitted values in an array
       $params = $this->exportValues();
 
       if ($this->_action & CRM_Core_Action::UPDATE) {
-        $ids['contributionType'] = $this->_id;
+        $params['id'] = $this->_id;
       }
 
-      $contributionType = CRM_Financial_BAO_FinancialAccount::add($params, $ids);
-      CRM_Core_Session::setStatus(ts('The Financial Account \'%1\' has been saved.', array(1 => $contributionType->name)));
+      $financialAccount = CRM_Financial_BAO_FinancialAccount::add($params);
+      CRM_Core_Session::setStatus(ts('The Financial Account \'%1\' has been saved.', array(1 => $financialAccount->name)));
     }
   }
 
