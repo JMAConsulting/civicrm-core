@@ -216,7 +216,7 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
       }
 
       $financialAccount = CRM_Financial_BAO_FinancialAccount::add($params);
-      CRM_Core_Session::setStatus(ts('The Financial Account \'%1\' has been saved.', array(1 => $financialAccount->name)));
+      CRM_Core_Session::setStatus(ts('The Financial Account \'%1\' has been saved.', array(1 => $financialAccount->name)), ts('Saved'), 'success');
     }
   }
 
