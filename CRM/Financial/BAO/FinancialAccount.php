@@ -404,9 +404,9 @@ Before Deferred Revenue can be enabled, a Deferred Revenue Account relationship 
 In other words, please create deferred revenue accounts at Administer > CiviContribute > Financial Accounts, then configure them for the following financial types at Administer > CiviContribute > Financial Types, accounts:';
     $tables = array(
       'civicrm_membership_type',
+      'civicrm_event',
       'civicrm_price_set',
       'civicrm_price_field_value',
-      'civicrm_event',
     );
     $params[2] = array('', 'Text');
     if (!empty($deferredFinancialType)) {
