@@ -235,7 +235,14 @@ class CRM_Financial_Page_AJAX {
             $updated = call_user_func_array(array($recordBAO, $methods[$op]), array(&$params, $ids));
           }
           if ($updated) {
-            $response = array('status' => 'record-updated-success');
+            $redirectStatus = $updated->status_id;
+            if ($batchStatus[$updated->status_id] == "Reopened") {
+              $redirectStatus = array_search("Open", $batchStatus);
+            }
+            $response = array(
+              'status' => 'record-updated-success',
+              'status_id' => $redirectStatus,
+            );
           }
         }
       }
