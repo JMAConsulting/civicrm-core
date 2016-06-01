@@ -54,7 +54,7 @@
           {/if}
           {include file="CRM/Contribute/Form/Search/Common.tpl"}
         </table>
-        <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="botttom"}</div>
+        <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"}</div>
       </div>
     </div>
   </div>
@@ -69,7 +69,7 @@
     <table id="crm-transaction-selector-assign-{$entityID}" cellpadding="0" cellspacing="0" border="0">
       <thead>
       <tr>
-        <th class="crm-transaction-checkbox">{if $statusID eq 1}{$form.toggleSelect.html}{/if}</th>
+        <th class="crm-transaction-checkbox">{if in_array($batchStatus, array('Open', 'Reopened'))}{$form.toggleSelect.html}{/if}</th>
         <th class="crm-contact-type"></th>
         <th class="crm-contact-name">{ts}Name{/ts}</th>
         <th class="crm-amount">{ts}Amount{/ts}</th>
