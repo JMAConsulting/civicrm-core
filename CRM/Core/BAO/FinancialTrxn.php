@@ -560,4 +560,45 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
     return $trxn;
   }
 
+  /**
+   * create transaction for deferred revenue
+   *
+   * @param array $params
+   * @param object $contribution
+   * @param array $lineItems
+   *
+   */
+  public static function createDeferredTrxn($params, $contribution, $lineItems) {
+    if (property_exists($contribution, 'revenue_recognition_date') && !CRM_Utils_System::isNull($contribution->revenue_recognition_date)) {
+      $trxnParams = array(
+        'contribution_id' => $contribution->id,
+        'trxn_date' => $contribution->revenue_recognition_date,
+        'total_amount' => $params['amount'],
+        'fee_amount' => '0.00',
+        'net_amount' => $params['amount'],
+        'currency' => $contribution->currency,
+        'trxn_id' => $contribution->trxn_id,
+        'status_id' => $contribution->contribution_status_id,
+        'payment_instrument_id' => $contribution->payment_instrument_id,
+        'check_number' => $contribution->check_number,
+        'is_payment' => 1,
+      );
+      $results = civicrm_api3('EntityFinancialAccount', 'get', array(
+        'entity_table' => "civicrm_financial_type",
+        'entity_id' => $lineItems->financial_type_id,
+        'account_relationship' => array('IN' => array("Income Account is", "Deferred Revenue Account is")),
+      ));
+      $accountRel = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE 'Income Account is' "));
+      foreach($results['values'] as $result) {
+        if ($result['account_relationship'] == $accountRel) {
+          $trxnParams['to_financial_account_id'] = $result['financial_account_id'];
+        }
+        else {
+          $trxnParams['from_financial_account_id'] = $result['financial_account_id'];
+        }
+      }
+      $financialTxn = CRM_Core_BAO_FinancialTrxn::create($trxnParams);
+    }
+  }
+
 }
