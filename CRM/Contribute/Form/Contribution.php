@@ -1650,7 +1650,9 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       );
 
       foreach ($dates as $d) {
-        $params[$d] = CRM_Utils_Date::processDate($formValues[$d], CRM_Utils_Array::value($d . '_time', $formValues), TRUE);
+        if (isset($formValues[$d])) {
+          $params[$d] = CRM_Utils_Date::processDate($formValues[$d], CRM_Utils_Array::value($d . '_time', $formValues), TRUE);
+        }
       }
 
       if (!empty($formValues['is_email_receipt'])) {
