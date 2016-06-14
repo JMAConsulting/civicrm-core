@@ -584,10 +584,13 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
         'is_payment' => 1,
       );
       $results = civicrm_api3('EntityFinancialAccount', 'get', array(
-        'entity_table' => "civicrm_financial_type",
+        'entity_table' => 'civicrm_financial_type',
         'entity_id' => $lineItems->financial_type_id,
-        'account_relationship' => array('IN' => array("Income Account is", "Deferred Revenue Account is")),
+        'account_relationship' => array('IN' => array('Income Account is', 'Deferred Revenue Account is')),
       ));
+      if ($results['count'] != 2) {
+        return;
+      }
       $accountRel = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE 'Income Account is' "));
       foreach($results['values'] as $result) {
         if ($result['account_relationship'] == $accountRel) {
