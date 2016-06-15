@@ -4021,7 +4021,7 @@ WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
           LEFT JOIN civicrm_financial_item fi ON fi.id = ef.entity_id
           INNER JOIN civicrm_financial_account fa ON fa.id = fi.financial_account_id
 
-        WHERE con.id = %1 AND ft.to_financial_account_id <> %2
+        WHERE con.id = %1 AND ft.to_financial_account_id <> %3
         GROUP BY ft.id
       ";
       $queryParams = array(
