@@ -590,6 +590,9 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
       $deferredRevenues = array();
       foreach ($contributionParams['line_item'] as $lineItem) {
         foreach ($lineItem as $key => $item) {
+          if ($item['line_total'] <= 0) {
+            continue;
+          }
           $deferredRevenues[$key] = $item;
           if (in_array($item['entity_table'], array('civicrm_participant', 'civicrm_contribution'))) {
             $deferredRevenues[$key]['revenue'][] = array(
@@ -599,6 +602,7 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
           }
           else {
             // for membership
+            $deferredRevenues[$key]['revenue'] = self::getMembershipRevenueAmount($item);
           }
         }
       }
@@ -610,7 +614,7 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
           'account_relationship' => array('IN' => array('Income Account is', 'Deferred Revenue Account is')),
         ));
         if ($results['count'] != 2) {
-          return;
+          continue;
         }
         $accountRel = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE 'Income Account is' "));
         foreach($results['values'] as $result) {
@@ -627,6 +631,33 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
         }
       }
     }
+  }
+
+  /**
+   * get revenue amount for membership
+   *
+   * @param array $lineItem
+   *
+   * @return array
+   */
+  public static function getMembershipRevenueAmount($lineItem) {
+    $membershipDetail = civicrm_api3('Membership', 'getsingle', array(
+      'id' => 1,
+    ));
+    $monthOfService = 12;
+    $startDateOfRevenue = $membershipDetail['start_date'];
+    $revenueAmount = array();
+    $typicalPayment = ROUND(($lineItem['line_totel'] / $monthOfService), 2);
+    for ($i = 0; $i < $monthOfService - 1; $i++) {
+      $revenueAmount[$i]['amount'] = $typicalPayment;
+      CRM_Core_Error::debug( '$revenueAmount', $revenueAmount );
+      if ($i == 0) {
+        $revenueAmount[$i]['amount'] -= ($lineItem['line_totel'] - ($typicalPayment * $monthOfService));
+      }
+      $revenueAmount[$i]['revenue_date'] = $startDateOfRevenue;
+      $startDateOfRevenue = date('Ymd', strtotime('+1 month', strtotime($startDateOfRevenue)));
+    }
+    return $revenueAmount;
   }
 
 }
