@@ -391,8 +391,7 @@ WHERE `entity_table` = 'civicrm_financial_type' AND cv.name = 'Deferred Revenue 
    */
   public static function validateTogglingDeferredRevenue() {
     $deferredFinancialType = self::getDeferredFinancialType();
-    $message = ' Please revise the error message to the following:
-Before Deferred Revenue can be enabled, a Deferred Revenue Account relationship must be defined for all financial types currently used for Memberships and Events, including
+    $message = ' Before Deferred Revenue can be enabled, a Deferred Revenue Account relationship must be defined for all financial types currently used for Memberships and Events, including
 <ul>
 <li>those specified for each membership type at Admin > CiviMember > Membership Types, edit</li>
 <li>on the Fees tab when managing events</li>
