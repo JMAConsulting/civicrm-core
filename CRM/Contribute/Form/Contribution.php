@@ -1008,6 +1008,11 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     if ($errorMessage) {
       $errors['financial_type_id'] = $errorMessage;
     }
+    if (!empty($fields['revenue_recognition_date'])
+      && count(array_filter($fields['revenue_recognition_date'])) == 1
+    ) {
+      $errors['revenue_recognition_date'] = ts('Month and Year are required field for Revenue Recognition.');
+    }
     $errors = array_merge($errors, $softErrors);
     return $errors;
   }
@@ -1641,15 +1646,17 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         $params['skipCleanMoney'] = 1;
       }
 
-      if (!empty($params['revenue_recognition_date'])) {
-        $formValues['revenue_recognition_date'] = '01-' . implode('-', $formValues['revenue_recognition_date']);
+      $params['revenue_recognition_date'] = NULL;
+      if (!empty($formValues['revenue_recognition_date'])
+        && count(array_filter($formValues['revenue_recognition_date'])) == 2
+      ) {
+        $params['revenue_recognition_date'] = CRM_Utils_Date::processDate('01-' . implode('-', $formValues['revenue_recognition_date']));
       }
 
       $dates = array(
         'receive_date',
         'receipt_date',
         'cancel_date',
-        'revenue_recognition_date',
       );
 
       foreach ($dates as $d) {
