@@ -201,7 +201,8 @@ class CRM_Admin_Form_Preferences_Contribute extends CRM_Admin_Form_Preferences {
     if (CRM_Utils_Array::value('deferred_revenue_enabled', $values)) {
       $errorMessage = CRM_Financial_BAO_FinancialAccount::validateTogglingDeferredRevenue();
       if ($errorMessage) {
-        $errors['deferred_revenue_enabled'] = $errorMessage;
+        $errors['deferred_revenue_enabled'] = ts("Can't set Revenue Recognition Date until deferred revenue account is configured for the financial type.");
+        CRM_Core_Session::setStatus($errorMessage, '', 'error');
       }
     }
     return $errors;
