@@ -566,38 +566,36 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
    * @param array $contributionParams
    *
    */
-  public static function createDeferredTrxn($contributionParams) {
-    if (empty($contributionParams['line_item'])) {
+  public static function createDeferredTrxn($lineItems, $contributionDetails) {
+    if (empty($lineItems)) {
       return FALSE;
     }
-    $revenueRecognitionDate = CRM_Utils_Array::value('revenue_recognition_date', $contributionParams);
-    if (empty($revenueRecognitionDate)) {
-      $revenueRecognitionDate = $contributionParams['prevContribution']->revenue_recognition_date;
-    }
+    $revenueRecognitionDate = $contributionDetails->revenue_recognition_date;
     if (!CRM_Utils_System::isNull($revenueRecognitionDate)) {
       $trxnParams = array(
-        'contribution_id' => $params['contribution']->id,
+        'contribution_id' => $contributionDetails->id,
         'fee_amount' => '0.00',
-        'currency' => $params['contribution']->currency,
-        'trxn_id' => $params['contribution']->trxn_id,
-        'status_id' => $params['contribution']->contribution_status_id,
-        'payment_instrument_id' => $params['contribution']->payment_instrument_id,
-        'check_number' => $params['contribution']->check_number,
+        'currency' => $contributionDetails->currency,
+        'trxn_id' => $contributionDetails->trxn_id,
+        'status_id' => $contributionDetails->contribution_status_id,
+        'payment_instrument_id' => $contributionDetails->payment_instrument_id,
+        'check_number' => $contributionDetails->check_number,
         'is_payment' => 1,
-        'payment_processor_id' => CRM_Utils_Array::value('payment_processor', $contributionParams),
       );
 
       $deferredRevenues = array();
-      foreach ($contributionParams['line_item'] as $lineItem) {
+      foreach ($lineItems as $lineItem) {
         foreach ($lineItem as $key => $item) {
           if ($item['line_total'] <= 0) {
             continue;
           }
           $deferredRevenues[$key] = $item;
-          if (in_array($item['entity_table'], array('civicrm_participant', 'civicrm_contribution'))) {
+          if (in_array($item['entity_table'], 
+            array('civicrm_participant', 'civicrm_contribution'))
+          ) {
             $deferredRevenues[$key]['revenue'][] = array(
               'amount' => $item['line_total'],
-              'revenue_date' => $contribution->recognition_date,
+              'revenue_date' => $revenueRecognitionDate,
             );
           }
           else {
@@ -606,6 +604,7 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
           }
         }
       }
+      $accountRel = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE 'Income Account is' "));
       // TODO: Call hook to alter $deferredRevenues
       foreach ($deferredRevenues as $key => $deferredRevenue) {
         $results = civicrm_api3('EntityFinancialAccount', 'get', array(
@@ -616,7 +615,6 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
         if ($results['count'] != 2) {
           continue;
         }
-        $accountRel = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE 'Income Account is' "));
         foreach($results['values'] as $result) {
           if ($result['account_relationship'] == $accountRel) {
             $trxnParams['to_financial_account_id'] = $result['financial_account_id'];
@@ -626,7 +624,8 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
           }
         }
         foreach($deferredRevenue['revenue'] as $revenue) {
-          $trxnParams['total_amount'] =  $trxnParams['net_amount'] = $revenue['amount'];
+          $trxnParams['total_amount'] = $trxnParams['net_amount'] = $revenue['amount'];
+          $trxnParams['trxn_date'] = CRM_Utils_Date::isoToMysql($revenue['revenue_date']);
           $financialTxn = CRM_Core_BAO_FinancialTrxn::create($trxnParams);
         }
       }
@@ -642,20 +641,19 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
    */
   public static function getMembershipRevenueAmount($lineItem) {
     $membershipDetail = civicrm_api3('Membership', 'getsingle', array(
-      'id' => 1,
+      'id' => $lineItem['entity_id'],
     ));
     $monthOfService = 12;
     $startDateOfRevenue = $membershipDetail['start_date'];
     $revenueAmount = array();
-    $typicalPayment = ROUND(($lineItem['line_totel'] / $monthOfService), 2);
-    for ($i = 0; $i < $monthOfService - 1; $i++) {
+    $typicalPayment = ROUND(($lineItem['line_total'] / $monthOfService), 2);
+    for ($i = 0; $i <= $monthOfService - 1; $i++) {
       $revenueAmount[$i]['amount'] = $typicalPayment;
-      CRM_Core_Error::debug( '$revenueAmount', $revenueAmount );
       if ($i == 0) {
-        $revenueAmount[$i]['amount'] -= ($lineItem['line_totel'] - ($typicalPayment * $monthOfService));
+        $revenueAmount[$i]['amount'] -= (($typicalPayment * $monthOfService) - $lineItem['line_total']);
       }
       $revenueAmount[$i]['revenue_date'] = $startDateOfRevenue;
-      $startDateOfRevenue = date('Ymd', strtotime('+1 month', strtotime($startDateOfRevenue)));
+      $startDateOfRevenue = date('Y-m', strtotime('+1 month', strtotime($startDateOfRevenue))). '-01';
     }
     return $revenueAmount;
   }

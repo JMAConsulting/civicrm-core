@@ -426,12 +426,12 @@ AND li.entity_id = {$entityId}
       return;
     }
 
-    foreach ($lineItem as $priceSetId => $values) {
+    foreach ($lineItem as $priceSetId => &$values) {
       if (!$priceSetId) {
         continue;
       }
 
-      foreach ($values as $line) {
+      foreach ($values as &$line) {
         $line['entity_table'] = $entityTable;
         if (empty($line['entity_id'])) {
           $line['entity_id'] = $entityId;
@@ -460,6 +460,7 @@ AND li.entity_id = {$entityId}
         }
       }
     }
+    CRM_Core_BAO_FinancialTrxn::createDeferredTrxn($lineItem, $contributionDetails);
   }
 
   /**
