@@ -515,4 +515,25 @@ LIMIT 1";
     return FALSE;
   }
 
+  /**
+   * Retrieve all Deferred Financial Accounts
+   *
+   *
+   * @return array of Deferred Financial Account
+   *
+   */
+  public static function getAllDeferredFinancialAccount() {
+    $query = "SELECT cfa.id, cfa.name FROM civicrm_entity_financial_account ce
+LEFT JOIN civicrm_option_value cv ON ce.account_relationship = cv.value
+LEFT JOIN civicrm_option_group cg ON cg.id= cv.option_group_id AND cg.name = 'account_relationship'
+LEFT JOIN civicrm_financial_account cfa ON ce.financial_account_id = cfa.id
+WHERE `entity_table` = 'civicrm_financial_type' AND cv.name = 'Deferred Revenue Account is' AND cfa.is_active = 1";
+    $dao = CRM_Core_DAO::executeQuery($query);
+    $financialAccount = array();
+    while ($dao->fetch()) {
+      $financialAccount[$dao->id] = $dao->name;
+    }
+    return $financialAccount;
+  }
+
 }
