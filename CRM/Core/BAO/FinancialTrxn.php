@@ -584,7 +584,10 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
       );
 
       $deferredRevenues = array();
-      foreach ($lineItems as $lineItem) {
+      foreach ($lineItems as $priceSetID => $lineItem) {
+        if (!$priceSetID) {
+          continue;
+        }
         foreach ($lineItem as $key => $item) {
           if ($item['line_total'] <= 0) {
             continue;
