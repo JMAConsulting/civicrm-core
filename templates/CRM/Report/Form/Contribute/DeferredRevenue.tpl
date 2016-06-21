@@ -38,7 +38,8 @@
   
 <table class="report-layout display">
    {foreach from=$rows item=row}
-   <tr><b>{$row.label}</b></tr>
+   <thead><th colspan=16><font color="black" size="3">{$row.label}</font></th></thead>
+   
   <thead class="sticky">
     <tr>
    {foreach from=$columnHeaders item=ignore key=header}
