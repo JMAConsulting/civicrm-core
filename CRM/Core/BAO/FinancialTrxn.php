@@ -572,6 +572,10 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
     }
     $revenueRecognitionDate = $contributionDetails->revenue_recognition_date;
     if (!CRM_Utils_System::isNull($revenueRecognitionDate)) {
+      $statuses = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
+      if (CRM_Utils_Array::value($contributionDetails->contribution_status_id, $statuses) != 'Completed') {
+        return;
+      }
       $trxnParams = array(
         'contribution_id' => $contributionDetails->id,
         'fee_amount' => '0.00',
