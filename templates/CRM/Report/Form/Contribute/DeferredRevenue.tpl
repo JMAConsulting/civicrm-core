@@ -23,4 +23,47 @@
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
 *}
-{include file="CRM/Report/Form.tpl"}
+{if $criteriaForm OR $instanceForm OR $instanceFormError}
+  <div class="crm-block crm-form-block crm-report-field-form-block">
+    {include file="CRM/Report/Form/Fields.tpl"}
+  </div>
+{/if}
+
+<div class="crm-block crm-content-block crm-report-form-block">
+  {*include actions*}
+  {include file="CRM/Report/Form/Actions.tpl"}
+
+  {*Statistics at the Top of the page*}
+  {include file="CRM/Report/Form/Statistics.tpl" top=true}
+  
+<table class="report-layout display">
+   {foreach from=$rows item=row}
+   <tr><b>{$row.label}</b></tr>
+  <thead class="sticky">
+    <tr>
+   {foreach from=$columnHeaders item=ignore key=header}
+       <th>{$header}</th>
+  {/foreach}
+    </tr>
+  </thead>
+   {foreach from=$row.rows item=innerRow}
+    <tr>
+   {foreach from=$columnHeaders item=ignore key=header}
+       <td>{$innerRow.$header}</td>
+   {/foreach}
+  {/foreach}
+    </tr>
+{/foreach}
+</table>
+
+  <br />
+  {*Statistics at the bottom of the page*}
+  {include file="CRM/Report/Form/Statistics.tpl" bottom=true}
+
+  {include file="CRM/Report/Form/ErrorMessage.tpl"}
+</div>
+{if $outputMode == 'print'}
+  <script type="text/javascript">
+    window.print();
+  </script>
+{/if}
