@@ -120,11 +120,12 @@
       <td>{$net_amount|crmMoney:$currency}</td>
     </tr>
   {/if}
-
+  {if $isDeferred}
   <tr>
     <td class="label">{ts}Revenue Recognition Date{/ts}</td>
     <td>{if $revenue_recognition_date}{$revenue_recognition_date|truncate:10:''|crmDate}{else}({ts}not available{/ts}){/if}</td>
   </tr>
+  {/if}
   <tr>
     <td class="label">{ts}Received{/ts}</td>
     <td>{if $receive_date}{$receive_date|crmDate}{else}({ts}not available{/ts}){/if}</td>
