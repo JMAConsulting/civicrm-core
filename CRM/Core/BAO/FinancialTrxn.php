@@ -634,6 +634,13 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
           $trxnParams['total_amount'] = $trxnParams['net_amount'] = $revenue['amount'];
           $trxnParams['trxn_date'] = CRM_Utils_Date::isoToMysql($revenue['revenue_date']);
           $financialTxn = CRM_Core_BAO_FinancialTrxn::create($trxnParams);
+          $entityParams = array(
+            'entity_id' => $deferredRevenue['financial_item_id'],
+            'entity_table' => 'civicrm_financial_item',
+            'amount' => $revenue['amount'],
+            'financial_trxn_id' => $financialTxn->id,
+          );
+          civicrm_api3('EntityFinancialTrxn', 'create', $entityParams);
         }
       }
     }
