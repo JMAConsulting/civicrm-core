@@ -60,6 +60,7 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
   }
 
   public function select() {
+    // TODO: add column
     $this->_select = ' SELECT 
 financial_account_deferred_civireport.name deferred_account,
 financial_account_deferred_civireport.id deferred_account_id,
@@ -67,53 +68,62 @@ financial_account_deferred_civireport.accounting_code deferred_account_code,
 financial_account_revenue.name revenue_account,
 financial_account_revenue.id revenue_account_id,
 financial_account_revenue.accounting_code revenue_account_code,
-cc.contribution_status_id,
-cc.receive_date,
-cc.total_amount,
-cc.id contribution_id,
-cc.contact_id,
-c.display_name,
-cc.source,
-GROUP_CONCAT(cft.total_amount) trxn_amount,
-GROUP_CONCAT(cft.trxn_date) trxn_date,
-cli.label,
-IFNULL(cm.start_date, ce.start_date) start_date,
-IFNULL(cm.end_date, ce.end_date) end_date
+financial_item.status_id,
+contribution.contribution_status_id,
+contribution.receive_date,
+contribution.total_amount,
+contribution.id contribution_id,
+contribution.contact_id,
+contact.display_name,
+contribution.source,
+GROUP_CONCAT(financial_trxn.total_amount) trxn_amount,
+GROUP_CONCAT(financial_trxn.trxn_date) trxn_date,
+financial_item.description,
+IFNULL(membership.start_date, event.start_date) start_date,
+IFNULL(membership.end_date, event.end_date) end_date
 ';
   }
 
   public function from() {
-    $this->_from = " FROM civicrm_entity_financial_account entity_financial_account_deferred
+    $deferredRelationship = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE 'Deferred Revenue Account is' "));
+    $revenueRelationship = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE 'Income Account is' "));
+    $this->_from = " FROM civicrm_financial_item financial_item
+INNER JOIN civicrm_entity_financial_account entity_financial_account_deferred
+  ON financial_item.financial_account_id = entity_financial_account_deferred.financial_account_id AND entity_financial_account_deferred.entity_table = 'civicrm_financial_type'
+    AND entity_financial_account_deferred.account_relationship = {$deferredRelationship}
 INNER JOIN civicrm_financial_account financial_account_deferred_civireport
   ON entity_financial_account_deferred.financial_account_id = financial_account_deferred_civireport.id
-INNER JOIN civicrm_option_value option_value_deferred
-  ON option_value_deferred.value = entity_financial_account_deferred.account_relationship AND option_value_deferred.name = 'Deferred Revenue Account is'
-INNER JOIN civicrm_option_group option_group_deferred
-  ON option_group_deferred.id = option_value_deferred.option_group_id AND option_group_deferred.name = 'account_relationship'
 INNER JOIN civicrm_entity_financial_account entity_financial_account_revenue
-  ON entity_financial_account_deferred.entity_id = entity_financial_account_revenue.entity_id 
-    AND entity_financial_account_deferred.entity_table= entity_financial_account_revenue.entity_table 
+  ON entity_financial_account_deferred.entity_id = entity_financial_account_revenue.entity_id
+    AND entity_financial_account_deferred.entity_table= entity_financial_account_revenue.entity_table
 INNER JOIN civicrm_financial_account financial_account_revenue
-  ON entity_financial_account_revenue.financial_account_id = financial_account_revenue.id 
-INNER JOIN civicrm_option_value option_value_revenue
-  ON option_value_revenue.value = entity_financial_account_revenue.account_relationship 
-    AND option_group_deferred.id = option_value_revenue.option_group_id AND option_value_revenue.name = 'Income Account is'
-INNER JOIN civicrm_financial_trxn cft on cft.from_financial_account_id = financial_account_deferred_civireport.id
-INNER JOIN civicrm_entity_financial_trxn ceft on ceft.financial_trxn_id = cft.id
-INNER JOIN civicrm_contribution cc ON cc.id = ceft.entity_id AND ceft.entity_table = 'civicrm_contribution'
-INNER JOIN civicrm_contact c on c.id = cc.contact_id
-INNER JOIN civicrm_line_item cli ON cli.contribution_id = cc.id
-LEFT JOIN  civicrm_membership cm ON case 
- WHEN cli.entity_table = 'civicrm_membership'
- THEN cli.entity_id = cm.id
- ELSE cm.id = 0 
-END
-LEFT JOIN  civicrm_participant cp ON case 
- WHEN cli.entity_table = 'civicrm_participant'
- THEN cli.entity_id = cp.id
- ELSE cp.id = 0 
-END
-LEFT JOIN civicrm_event ce ON cp.event_id = ce.id
+  ON entity_financial_account_revenue.financial_account_id = financial_account_revenue.id
+    AND {$revenueRelationship} = entity_financial_account_revenue.account_relationship
+INNER JOIN civicrm_entity_financial_trxn entity_financial_trxn_item
+  ON entity_financial_trxn_item.entity_id = financial_item.id AND entity_financial_trxn_item.entity_table = 'civicrm_financial_item'
+INNER JOIN civicrm_financial_trxn financial_trxn
+  ON financial_trxn.from_financial_account_id = financial_account_deferred_civireport.id AND financial_trxn.id =  entity_financial_trxn_item.financial_trxn_id 
+INNER JOIN civicrm_entity_financial_trxn financial_trxn_contribution
+  ON financial_trxn_contribution.financial_trxn_id = financial_trxn.id AND financial_trxn_contribution.entity_table = 'civicrm_contribution'
+INNER JOIN civicrm_contribution contribution 
+  ON contribution.id = financial_trxn_contribution.entity_id
+INNER JOIN civicrm_contact contact 
+  ON contact.id = contribution.contact_id
+INNER JOIN civicrm_line_item line_item 
+  ON line_item.contribution_id = contribution.id
+LEFT JOIN  civicrm_membership membership 
+  ON CASE
+    WHEN line_item.entity_table = 'civicrm_membership'
+    THEN line_item.entity_id = membership.id
+    ELSE membership.id = 0
+  END
+LEFT JOIN civicrm_participant participant
+  ON CASE
+    WHEN line_item.entity_table = 'civicrm_participant'
+    THEN line_item.entity_id = participant.id
+    ELSE participant.id = 0
+  END
+LEFT JOIN civicrm_event event ON participant.event_id = event.id
 ";
   }
 
@@ -122,7 +132,7 @@ LEFT JOIN civicrm_event ce ON cp.event_id = ce.id
   }
 
   public function where() {
-    $clauses = array("entity_financial_account_deferred.entity_table = 'civicrm_financial_type'");
+    $clauses = array();
     foreach ($this->_columns as $tableName => $table) {
       if (array_key_exists('filters', $table)) {
         foreach ($table['filters'] as $fieldName => $field) {
@@ -151,7 +161,9 @@ LEFT JOIN civicrm_event ce ON cp.event_id = ce.id
         }
       }
     }
-    $this->_where = 'WHERE ' . implode(' AND ', $clauses);
+    if (!empty($clauses)) {
+      $this->_where = 'WHERE ' . implode(' AND ', $clauses);
+    }
   }
 
   public function postProcess() {
@@ -160,7 +172,7 @@ LEFT JOIN civicrm_event ce ON cp.event_id = ce.id
   }
 
   public function groupBy() {
-    $this->_groupBy = "GROUP BY financial_account_deferred_civireport.id, financial_account_revenue.id, cc.id";
+    $this->_groupBy = "GROUP BY financial_account_deferred_civireport.id, financial_account_revenue.id, financial_item.id";
   }
 
   /**
@@ -199,7 +211,7 @@ LEFT JOIN civicrm_event ce ON cp.event_id = ce.id
         'Date of Transaction' => CRM_Utils_Date::customFormat($dao->receive_date, $dateFormat),
         'Amount' => CRM_Utils_Money::format($dao->total_amount),
         'Contribution ID' => $dao->contribution_id,
-        'Item' => $dao->label,
+        'Item' => $dao->description,
         'Contact ID' => $dao->contact_id,
         'Contact Name' => $dao->display_name,
         'Source' => $dao->source,
