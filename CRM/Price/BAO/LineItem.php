@@ -453,7 +453,8 @@ AND li.entity_id = {$entityId}
         }
         $lineItems = CRM_Price_BAO_LineItem::create($line);
         if (!$update && $contributionDetails) {
-          CRM_Financial_BAO_FinancialItem::add($lineItems, $contributionDetails);
+          $financialItem = CRM_Financial_BAO_FinancialItem::add($lineItems, $contributionDetails);
+          $line['financial_item_id'] = $financialItem->id;
           if (!empty($line['tax_amount'])) {
             CRM_Financial_BAO_FinancialItem::add($lineItems, $contributionDetails, TRUE);
           }

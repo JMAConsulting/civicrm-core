@@ -654,12 +654,15 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
    * @return array
    */
   public static function getMembershipRevenueAmount($lineItem) {
+    $revenueAmount = array();
     $membershipDetail = civicrm_api3('Membership', 'getsingle', array(
       'id' => $lineItem['entity_id'],
     ));
+    if (empty($membershipDetail['end_date'])) {
+      return $revenueAmount;
+    }
     $monthOfService = 12;
     $startDateOfRevenue = $membershipDetail['start_date'];
-    $revenueAmount = array();
     $typicalPayment = ROUND(($lineItem['line_total'] / $monthOfService), 2);
     for ($i = 0; $i <= $monthOfService - 1; $i++) {
       $revenueAmount[$i]['amount'] = $typicalPayment;
