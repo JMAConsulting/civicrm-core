@@ -661,7 +661,15 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
     if (empty($membershipDetail['end_date'])) {
       return $revenueAmount;
     }
-    $monthOfService = 12;
+
+    $startDate = strtotime($membershipDetail['start_date']);
+    $endDate = strtotime($membershipDetail['end_date']);
+    $startYear = date('Y', $startDate);
+    $endYear = date('Y', $endDate);
+    $startMonth = date('m', $startDate);
+    $endMonth = date('m', $endDate);
+
+    $monthOfService = (($endYear - $startYear) * 12) + ($endMonth - $startMonth);
     $startDateOfRevenue = $membershipDetail['start_date'];
     $typicalPayment = ROUND(($lineItem['line_total'] / $monthOfService), 2);
     for ($i = 0; $i <= $monthOfService - 1; $i++) {
