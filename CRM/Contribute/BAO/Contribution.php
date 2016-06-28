@@ -3429,7 +3429,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
           CRM_Core_DAO::setFieldValue('CRM_Contribute_DAO_Contribution', $params['contribution']->id, 'creditnote_id', $creditNoteId);
         }
       }
-      elseif (($previousContributionStgetFinancialTrxnIdatus == 'Pending'
+      elseif (($previousContributionStatus == 'Pending'
           && $params['prevContribution']->is_pay_later) || $previousContributionStatus == 'In Progress'
       ) {
         $financialTypeID = CRM_Utils_Array::value('financial_type_id', $params) ? $params['financial_type_id'] : $params['prevContribution']->financial_type_id;
@@ -3517,6 +3517,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
     if ($context != 'changePaymentInstrument') {
       $itemParams['entity_table'] = 'civicrm_line_item';
       $trxnIds['id'] = $params['entity_id'];
+      $updateLineItems = $params['line_item'];
       foreach ($params['line_item'] as $fieldId => $fields) {
         foreach ($fields as $fieldValueId => $fieldValues) {
           $prevFinancialItem = CRM_Financial_BAO_FinancialItem::getPreviousFinancialItem($fieldValues['id']);
@@ -3557,7 +3558,9 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
             'entity_table' => 'civicrm_line_item',
             'entity_id' => $fieldValues['id'],
           );
-          CRM_Financial_BAO_FinancialItem::create($itemParams, NULL, $trxnIds);
+          $financialItem = CRM_Financial_BAO_FinancialItem::create($itemParams, NULL, $trxnIds);
+          $updateLineItems[$fieldId][$fieldValueId]['line_total'] = $amount;
+          $updateLineItems[$fieldId][$fieldValueId]['financial_item_id'] = $financialItem->id;
 
           if ($fieldValues['tax_amount']) {
             $invoiceSettings = Civi::settings()->get('contribution_invoice_settings');
@@ -3580,6 +3583,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
         }
       }
     }
+    CRM_Core_BAO_FinancialTrxn::createDeferredTrxn($updateLineItems, $params['contribution'], TRUE, $context);
   }
 
   /**

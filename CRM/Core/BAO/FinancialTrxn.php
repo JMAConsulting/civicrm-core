@@ -571,15 +571,24 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
    *
    * @param array $contributionParams
    *
+   * @param bool $update
+   *
+   * @param string $context
+   *
    */
-  public static function createDeferredTrxn($lineItems, $contributionDetails) {
+  public static function createDeferredTrxn($lineItems, $contributionDetails, $update = FALSE, $context = NULL) {
     if (empty($lineItems)) {
       return FALSE;
     }
     $revenueRecognitionDate = $contributionDetails->revenue_recognition_date;
     if (!CRM_Utils_System::isNull($revenueRecognitionDate)) {
       $statuses = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
-      if (CRM_Utils_Array::value($contributionDetails->contribution_status_id, $statuses) != 'Completed') {
+      if (!$update
+        && (CRM_Utils_Array::value($contributionDetails->contribution_status_id, $statuses) != 'Completed'
+          || (CRM_Utils_Array::value($contributionDetails->contribution_status_id, $statuses) != 'Pending' 
+            && $contributionDetails->is_pay_later)
+          )
+      ) {
         return;
       }
       $trxnParams = array(
@@ -599,10 +608,13 @@ WHERE pp.participant_id = {$entityId} AND ft.to_financial_account_id != {$toFina
           continue;
         }
         foreach ($lineItem as $key => $item) {
-          if ($item['line_total'] <= 0) {
+          if ($item['line_total'] <= 0 && !$update) {
             continue;
           }
           $deferredRevenues[$key] = $item;
+          if ($context == 'changeFinancialType') {
+            $deferredRevenues[$key]['financial_type_id'] = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_LineItem', $item['id'], 'financial_type_id');
+          }
           if (in_array($item['entity_table'], 
             array('civicrm_participant', 'civicrm_contribution'))
           ) {
