@@ -173,6 +173,8 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
     // assign values to the template
     $this->assign($values);
     $invoiceSettings = Civi::settings()->get('contribution_invoice_settings');
+    $deferred = CRM_Utils_Array::value('deferred_revenue_enabled', $invoiceSettings);
+    $this->assign('isDeferred', $deferred);
     $invoicing = CRM_Utils_Array::value('invoicing', $invoiceSettings);
     $this->assign('invoicing', $invoicing);
     if ($invoicing && isset($values['tax_amount'])) {
