@@ -111,12 +111,11 @@ cj("#account_relationship").change(function() {
 {literal}
   var financialId = cj("#account_relationship").val();
   var check = cj(financialAccountID).val();
-  if (check == 'select' || financialId == 'select') {
-    callbackURLs = callbackURLs+"&_value="+financialId;
-    cj.ajax({
-      url: callbackURLs,
-      context: document.body,
-      success: function(data, textStatus) {
+  callbackURLs = callbackURLs+"&_value="+financialId;
+  cj.ajax({
+    url: callbackURLs,
+    context: document.body,
+    success: function(data, textStatus) {
   cj(financialAccountID).html("");//clear old options
   data = eval(data);//get json array
         if (data != null) {
@@ -157,7 +156,6 @@ cj("#account_relationship").change(function() {
         }
       });
     }
-  }
 });
 {/literal}
 </script>
