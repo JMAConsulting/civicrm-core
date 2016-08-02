@@ -697,12 +697,8 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
   }
 
   /**
-   * Generate sql query for trial balance report.
-   *
-   * @param array $alias
-   *   table name alias
-   *
-   * @param bool $onlyFromClause
+   * Create trial balance export file
+   * and update civicrm_financial_account.current_period_opening_balance field 
    *
    *
    * @return string
