@@ -561,9 +561,11 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
    *
    * @param array $lineItem
    *
+   * @param date $receiveDate
+   *
    * @return array
    */
-  public static function getMembershipRevenueAmount($lineItem) {
+  public static function getMembershipRevenueAmount($lineItem, $receiveDate) {
     $revenueAmount = array();
     $membershipDetail = civicrm_api3('Membership', 'getsingle', array(
       'id' => $lineItem['entity_id'],
@@ -572,7 +574,7 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
       return $revenueAmount;
     }
 
-    $startDate = strtotime($membershipDetail['start_date']);
+    $startDate = strtotime($receiveDate);
     $endDate = strtotime($membershipDetail['end_date']);
     $startYear = date('Y', $startDate);
     $endYear = date('Y', $endDate);
@@ -580,7 +582,7 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
     $endMonth = date('m', $endDate);
 
     $monthOfService = (($endYear - $startYear) * 12) + ($endMonth - $startMonth);
-    $startDateOfRevenue = $membershipDetail['start_date'];
+    $startDateOfRevenue = $receiveDate;
     $typicalPayment = round(($lineItem['line_total'] / $monthOfService), 2);
     for ($i = 0; $i <= $monthOfService - 1; $i++) {
       $revenueAmount[$i]['amount'] = $typicalPayment;
@@ -598,36 +600,40 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
    *
    * @param array $lineItems
    *
-   * @param CRM_Contribute_BAO_Contribution $contributionDetails
+   * @param integer $contributionId
    *
    * @param bool $update
    *
    * @param string $context
    *
    */
-  public static function createDeferredTrxn($lineItems, $contributionDetails, $update = FALSE, $context = NULL) {
+  public static function createDeferredTrxn($lineItems, $contributionId, $update = FALSE, $context = NULL) {
     if (empty($lineItems)) {
       return;
     }
-    $revenueRecognitionDate = $contributionDetails->revenue_recognition_date;
+    $contributionDetails = civicrm_api3('Contribution', 'getsingle', array(
+      'id' => $contributionId,
+    ));
+    $revenueRecognitionDate = CRM_Utils_Array::value('revenue_recognition_date', $contributionDetails);
     if (!CRM_Utils_System::isNull($revenueRecognitionDate)) {
       $statuses = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
       if (!$update
-         && (!(CRM_Utils_Array::value($contributionDetails->contribution_status_id, $statuses) == 'Completed'
-         || (CRM_Utils_Array::value($contributionDetails->contribution_status_id, $statuses) == 'Pending'
-           && $contributionDetails->is_pay_later))
+         && (!(CRM_Utils_Array::value($contributionDetails['contribution_status_id'], $statuses) == 'Completed'
+         || (CRM_Utils_Array::value($contributionDetails['contribution_status_id'], $statuses) == 'Pending'
+           && $contributionDetails['is_pay_later']))
         )
       ) {
         return;
       }
       $trxnParams = array(
-        'contribution_id' => $contributionDetails->id,
+        'contribution_id' => $contributionId,
         'fee_amount' => '0.00',
-        'currency' => $contributionDetails->currency,
-        'trxn_id' => $contributionDetails->trxn_id,
-        'status_id' => $contributionDetails->contribution_status_id,
-        'payment_instrument_id' => $contributionDetails->payment_instrument_id,
-        'check_number' => $contributionDetails->check_number,
+        'currency' => $contributionDetails['currency'],
+        'trxn_id' => $contributionDetails['trxn_id'],
+        'status_id' => $contributionDetails['contribution_status_id'],
+        'payment_instrument_id' => $contributionDetails['payment_instrument_id'],
+        'check_number' => $contributionDetails['check_number'],
+        'is_payment' => 1,
       );
 
       $deferredRevenues = array();
@@ -655,7 +661,7 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
           else {
             // for membership
             $item['line_total'] = $lineTotal;
-            $deferredRevenues[$key]['revenue'] = self::getMembershipRevenueAmount($item);
+            $deferredRevenues[$key]['revenue'] = self::getMembershipRevenueAmount($item, $contributionDetails['receive_date']);
           }
         }
       }
