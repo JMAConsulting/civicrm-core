@@ -716,10 +716,10 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
         }
         foreach ($results['values'] as $result) {
           if ($result['account_relationship'] == $accountRel) {
-            $trxnParams['to_financial_account_id'] = $result['financial_account_id'];
+            $trxnParams['from_financial_account_id'] = $result['financial_account_id'];
           }
           else {
-            $trxnParams['from_financial_account_id'] = $result['financial_account_id'];
+            $trxnParams['to_financial_account_id'] = $result['financial_account_id'];
           }
         }
         foreach ($deferredRevenue['revenue'] as $revenue) {
@@ -791,45 +791,6 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
       $creditCardType = CRM_Core_PseudoConstant::getKey('CRM_Financial_DAO_FinancialTrxn', 'card_type', $creditCardType);
     }
     return $creditCardType;
-  }
-
-  /**
-   * Update Credit Card Details in civicrm_financial_trxn table.
-   *
-   * @param int $contributionID
-   * @param int $panTruncation
-   * @param int $cardType
-   *
-   */
-  public static function updateCreditCardDetails($contributionID, $panTruncation, $cardType) {
-    $financialTrxn = civicrm_api3('EntityFinancialTrxn', 'get', array(
-      'return' => array('financial_trxn_id.payment_processor_id', 'financial_trxn_id'),
-      'entity_table' => 'civicrm_contribution',
-      'entity_id' => $contributionID,
-      'financial_trxn_id.is_payment' => TRUE,
-      'options' => array('sort' => 'financial_trxn_id DESC', 'limit' => 1),
-    ));
-
-    if (!$financialTrxn['count']) {
-      return NULL;
-    }
-
-    $financialTrxn = $financialTrxn['values'][$financialTrxn['id']];
-    $paymentProcessorID = CRM_Utils_Array::value('financial_trxn_id.payment_processor_id', $financialTrxn);
-
-    if ($paymentProcessorID) {
-      return NULL;
-    }
-
-    $financialTrxnId = $financialTrxn['financial_trxn_id'];
-    $trxnparams = array('id' => $financialTrxnId);
-    if (isset($cardType)) {
-      $trxnparams['card_type'] = $cardType;
-    }
-    if (isset($panTruncation)) {
-      $trxnparams['pan_truncation'] = $panTruncation;
-    }
-    civicrm_api3('FinancialTrxn', 'create', $trxnparams);
   }
 
   /**
