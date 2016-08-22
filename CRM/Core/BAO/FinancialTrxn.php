@@ -630,7 +630,7 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
         'fee_amount' => '0.00',
         'currency' => $contributionDetails['currency'],
         'trxn_id' => $contributionDetails['trxn_id'],
-        'status_id' => $contributionDetails['contribution_status_id'],
+        'status_id' => array_search('Completed', $statuses),
         'payment_instrument_id' => $contributionDetails['payment_instrument_id'],
         'check_number' => $contributionDetails['check_number'],
         'is_payment' => 1,
@@ -810,6 +810,30 @@ IF (financial_account_type_id IN (2,3), total_amount_1, NULL) + IF (current_peri
     CRM_Contact_Import_Parser::exportCSV($fileName, $header, $rows);
 
     return $fileName;
+  }
+
+  /**
+   * Calculate Revenue Recognition date for Membership.
+   *
+   * @param array $params
+   *   Holds submitted formvalues and params from api for updating/adding contribution.
+   *
+   * @param int $contributionID
+   *   Contribution ID
+   *
+   */
+  public static function generateRevenueRecognitionDate(&$params, $contributionID) {
+    if (!CRM_Contribute_BAO_Contribution::checkContributeSettings('deferred_revenue_enabled')) {
+      return FALSE;
+    }
+    $membershipID = CRM_Utils_Array::value('membership_id', $params);
+    if (!$membershipID && $contributionID) {
+      $membershipID = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_MembershipPayment', $contributionID, 'membership_id', 'contribution_id');
+    }
+    if ($membershipID && empty($params['revenue_recognition_date'])) {
+      $params['revenue_recognition_date'] = CRM_Utils_Array::value('receive_date', $params, date('Ymd'));
+      $params['membership_id'] = $membershipID;
+    }
   }
 
 }
