@@ -159,15 +159,6 @@ class CRM_Contribute_BAO_Contribution extends CRM_Contribute_DAO_Contribution {
       $params['contribution_status_id'] = civicrm_api3('Contribution', 'getvalue', array('id' => $contributionID, 'return' => 'contribution_status_id'));
     }
 
-    if (!$contributionID
-      && CRM_Utils_Array::value('membership_id', $params)
-      && self::checkContributeSettings('deferred_revenue_enabled')
-    ) {
-      $memberStartDate = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership', $params['membership_id'], 'start_date');
-      if ($memberStartDate) {
-        $params['revenue_recognition_date'] = date('Ymd', strtotime($memberStartDate));
-      }
-    }
     self::calculateMissingAmountParams($params, $contributionID);
 
     if (!empty($params['payment_instrument_id'])) {
@@ -195,12 +186,7 @@ class CRM_Contribute_BAO_Contribution extends CRM_Contribute_DAO_Contribution {
 
     // CRM-16189
     CRM_Financial_BAO_FinancialAccount::checkFinancialTypeHasDeferred($params, $contributionID);
-    if ($contributionID && !empty($params['revenue_recognition_date']) && !empty($params['prevContribution'])
-      && !($contributionStatus[$params['prevContribution']->contribution_status_id] == 'Pending')
-      && !self::allowUpdateRevenueRecognitionDate($contributionID)
-    ) {
-      unset($params['revenue_recognition_date']);
-    }
+    CRM_Core_BAO_FinancialTrxn::generateRevenueRecognitionDate($params, $contributionID);
 
     if (!isset($params['tax_amount']) && $setPrevContribution && (isset($params['total_amount']) ||
      isset($params['financial_type_id']))) {
@@ -3524,6 +3510,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
             );
             $financialItem = CRM_Core_DAO::executeQuery($sql, $fparams);
             while ($financialItem->fetch()) {
+              $params['line_item'][$fieldId][$fieldValueId]['financial_item_id'] = $financialItem->id;
               $entityParams['entity_id'] = $financialItem->id;
               $entityParams['amount'] = $financialItem->amount;
               foreach (self::$_trxnIDs as $tID) {
@@ -3532,6 +3519,11 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
               }
             }
           }
+        }
+        if ($params['prevContribution']->contribution_page_id
+          && $previousContributionStatus == 'Pending' && !empty($params['membership_id'])
+        ) {
+          CRM_Core_BAO_FinancialTrxn::createDeferredTrxn($params['line_item'], $params['id'], TRUE);
         }
         return;
       }
