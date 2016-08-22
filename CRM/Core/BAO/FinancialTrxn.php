@@ -613,10 +613,10 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
     if (!CRM_Utils_System::isNull($revenueRecognitionDate)) {
       $statuses = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
       if (!$update
-        && (CRM_Utils_Array::value($contributionDetails->contribution_status_id, $statuses) != 'Completed'
-          || (CRM_Utils_Array::value($contributionDetails->contribution_status_id, $statuses) != 'Pending'
-            && $contributionDetails->is_pay_later)
-          )
+         && (!(CRM_Utils_Array::value($contributionDetails->contribution_status_id, $statuses) == 'Completed'
+         || (CRM_Utils_Array::value($contributionDetails->contribution_status_id, $statuses) == 'Pending'
+           && $contributionDetails->is_pay_later))
+        )
       ) {
         return;
       }
