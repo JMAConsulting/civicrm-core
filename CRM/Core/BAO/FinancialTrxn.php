@@ -713,8 +713,7 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
     $closingDate = 'now()';
     if (!$onlyFromClause && Civi::settings()->get('closing_date')) {
       $closingDate = Civi::settings()->get('closing_date');
-      $closingDate = implode('/', $closingDate);
-      $closingDate = "'" . date('Y-m-d', strtotime($closingDate)) . "'";
+      $closingDate = "'" . date('Y-m-t', mktime(0, 0, 0, $closingDate['M'], 1, $closingDate['Y'])) . "'";
     }
     $priorDate = CRM_Contribute_BAO_Contribution::checkContributeSettings('prior_financial_period');
     if (empty($priorDate)) {
