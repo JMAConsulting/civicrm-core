@@ -285,3 +285,6 @@ INSERT INTO
    civicrm_option_value (option_group_id, {localize field='label'}label{/localize}, value, name, grouping, filter, is_default, weight, {localize field='description'}description{/localize}, is_optgroup, is_reserved, is_active, component_id, visibility_id)
 VALUES
 (@option_group_id_report, {localize}'{ts escape="sql"}Trial Balance Report{/ts}'{/localize}, 'contribute/trialBalance', 'CRM_Report_Form_Contribute_TrialBalance', NULL, 0, NULL, @option_group_id_report_wt+1, {localize}'{ts escape="sql"}Balance for each account is calculated by summing entries since Prior Period Close Date, and adding to Current Period Opening Balance for Financial Account{/ts}'{/localize}, 0, 0, 1, @contributeCompId, NULL);
+
+ALTER TABLE `civicrm_financial_trxn`
+  ADD `credit_card_type` INT( 10 ) UNSIGNED NULL DEFAULT NULL COMMENT 'FK to accept_creditcard option group values';
