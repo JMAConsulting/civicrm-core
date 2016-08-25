@@ -834,4 +834,21 @@ IF (financial_account_type_id IN (2,3), total_amount_1, NULL) + IF (current_peri
     }
   }
 
+  /**
+   * Get Credit Card Type.
+   *
+   * @param int $contributionID
+   *   Contribution ID
+   *
+   */
+  public static function getCreditCardType($contributionID) {
+    $sql = "SELECT credit_card_type
+      FROM civicrm_financial_trxn cft
+        INNER JOIN civicrm_entity_financial_trxn ceft ON ceft.financial_trxn_id = cft.id
+      WHERE ceft.entity_table = 'civicrm_contribution'
+        AND ceft.entity_id = {$contributionID}
+        AND cft.is_payment = 1 ORDER  BY cft.id DESC";
+    return CRM_Core_DAO::singleValueQuery($sql);
+  }
+
 }
