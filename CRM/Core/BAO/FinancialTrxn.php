@@ -633,7 +633,6 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
         'status_id' => array_search('Completed', $statuses),
         'payment_instrument_id' => $contributionDetails['payment_instrument_id'],
         'check_number' => $contributionDetails['check_number'],
-        'is_payment' => 1,
       );
 
       $deferredRevenues = array();
