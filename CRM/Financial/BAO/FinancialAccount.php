@@ -396,8 +396,8 @@ LIMIT 1";
     }
     $recognitionDate = CRM_Utils_Array::value('revenue_recognition_date', $params);
     if (!(!CRM_Utils_System::isNull($recognitionDate)
-      || ($contributionID && isset($params['prevContribution'])
-      && !CRM_Utils_System::isNull($params['prevContribution']->revenue_recognition_date)))
+      || ($contributionID 
+        && !empty($params['prevContribution']) && !CRM_Utils_System::isNull($params['prevContribution']->revenue_recognition_date)))
     ) {
       return FALSE;
     }
