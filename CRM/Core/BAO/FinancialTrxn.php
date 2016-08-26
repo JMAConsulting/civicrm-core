@@ -566,31 +566,61 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
    * @return array
    */
   public static function getMembershipRevenueAmount($lineItem, $receiveDate) {
+
     $revenueAmount = array();
     $membershipDetail = civicrm_api3('Membership', 'getsingle', array(
       'id' => $lineItem['entity_id'],
     ));
+    $membershipTypeDetail = civicrm_api3('MembershipType', 'getsingle', array(
+      'id' => $lineItem['membership_type_id'],
+    ));
+
     if (empty($membershipDetail['end_date'])) {
       return $revenueAmount;
     }
 
-    $startDate = strtotime($receiveDate);
-    $endDate = strtotime($membershipDetail['end_date']);
+    if ($membershipTypeDetail['period_type'] == 'rolling') {
+      $startDate = strtotime($receiveDate);
+      $startDateOfRevenue = $receiveDate;
+    }
+    else {
+      $startDate = strtotime($membershipDetail['start_date']);
+      $startDateOfRevenue = $membershipDetail['start_date'];
+    }
+
     $startYear = date('Y', $startDate);
-    $endYear = date('Y', $endDate);
     $startMonth = date('m', $startDate);
+
+    $endDate = strtotime($membershipDetail['end_date']);
+    $endYear = date('Y', $endDate);
     $endMonth = date('m', $endDate);
 
     $monthOfService = (($endYear - $startYear) * 12) + ($endMonth - $startMonth);
-    $startDateOfRevenue = $receiveDate;
+    $forFixedMembershipAmount = 0;
     $typicalPayment = round(($lineItem['line_total'] / $monthOfService), 2);
+    $receiveDateMonthYear = date('Ym', strtotime($receiveDate));
+
     for ($i = 0; $i <= $monthOfService - 1; $i++) {
-      $revenueAmount[$i]['amount'] = $typicalPayment;
+      $checkDate = $startDateOfRevenue;
+      $monthYearDate = date('Ym', strtotime($checkDate));
+      $deferredAmount = $typicalPayment;
       if ($i == 0) {
-        $revenueAmount[$i]['amount'] -= (($typicalPayment * $monthOfService) - $lineItem['line_total']);
+        $deferredAmount -= (($typicalPayment * $monthOfService) - $lineItem['line_total']);
+        $startDateOfRevenue = date('Y-m', strtotime($startDateOfRevenue)) . '-01';
       }
-      $revenueAmount[$i]['revenue_date'] = $startDateOfRevenue;
       $startDateOfRevenue = date('Y-m', strtotime('+1 month', strtotime($startDateOfRevenue))) . '-01';
+      if ($membershipTypeDetail['period_type'] == 'fixed' && $monthYearDate <= $receiveDateMonthYear) {
+        $forFixedMembershipAmount += $deferredAmount;
+        if ($monthYearDate == $receiveDateMonthYear) {
+          $deferredAmount = $forFixedMembershipAmount;
+          $checkDate = $receiveDate;
+        }
+        else {
+          continue;
+        }
+      }
+      $revenueAmount[$i]['amount'] = $deferredAmount;
+      $revenueAmount[$i]['revenue_date'] = date('Y-m-d', strtotime($checkDate));
     }
     return $revenueAmount;
   }
