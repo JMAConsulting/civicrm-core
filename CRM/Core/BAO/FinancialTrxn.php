@@ -600,6 +600,9 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
 
     $monthOfService = (($endYear - $startYear) * 12) + ($endMonth - $startMonth) + 1;
     $forFixedMembershipAmount = 0;
+    if ($monthOfService == 0) {
+      return $revenueAmount;
+    }
     $typicalPayment = round(($lineItem['line_total'] / $monthOfService), 2);
     $receiveDateMonthYear = date('Ym', strtotime($receiveDate));
 
