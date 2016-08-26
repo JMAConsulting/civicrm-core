@@ -566,7 +566,6 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
    * @return array
    */
   public static function getMembershipRevenueAmount($lineItem, $receiveDate) {
-
     $revenueAmount = array();
     $membershipDetail = civicrm_api3('Membership', 'getsingle', array(
       'id' => $lineItem['entity_id'],
@@ -594,13 +593,17 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
     $endDate = strtotime($membershipDetail['end_date']);
     $endYear = date('Y', $endDate);
     $endMonth = date('m', $endDate);
+    //TODO: fix date calculation using some date function
+    if ($endMonth == $startMonth && $endYear!= $startYear) {
+      $endMonth--;
+    }
 
-    $monthOfService = (($endYear - $startYear) * 12) + ($endMonth - $startMonth);
+    $monthOfService = (($endYear - $startYear) * 12) + ($endMonth - $startMonth) + 1;
     $forFixedMembershipAmount = 0;
     $typicalPayment = round(($lineItem['line_total'] / $monthOfService), 2);
     $receiveDateMonthYear = date('Ym', strtotime($receiveDate));
 
-    for ($i = 0; $i <= $monthOfService - 1; $i++) {
+    for ($i = 0; $i < $monthOfService; $i++) {
       $checkDate = $startDateOfRevenue;
       $monthYearDate = date('Ym', strtotime($checkDate));
       $deferredAmount = $typicalPayment;
