@@ -594,7 +594,7 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
     $endYear = date('Y', $endDate);
     $endMonth = date('m', $endDate);
     //TODO: fix date calculation using some date function
-    if ($endMonth == $startMonth && $endYear!= $startYear) {
+    if ($endMonth == $startMonth && $endYear != $startYear) {
       $endMonth--;
     }
 
@@ -636,7 +636,7 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
    *
    * @param array $lineItems
    *
-   * @param integer $contributionId
+   * @param int $contributionId
    *
    * @param bool $update
    *
@@ -654,9 +654,9 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
     if (!CRM_Utils_System::isNull($revenueRecognitionDate)) {
       $statuses = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
       if (!$update
-         && (!(CRM_Utils_Array::value($contributionDetails['contribution_status_id'], $statuses) == 'Completed'
-         || (CRM_Utils_Array::value($contributionDetails['contribution_status_id'], $statuses) == 'Pending'
-           && $contributionDetails['is_pay_later']))
+        && (!(CRM_Utils_Array::value($contributionDetails['contribution_status_id'], $statuses) == 'Completed'
+        || (CRM_Utils_Array::value($contributionDetails['contribution_status_id'], $statuses) == 'Pending'
+          && $contributionDetails['is_pay_later']))
         )
       ) {
         return;
