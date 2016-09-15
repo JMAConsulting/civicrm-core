@@ -871,12 +871,12 @@ IF (financial_account_type_id IN (2,3), total_amount_1, NULL) + IF (current_peri
   }
 
   /**
-   * Get Credit Card Type.
+   * Get Credit Card Details.
    *
    * @param int $contributionID
    *   Contribution ID
    *
-   * @return CRM_Core_DAO
+   * @return array
    */
   public static function getCreditCardDetails($contributionID) {
     $sql = "SELECT credit_card_type, credit_card_number
@@ -884,8 +884,14 @@ IF (financial_account_type_id IN (2,3), total_amount_1, NULL) + IF (current_peri
         INNER JOIN civicrm_entity_financial_trxn ceft ON ceft.financial_trxn_id = cft.id
       WHERE ceft.entity_table = 'civicrm_contribution'
         AND ceft.entity_id = {$contributionID}
-        AND cft.is_payment = 1 ORDER BY cft.id DESC LIMIT 1";
-    return CRM_Core_DAO::executeQuery($sql);
+        AND cft.is_payment = 1 AND from_financial_account_id IS NULL ORDER BY cft.id DESC LIMIT 1";
+    $dao = CRM_Core_DAO::executeQuery($sql);
+    $dao->fetch();
+    $creditCardDetails = array(
+      'credit_card_type' => $dao->credit_card_type,
+      'credit_card_number' => empty($dao->credit_card_number) ? NULL : ("**** **** **** " . $dao->credit_card_number),
+    );
+    return $creditCardDetails;
   }
 
 }
