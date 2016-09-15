@@ -894,4 +894,26 @@ IF (financial_account_type_id IN (2,3), total_amount_1, NULL) + IF (current_peri
     return $creditCardDetails;
   }
 
+  /**
+   * Format Credit Card type.
+   *
+   * @param array $params
+   *
+   */
+  public static function formatCreditCardDetails(&$params) {
+    $creditCardType = CRM_Utils_Array::value('credit_card_type', $params);
+    if ($creditCardType && !is_numeric($creditCardType)) {
+      $creditCardTypes = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn',
+        'credit_card_type',
+        array('labelColumn' => 'name')
+      );
+      $params['credit_card_type'] = array_search($creditCardType, $creditCardTypes);
+    }
+
+    $ccNumber = CRM_Utils_Array::value('credit_card_number', $params);
+    if ($ccNumber) {
+      $params['credit_card_number'] = substr($ccNumber, -4);
+    }
+  }
+
 }
