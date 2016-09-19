@@ -76,12 +76,12 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
           'debit' => array(
             'title' => ts('Debit'),
             'required' => TRUE,
-            'dbAlias' => 'IF (financial_account_type_id NOT IN (' . implode(',', $financialAccountType) . "), total_amount, NULL) + {$financialBalanceField}",
+            'dbAlias' => 'IF (financial_account_type_id NOT IN (' . implode(',', $financialAccountType) . "), total_amount, 0) + {$financialBalanceField}",
           ),
           'credit' => array(
             'title' => ts('Credit'),
             'required' => TRUE,
-            'dbAlias' => 'IF (financial_account_type_id IN (' . implode(',', $financialAccountType) . "), total_amount, NULL) + {$financialBalanceField}",
+            'dbAlias' => 'IF (financial_account_type_id IN (' . implode(',', $financialAccountType) . "), total_amount, 0) + {$financialBalanceField}",
           ),
         ),
       ),
