@@ -43,6 +43,11 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
       array_search('Liability', $financialAccountType),
       array_search('Revenue', $financialAccountType),
     );
+    $financialBalanceField = 'opening_balance';
+    if (CRM_Contribute_BAO_Contribution::checkContributeSettings('prior_financial_period')) {
+      $financialBalanceField = 'current_period_opening_balance';
+    }
+
     $this->_columns = array(
       'civicrm_financial_account' => array(
         'dao' => 'CRM_Financial_DAO_FinancialAccount',
@@ -71,12 +76,12 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
           'debit' => array(
             'title' => ts('Debit'),
             'required' => TRUE,
-            'dbAlias' => 'IF (financial_account_type_id NOT IN (' . implode(',', $financialAccountType) . '), total_amount_1, NULL) + IF (current_period_opening_balance <> 0, current_period_opening_balance, opening_balance)',
+            'dbAlias' => 'IF (financial_account_type_id NOT IN (' . implode(',', $financialAccountType) . "), total_amount, NULL) + {$financialBalanceField}",
           ),
           'credit' => array(
             'title' => ts('Credit'),
             'required' => TRUE,
-            'dbAlias' => 'IF (financial_account_type_id IN (' . implode(',', $financialAccountType) . '), total_amount_1, NULL) + IF (current_period_opening_balance <> 0, current_period_opening_balance, opening_balance)',
+            'dbAlias' => 'IF (financial_account_type_id IN (' . implode(',', $financialAccountType) . "), total_amount, NULL) + {$financialBalanceField}",
           ),
         ),
       ),
@@ -102,20 +107,31 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
     }
     $this->_from = "
       FROM (
-        SELECT SUM(total_amount) AS total_amount_1, to_financial_account_id AS financial_account_id 
-          FROM civicrm_financial_trxn
-          WHERE trxn_date {$where}
-          GROUP BY to_financial_account_id
+        SELECT cft1.id, cft1.total_amount AS total_amount,
+          cft1.to_financial_account_id AS financial_account_id
+          FROM civicrm_financial_trxn cft1
+          WHERE cft1.trxn_date {$where}
         UNION
-        SELECT -sum(total_amount) AS total_amount_2, from_financial_account_id 
-          FROM civicrm_financial_trxn
-          WHERE from_financial_account_id IS NOT NULL AND trxn_date {$where}
-          GROUP BY from_financial_account_id
+        SELECT cft2.id, -cft2.total_amount, cft2.from_financial_account_id
+          FROM civicrm_financial_trxn cft2
+          WHERE cft2.trxn_date {$where}
         UNION
-        SELECT -sum(amount) total_amount_3, financial_account_id 
-          FROM civicrm_financial_item
-          WHERE transaction_date {$where}
-          GROUP BY financial_account_id
+        SELECT cft3.id, -cfi3.amount, cfi3.financial_account_id
+          FROM civicrm_financial_item cfi3
+            INNER JOIN civicrm_entity_financial_trxn ceft3 ON cfi3.id = ceft3.entity_id
+              AND ceft3.entity_table = 'civicrm_financial_item'
+            INNER JOIN civicrm_financial_trxn cft3 ON ceft3.financial_trxn_id = cft3.id 
+              AND cft3.to_financial_account_id IS NULL
+          WHERE cfi3.transaction_date {$where}
+        UNION
+        SELECT cft4.id, cfi4.amount, cfi4.financial_account_id
+          FROM civicrm_financial_item cfi4
+          INNER JOIN civicrm_entity_financial_trxn ceft4 ON cfi4.id=ceft4.entity_id
+            AND ceft4.entity_table='civicrm_financial_item'
+          INNER JOIN civicrm_financial_trxn cft4 ON ceft4.financial_trxn_id=cft4.id
+            AND cft4.from_financial_account_id IS NULL
+          WHERE cfi4.transaction_date {$where}
+
       ) AS {$this->_aliases['civicrm_financial_trxn']}
       INNER JOIN civicrm_financial_account {$this->_aliases['civicrm_financial_account']} ON {$this->_aliases['civicrm_financial_trxn']}.financial_account_id = {$this->_aliases['civicrm_financial_account']}.id
 ";
@@ -160,10 +176,18 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
     if (empty($rows)) {
       return NULL;
     }
+    $creditAmount = $debitAmount = 0;
     foreach ($rows as &$row) {
+      $creditAmount += $row['civicrm_financial_trxn_credit'];
+      $debitAmount += $row['civicrm_financial_trxn_debit'];
       $row['civicrm_financial_trxn_credit'] = CRM_Utils_Money::format($row['civicrm_financial_trxn_credit']);
       $row['civicrm_financial_trxn_debit'] = CRM_Utils_Money::format($row['civicrm_financial_trxn_debit']);    
     }
+    $rows[] = array(
+      'civicrm_financial_account_accounting_code' => ts('<b>Total Amount</b>'),
+      'civicrm_financial_trxn_debit' => '<b>' . CRM_Utils_Money::format($debitAmount) . '</b>',
+      'civicrm_financial_trxn_credit' => '<b>' . CRM_Utils_Money::format($creditAmount) . '</b>',
+    );
   }
 
 }
