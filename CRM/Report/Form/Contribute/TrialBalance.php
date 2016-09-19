@@ -59,8 +59,8 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
         'filters' => array(
           'contact_id' => array(
             'title' => ts('Organization Name'),
-            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => CRM_Financial_BAO_FinancialAccount::getOrganizationNames(),
+            'operatorType' => CRM_Report_Form::OP_SELECT,
+            'options' => array('' => '- Select Organization -') + CRM_Financial_BAO_FinancialAccount::getOrganizationNames(),
             'type' => CRM_Utils_Type::T_INT,
           ),
         ),
@@ -125,26 +125,22 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
     $this->_orderBy = " ORDER BY {$this->_aliases['civicrm_financial_account']}.name ";
   }
 
+ /**
+   * Set limit.
+   *
+   * @param int $rowCount
+   *
+   * @return array
+   */
+  public function limit($rowCount = self::ROW_COUNT_LIMIT) {
+    $this->_limit = NULL;
+  }
+
+  /**
+   * Post process function.
+   */
   public function postProcess() {
-    // get ready with post process params
-    $this->beginPostProcess();
-
-    // build query
-    $sql = $this->buildQuery(FALSE);
-
-    // build array of result based on column headers. This method also allows
-    // modifying column headers before using it to build result set i.e $rows.
-    $rows = array();
-    $this->buildRows($sql, $rows);
-
-    // format result set.
-    $this->formatDisplay($rows);
-
-    // assign variables to templates
-    $this->doTemplateAssignment($rows);
-
-    // do print / pdf / instance stuff if needed
-    $this->endPostProcess($rows);
+    parent::postProcess();
   }
 
   public function groupBy() {
