@@ -148,14 +148,6 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
   }
 
   /**
-   * @param $rows
-   *
-   */
-  public function statistics(&$rows) {
-
-  }
-
-  /**
    * Alter display of rows.
    *
    * Iterate through the rows retrieved via SQL and make changes for display purposes,
@@ -168,18 +160,10 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
     if (empty($rows)) {
       return NULL;
     }
-    $creditAmount = $debitAmount = 0;
     foreach ($rows as &$row) {
-      $creditAmount += $row['civicrm_financial_trxn_credit'];
-      $debitAmount += $row['civicrm_financial_trxn_debit'];
       $row['civicrm_financial_trxn_credit'] = CRM_Utils_Money::format($row['civicrm_financial_trxn_credit']);
       $row['civicrm_financial_trxn_debit'] = CRM_Utils_Money::format($row['civicrm_financial_trxn_debit']);    
     }
-    $rows[] = array(
-      'civicrm_financial_account_accounting_code' => ts('<b>Total Amount</b>'),
-      'civicrm_financial_trxn_debit' => '<b>' . CRM_Utils_Money::format($debitAmount) . '</b>',
-      'civicrm_financial_trxn_credit' => '<b>' . CRM_Utils_Money::format($creditAmount) . '</b>',
-    );
   }
 
 }
