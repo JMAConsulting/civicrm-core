@@ -415,7 +415,6 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     if (!empty($result) && !empty($submittedValues['is_email_receipt'])) {
       $submittedValues['contact_id'] = $this->_contactId;
       $submittedValues['contribution_id'] = $this->_contributionId;
-      
       // to get 'from email id' for send receipt
       $this->fromEmailId = $submittedValues['from_email_address'];
       $sendReceipt = $this->emailReceipt($submittedValues);
