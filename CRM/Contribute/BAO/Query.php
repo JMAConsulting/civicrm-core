@@ -137,6 +137,21 @@ class CRM_Contribute_BAO_Query extends CRM_Core_BAO_Query {
     }
 
     self::addSoftCreditFields($query);
+    // Adding address_id in a way that is more easily extendable since the above is a bit ... wordy.
+    $supportedBasicReturnValues = array('address_id');
+    foreach ($supportedBasicReturnValues as $fieldName) {
+      if (!empty($query->_returnProperties[$fieldName]) && empty($query->_select[$fieldName])) {
+        $query->_select[$fieldName] = "civicrm_contribution.{$fieldName} as $fieldName";
+        $query->_element[$fieldName] = $query->_tables['civicrm_contribution'] = 1;
+      }
+    }
+
+    //CRM-16116: get financial_type_id
+    if (!empty($query->_returnProperties['financial_type_id'])) {
+      $query->_select['financial_type_id'] = "civicrm_contribution.financial_type_id as financial_type_id";
+      $query->_element['financial_type_id'] = $query->_tables['civicrm_contribution'] = 1;
+    }
+    // LCD 716 END
   }
 
   /**

@@ -441,18 +441,25 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
         'id' => $result->contribution_id,
         'cid' => $result->contact_id,
         'cxt' => $this->_context,
+        'compId' => $result->contribution_id,
+        'comp' => 'contribution',
       );
 
-      if (in_array($row['contribution_status_name'], array('Partially paid', 'Pending refund')) || $isPayLater) {
-        $buttonName = ts('Record Payment');
-        if ($row['contribution_status_name'] == 'Pending refund') {
-          $buttonName = ts('Record Refund');
-        }
+      if ($row['contribution_status_name'] == 'Partially paid' || $isPayLater) {
         $links[CRM_Core_Action::ADD] = array(
-          'name' => $buttonName,
+          'name' => ts('Record Payment'),
           'url' => 'civicrm/payment',
-          'qs' => 'reset=1&id=%%id%%&cid=%%cid%%&action=add&component=contribution',
-          'title' => $buttonName,
+          'qs' => 'reset=1&id=%%compId%%&cid=%%cid%%&action=add&component=%%comp%%',
+          'title' => ts('Record Payment'),
+        );
+      }
+
+      if ($row['contribution_status_name'] == 'Pending refund') {
+        $links[CRM_Core_Action::ADD] = array(
+          'name' => ts('Record Refund'),
+          'url' => 'civicrm/payment',
+          'qs' => 'reset=1&id=%%pid%%&cid=%%cid%%&action=add&component=event',
+          'title' => ts('Record Refund'),
         );
       }
 
