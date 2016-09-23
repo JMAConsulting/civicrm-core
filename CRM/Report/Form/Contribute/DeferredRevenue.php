@@ -259,14 +259,17 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
     $deferredRelationship = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE 'Deferred Revenue Account is' "));
     $revenueRelationship = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE 'Income Account is' "));
     $this->_from = " FROM civicrm_financial_item {$this->_aliases['civicrm_financial_item']}
+INNER JOIN civicrm_line_item line_item 
+  ON line_item.id = {$this->_aliases['civicrm_financial_item']}.entity_id AND {$this->_aliases['civicrm_financial_item']}.entity_table = 'civicrm_line_item'
 INNER JOIN civicrm_entity_financial_account entity_financial_account_deferred
-  ON {$this->_aliases['civicrm_financial_item']}.financial_account_id = entity_financial_account_deferred.financial_account_id AND entity_financial_account_deferred.entity_table = 'civicrm_financial_type'
+  ON {$this->_aliases['civicrm_financial_item']}.financial_account_id = entity_financial_account_deferred.financial_account_id AND entity_financial_account_deferred.entity_table = 'civicrm_financial_type' AND line_item.financial_type_id = entity_financial_account_deferred.entity_id
     AND entity_financial_account_deferred.account_relationship = {$deferredRelationship}
 INNER JOIN civicrm_financial_account {$this->_aliases['civicrm_financial_account']}
   ON entity_financial_account_deferred.financial_account_id = {$this->_aliases['civicrm_financial_account']}.id
 INNER JOIN civicrm_entity_financial_account entity_financial_account_revenue
   ON entity_financial_account_deferred.entity_id = entity_financial_account_revenue.entity_id
     AND entity_financial_account_deferred.entity_table= entity_financial_account_revenue.entity_table
+    AND line_item.financial_type_id = entity_financial_account_revenue.entity_id
 INNER JOIN civicrm_financial_account {$this->_aliases['civicrm_financial_account_1']}
   ON entity_financial_account_revenue.financial_account_id = {$this->_aliases['civicrm_financial_account_1']}.id
     AND {$revenueRelationship} = entity_financial_account_revenue.account_relationship
@@ -282,8 +285,6 @@ INNER JOIN civicrm_contribution {$this->_aliases['civicrm_contribution']}
   ON {$this->_aliases['civicrm_contribution']}.id = financial_trxn_contribution.entity_id
 INNER JOIN civicrm_contact {$this->_aliases['civicrm_contact']}
   ON {$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_contribution']}.contact_id
-INNER JOIN civicrm_line_item line_item 
-  ON line_item.contribution_id = {$this->_aliases['civicrm_contribution']}.id
 LEFT JOIN  civicrm_membership {$this->_aliases['civicrm_membership']}
   ON CASE
     WHEN line_item.entity_table = 'civicrm_membership'
