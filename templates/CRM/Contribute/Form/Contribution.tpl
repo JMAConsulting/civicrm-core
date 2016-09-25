@@ -652,14 +652,17 @@ CRM.$(function($) {
     if (paymentInstrument == 4) {
       $('tr#checkNumber').show();
       $('tr#creditCardType').hide();
+      $('tr#creditCardNumber').hide();
     }
-    else if (paymentInstrument == 1 || paymentInstrument == 2) {
+    else if (paymentInstrument == 1) {
       $('tr#creditCardType').show();
+      $('tr#creditCardNumber').show();
       $('tr#checkNumber').hide();
     }
     else {
       $('tr#checkNumber').hide();
       $('tr#creditCardType').hide();
+      $('tr#creditCardNumber').hide();
     }
   }
 });

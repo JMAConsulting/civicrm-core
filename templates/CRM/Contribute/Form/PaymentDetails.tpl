@@ -45,6 +45,10 @@
     <td class="label">{$form.credit_card_type.label}</td>
     <td>{$form.credit_card_type.html}</td>
   </tr>
+  <tr id="creditCardNumber" class="crm-payment-details-block-credit_card_number">
+    <td class="label">{$form.credit_card_number.label}</td>
+    <td>{$form.credit_card_number.html}</td>
+  </tr>
   <tr id="checkNumber" class="crm-payment-details-block-check_number">
     <td class="label">{$form.check_number.label}</td>
     <td>{$form.check_number.html|crmAddClass:six}</td>
@@ -74,14 +78,17 @@ CRM.$(function($) {
     if (paymentInstrument == 4) {
       $('tr#checkNumber').show();
       $('tr#creditCardType').hide();
+      $('tr#creditCardNumber').hide();
     }
-    else if (paymentInstrument == 1 || paymentInstrument == 2) {
+    else if (paymentInstrument == 1) {
       $('tr#creditCardType').show();
+      $('tr#creditCardNumber').show();
       $('tr#checkNumber').hide();
     }
     else {
       $('tr#checkNumber').hide();
       $('tr#creditCardType').hide();
+      $('tr#creditCardNumber').hide();
     }
   }
 });

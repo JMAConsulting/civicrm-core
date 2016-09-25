@@ -116,8 +116,17 @@
           <tr class="crm-payment-form-block-payment_instrument_id">
             <td class="label">{$form.payment_instrument_id.label}</td>
             <td {$valueStyle}>{$form.payment_instrument_id.html} {help id="payment_instrument_id"}</td>
-            </td>
           </tr>
+	  {if !$isOnline}
+            <tr id="creditCardType" class="crm-payment-form-block-credit_card_type">
+              <td class="label">{$form.credit_card_type.label}</td>
+              <td {$valueStyle}>{$form.credit_card_type.html}</td>
+            </tr>
+            <tr id="creditCardNumber" class="crm-payment-form-block-credit_card_number">
+              <td class="label">{$form.credit_card_number.label}</td>
+              <td {$valueStyle}>{$form.credit_card_number.html}</td>
+            </tr>
+          {/if}
           {if $showCheckNumber || !$isOnline}
             <tr id="checkNumber" class="crm-payment-form-block-check_number">
               <td class="label">{$form.check_number.label}</td>
@@ -250,16 +259,40 @@
         });
       });
 
+cj('#fee_amount').change( function() {
+  var totalAmount = cj('#total_amount').val();
+  var feeAmount = cj('#fee_amount').val();
+  var netAmount = totalAmount.replace(/,/g, '') - feeAmount.replace(/,/g, '');
+  if (!cj('#net_amount').val() && totalAmount) {
+    cj('#net_amount').val(CRM.formatMoney(netAmount, true));
+  }
+});
+
+CRM.$(function($) {
+  onPaymentMethodChange();
+  $("#payment_instrument_id").on("change",function(){
+    onPaymentMethodChange();
+  });
+
+  function onPaymentMethodChange() {
+    var paymentInstrument = $('#payment_instrument_id').val();
+    if (paymentInstrument == 4) {
+      $('tr#checkNumber').show();
+      $('tr#creditCardType').hide();
+      $('tr#creditCardNumber').hide();
+    }
+    else if (paymentInstrument == 1) {
+      $('tr#creditCardType').show();
+      $('tr#creditCardNumber').show();
+      $('tr#checkNumber').hide();
+    }
+    else {
+      $('tr#checkNumber').hide();
+      $('tr#creditCardType').hide();
+      $('tr#creditCardNumber').hide();
+    }
+  }
+});
     </script>
     {/literal}
-      {if !$contributionMode}
-        {include file="CRM/common/showHideByFieldValue.tpl"
-        trigger_field_id    ="payment_instrument_id"
-        trigger_value       = '4'
-        target_element_id   ="checkNumber"
-        target_element_type ="table-row"
-        field_type          ="select"
-        invert              = 0
-        }
-    {/if}
 {/if}

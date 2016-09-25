@@ -105,6 +105,11 @@ class CRM_Contribute_Form_PaymentDetails {
       ts('Payment Method'),
       array('' => ts('- select -')) + CRM_Contribute_PseudoConstant::paymentInstrument()
     );
+    $form->add('text', 'credit_card_number', ts('Credit Card Number'), array(
+      'size' => 5,
+      'maxlength' => 10,
+      'autocomplete' => 'off',
+    ));
 
     // don't show transaction id in batch update mode
     $path = CRM_Utils_System::currentPath();
