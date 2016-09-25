@@ -753,40 +753,59 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
     $priorDate = CRM_Contribute_BAO_Contribution::checkContributeSettings('prior_financial_period');
     if (empty($priorDate)) {
       $where = " <= $closingDate ";
+      $financialBalanceField = 'opening_balance';
     }
     else {
       $priorDate = date('Y-m-d', strtotime($priorDate));
       $where = " BETWEEN '$priorDate' AND $closingDate ";
+      $financialBalanceField = 'current_period_opening_balance';
     }
     $from = "
       FROM (
-        SELECT SUM(total_amount) AS total_amount_1, to_financial_account_id AS financial_account_id 
-          FROM civicrm_financial_trxn
-          WHERE trxn_date {$where}
-          GROUP BY to_financial_account_id
+        SELECT cft1.id, cft1.total_amount AS total_amount,
+          cft1.to_financial_account_id AS financial_account_id
+          FROM civicrm_financial_trxn cft1
+          WHERE cft1.trxn_date {$where}
         UNION
-        SELECT -sum(total_amount) AS total_amount_2, from_financial_account_id 
-          FROM civicrm_financial_trxn
-          WHERE from_financial_account_id IS NOT NULL AND trxn_date {$where}
-          GROUP BY from_financial_account_id
+        SELECT cft2.id, -cft2.total_amount, cft2.from_financial_account_id
+          FROM civicrm_financial_trxn cft2
+          WHERE cft2.trxn_date {$where}
         UNION
-        SELECT -sum(amount) total_amount_3, financial_account_id 
-          FROM civicrm_financial_item
-          WHERE transaction_date {$where}
-          GROUP BY financial_account_id
+        SELECT cft3.id, -cfi3.amount, cfi3.financial_account_id
+          FROM civicrm_financial_item cfi3
+            INNER JOIN civicrm_entity_financial_trxn ceft3 ON cfi3.id = ceft3.entity_id
+              AND ceft3.entity_table = 'civicrm_financial_item'
+            INNER JOIN civicrm_financial_trxn cft3 ON ceft3.financial_trxn_id = cft3.id 
+              AND cft3.to_financial_account_id IS NULL
+          WHERE cfi3.transaction_date {$where}
+        UNION
+        SELECT cft4.id, cfi4.amount, cfi4.financial_account_id
+          FROM civicrm_financial_item cfi4
+          INNER JOIN civicrm_entity_financial_trxn ceft4 ON cfi4.id=ceft4.entity_id
+            AND ceft4.entity_table='civicrm_financial_item'
+          INNER JOIN civicrm_financial_trxn cft4 ON ceft4.financial_trxn_id=cft4.id
+            AND cft4.from_financial_account_id IS NULL
+          WHERE cfi4.transaction_date {$where}
+
       ) AS {$alias['civicrm_financial_trxn']}
       INNER JOIN civicrm_financial_account {$alias['civicrm_financial_account']} ON {$alias['civicrm_financial_trxn']}.financial_account_id = {$alias['civicrm_financial_account']}.id
 ";
     if ($onlyFromClause) {
       return $from;
     }
+    $params['labelColumn'] = 'name';
+    $financialAccountType = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialAccount', 'financial_account_type_id', $params);
+    $financialAccountType = array(
+      array_search('Liability', $financialAccountType),
+      array_search('Revenue', $financialAccountType),
+    );
     $query = "
 SELECT financial_account_civireport.id as civicrm_financial_account_id,
 financial_account_civireport.name as civicrm_financial_account_name,
 financial_account_civireport.financial_account_type_id as civicrm_financial_account_financial_account_type_id,
 financial_account_civireport.accounting_code as civicrm_financial_account_accounting_code,
-IF (financial_account_type_id NOT IN (2,3), total_amount_1, NULL) + IF (current_period_opening_balance <> 0, current_period_opening_balance, opening_balance) as civicrm_financial_trxn_debit,
-IF (financial_account_type_id IN (2,3), total_amount_1, NULL) + IF (current_period_opening_balance <> 0, current_period_opening_balance, opening_balance) as civicrm_financial_trxn_credit  
+IF (financial_account_type_id NOT IN (" . implode(',', $financialAccountType) . "), SUM(total_amount) + {$financialBalanceField}, 0) as civicrm_financial_trxn_debit,
+IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), SUM(total_amount) + {$financialBalanceField}, 0) as civicrm_financial_trxn_credit  
   {$from}
   GROUP BY financial_account_civireport.id
   ORDER BY financial_account_civireport.name  
