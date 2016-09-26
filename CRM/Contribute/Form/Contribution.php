@@ -662,8 +662,14 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         array('entity' => 'financialTrxn', 'label' => ts('Credit Card Type'), 'option_url' => NULL, 'placeholder' => ts('- any -'))
       );
 
+      $creditCardNumber = $this->add('text', 'credit_card_number', ts('Credit Card Number'), array(
+        'size' => 5,
+        'maxlength' => 10,
+        'autocomplete' => 'off',
+      ));
       if ($this->_id) {
         $creditCardType->freeze();
+        $creditCardNumber->freeze();
       }
     }
     $trxnId = $this->add('text', 'trxn_id', ts('Transaction ID'), array('class' => 'twelve') + $attributes['trxn_id']);
