@@ -4093,7 +4093,11 @@ WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
         $paidByName = CRM_Core_PseudoConstant::getName('CRM_Core_BAO_FinancialTrxn', 'payment_instrument_id', $resultDAO->payment_instrument_id);
         if ($resultDAO->credit_card_type) {
           $creditCardType = CRM_Core_PseudoConstant::getLabel('CRM_Core_BAO_FinancialTrxn', 'credit_card_type', $resultDAO->credit_card_type);
-          $paidByLabel .= " ({$creditCardType} : {$resultDAO->credit_card_number})";
+          $paidByLabel .= " ({$creditCardType}";
+          if ($resultDAO->credit_card_number) {
+            $paidByLabel .= ": {$resultDAO->credit_card_number}";
+          }
+          $paidByLabel .= ')';
         }
         $val = array(
           'total_amount' => $resultDAO->total_amount,
