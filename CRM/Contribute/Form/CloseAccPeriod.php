@@ -30,6 +30,13 @@
 class CRM_Contribute_Form_CloseAccPeriod extends CRM_Core_Form {
 
   /**
+   * Contains list of Organization linked with financial account.
+   *
+   * @var array
+   */
+  public $_financialAccountOrg;
+
+  /**
    * Set default values.
    *
    * @return array
@@ -47,6 +54,9 @@ class CRM_Contribute_Form_CloseAccPeriod extends CRM_Core_Form {
       'M' => date('n', $date),
       'Y' => date('Y', $date),
     );
+    if (count($this->_financialAccountOrg) == 1) {
+      $defaults['contact_id'] = key($this->_financialAccountOrg);
+    }
     return $defaults;
   }
 
@@ -55,6 +65,12 @@ class CRM_Contribute_Form_CloseAccPeriod extends CRM_Core_Form {
    */
   public function buildQuickForm() {
     $this->add('date', 'closing_date', ts('Accounting Period to Close'), CRM_Core_SelectValues::date(NULL, 'M Y', 2, 5), TRUE);
+    $this->_financialAccountOrg = CRM_Financial_BAO_FinancialAccount::getOrganizationNames();
+    $this->add('select', 'contact_id',
+      ts('Organization'),
+      array('' => ts('- select -')) + $this->_financialAccountOrg,
+      TRUE
+    );
     $confirmClose = ts('Are you sure you want to close accounting period?');
     $this->addButtons(array(
         array(

@@ -29,6 +29,10 @@
     <td class="label">{$form.closing_date.label}</td>
     <td class="content">{$form.closing_date.html}</td>
   </tr>
+  <tr>
+    <td class="label">{$form.contact_id.label}</td>
+    <td class="content">{$form.contact_id.html}</td>
+  </tr>
 </table>
 
 <div class="crm-submit-buttons">{include file="CRM/common/formButtons.tpl" location="bottom"}</div>
