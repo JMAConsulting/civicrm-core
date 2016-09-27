@@ -807,18 +807,20 @@ financial_account_civireport.accounting_code as civicrm_financial_account_accoun
 IF (financial_account_type_id NOT IN (" . implode(',', $financialAccountType) . "), SUM(total_amount) + {$financialBalanceField}, 0) as civicrm_financial_trxn_debit,
 IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), SUM(total_amount) + {$financialBalanceField}, 0) as civicrm_financial_trxn_credit  
   {$from}
+  WHERE {$alias['civicrm_financial_account']}.contact_id = %1
   GROUP BY financial_account_civireport.id
   ORDER BY financial_account_civireport.name  
 ";
     return $query;
   }
 
-  public static function createTrialBalanceExport() {
+  public static function createTrialBalanceExport($orgId) {
     $alias = array(
       'civicrm_financial_trxn' => 'financial_trxn_civireport',
       'civicrm_financial_account' => 'financial_account_civireport',
     );
     $query = self::getTrialBalanceQuery($alias);
+    $queryParams = array(1 => array($orgId, 'Integer'));
     $result = CRM_Core_DAO::executeQuery($query);
     $rows = array();
     $credit = $debit = 0;
