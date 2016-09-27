@@ -293,19 +293,22 @@ class CRM_Report_Form_Contribute_Bookkeeping extends CRM_Report_Form {
             'title' => ts('Invoice ID'),
             'default' => TRUE,
           ),
-          'id' => array(
-            'title' => ts('Contribution ID'),
-          ),
           'contribution_status_id' => array(
             'title' => ts('Contribution Status'),
             'default' => TRUE,
           ),
           'id' => array(
-            'title' => ts('Contribution #'),
+            'title' => ts('Contribution ID'),
             'default' => TRUE,
           ),
         ),
         'filters' => array(
+          'contribution_id' => array(
+            'title' => ts('Contribution ID'),
+            'name' => 'id',
+            'operatorType' => CRM_Report_Form::OP_INT,
+            'type' => CRM_Utils_Type::T_INT,
+          ),
           'receive_date' => array('operatorType' => CRM_Report_Form::OP_DATE),
           'contribution_status_id' => array(
             'title' => ts('Contribution Status'),
