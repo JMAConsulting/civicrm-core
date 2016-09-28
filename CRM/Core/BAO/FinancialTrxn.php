@@ -821,7 +821,7 @@ IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), 
     );
     $query = self::getTrialBalanceQuery($alias);
     $queryParams = array(1 => array($orgId, 'Integer'));
-    $result = CRM_Core_DAO::executeQuery($query);
+    $result = CRM_Core_DAO::executeQuery($query, $queryParams);
     $rows = array();
     $credit = $debit = 0;
     $params['labelColumn'] = 'name';
