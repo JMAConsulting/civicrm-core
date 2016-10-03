@@ -324,7 +324,7 @@
               <td class="label">{$form.credit_card_type.label}</td>
               <td {$valueStyle}>{$form.credit_card_type.html}</td>
             </tr>
-            <tr class="crm-contribution-form-block-credit_card_number">
+            <tr id="creditCardNumber" class="crm-contribution-form-block-credit_card_number">
               <td class="label">{$form.credit_card_number.label}</td>
               <td {$valueStyle}>{$form.credit_card_number.html}</td>
             </tr>
