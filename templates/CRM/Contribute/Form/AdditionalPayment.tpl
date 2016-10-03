@@ -115,7 +115,7 @@
           </tr>
           <tr class="crm-payment-form-block-payment_instrument_id">
             <td class="label">{$form.payment_instrument_id.label}</td>
-            <td {$valueStyle}>{$form.payment_instrument_id.html} {help id="payment_instrument_id"}</td>
+            <td {$valueStyle}>{$form.payment_instrument_id.html} {help id="payment_instrument_id" file="CRM/Contribute/Page/Tab.hlp"}</td>
           </tr>
 	  {if !$isOnline}
             <tr id="creditCardType" class="crm-payment-form-block-credit_card_type">
@@ -124,7 +124,7 @@
             </tr>
             <tr id="creditCardNumber" class="crm-payment-form-block-credit_card_number">
               <td class="label">{$form.credit_card_number.label}</td>
-              <td {$valueStyle}>{$form.credit_card_number.html}</td>
+              <td {$valueStyle}>{$form.credit_card_number.html} {help id="credit_card_number" file="CRM/Contribute/Page/Tab.hlp"}</td>
             </tr>
           {/if}
           {if $showCheckNumber || !$isOnline}
@@ -135,7 +135,7 @@
           {/if}
           <tr class="crm-payment-form-block-trxn_id">
             <td class="label">{$form.trxn_id.label}</td>
-            <td {$valueStyle}>{$form.trxn_id.html} {help id="id-trans_id"}</td>
+            <td {$valueStyle}>{$form.trxn_id.html} {help id="id-trans_id" file="CRM/Contribute/Page/Tab.hlp"}</td>
           </tr>
           {if $email and $outBound_option != 2}
             <tr class="crm-payment-form-block-is_email_receipt">

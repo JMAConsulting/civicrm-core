@@ -47,7 +47,7 @@
   </tr>
   <tr id="creditCardNumber" class="crm-payment-details-block-credit_card_number">
     <td class="label">{$form.credit_card_number.label}</td>
-    <td>{$form.credit_card_number.html}</td>
+    <td>{$form.credit_card_number.html} {help id="credit_card_number" file="CRM/Contribute/Page/Tab.hlp"}</td>
   </tr>
   <tr id="checkNumber" class="crm-payment-details-block-check_number">
     <td class="label">{$form.check_number.label}</td>

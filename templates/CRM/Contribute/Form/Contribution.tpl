@@ -326,7 +326,7 @@
             </tr>
             <tr id="creditCardNumber" class="crm-contribution-form-block-credit_card_number">
               <td class="label">{$form.credit_card_number.label}</td>
-              <td {$valueStyle}>{$form.credit_card_number.html}</td>
+              <td {$valueStyle}>{$form.credit_card_number.html} {help id="credit_card_number"}</td>
             </tr>
           {/if}
           {if $showCheckNumber || !$isOnline}
