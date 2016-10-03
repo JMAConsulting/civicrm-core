@@ -278,7 +278,7 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     $label = ($this->_refund) ? ts('Refund Amount') : ts('Payment Amount');
     $this->addMoney('total_amount',
       $label,
-      FALSE,
+      TRUE,
       $attributes['total_amount'],
       TRUE, 'currency', NULL
     );
