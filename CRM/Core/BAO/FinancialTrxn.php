@@ -896,10 +896,11 @@ IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), 
    *
    * @param int $contributionID
    *   Contribution ID
+   * @param bool $viewOnly
    *
    * @return array
    */
-  public static function getCreditCardDetails($contributionID) {
+  public static function getCreditCardDetails($contributionID, $viewOnly = TRUE) {
     $sql = "SELECT credit_card_type, credit_card_number
       FROM civicrm_financial_trxn cft
         INNER JOIN civicrm_entity_financial_trxn ceft ON ceft.financial_trxn_id = cft.id
@@ -910,7 +911,7 @@ IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), 
     $dao->fetch();
     $creditCardDetails = array(
       'credit_card_type' => $dao->credit_card_type,
-      'credit_card_number' => empty($dao->credit_card_number) ? NULL : ("**** **** **** " . $dao->credit_card_number),
+      'credit_card_number' => empty($dao->credit_card_number) ? NULL : $viewOnly ? ("**** **** **** " . $dao->credit_card_number) : $dao->credit_card_number,
     );
     return $creditCardDetails;
   }
@@ -935,6 +936,23 @@ IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), 
     if ($ccNumber) {
       $params['credit_card_number'] = substr($ccNumber, -4);
     }
+  }
+
+  /**
+   * Check if financial trxn is via payment processor.
+   *
+   * @param int $contributionID
+   *   Contribution ID
+   *
+   * @return array
+   */
+  public static function hasPaymentProcessorTrxn($contributionID) {
+    $sql = "SELECT payment_processor_id FROM civicrm_financial_trxn cft
+        INNER JOIN civicrm_entity_financial_trxn ceft ON ceft.financial_trxn_id = cft.id
+      WHERE ceft.entity_table = 'civicrm_contribution'
+        AND ceft.entity_id = {$contributionID}
+        AND cft.is_payment = 1 ORDER BY cft.id DESC LIMIT 1";
+    return CRM_Core_DAO::singleValueQuery($sql);
   }
 
 }
