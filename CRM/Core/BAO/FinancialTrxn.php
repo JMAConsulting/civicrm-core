@@ -765,21 +765,21 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
     }
     else {
       $priorDate = date('Y-m-d', strtotime($priorDate));
-      $where = " BETWEEN '$priorDate' AND $closingDate ";
+      $where = " BETWEEN DATE('$priorDate') AND $closingDate ";
       $financialBalanceField = 'current_period_opening_balance';
     }
     $from = "
       FROM (
-        SELECT cft1.id, cft1.total_amount AS total_amount,
+        SELECT cft1.id, 0 AS credit, cft1.total_amount AS debit,
           cft1.to_financial_account_id AS financial_account_id
           FROM civicrm_financial_trxn cft1
           WHERE cft1.trxn_date {$where}
         UNION
-        SELECT cft2.id, -cft2.total_amount, cft2.from_financial_account_id
+        SELECT cft2.id, cft2.total_amount AS credit, 0 AS debit, cft2.from_financial_account_id
           FROM civicrm_financial_trxn cft2
           WHERE cft2.trxn_date {$where}
         UNION
-        SELECT cft3.id, -cfi3.amount, cfi3.financial_account_id
+        SELECT cft3.id, 0 AS credit, cfi3.amount AS debit, cfi3.financial_account_id
           FROM civicrm_financial_item cfi3
             INNER JOIN civicrm_entity_financial_trxn ceft3 ON cfi3.id = ceft3.entity_id
               AND ceft3.entity_table = 'civicrm_financial_item'
@@ -787,7 +787,7 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
               AND cft3.to_financial_account_id IS NULL
           WHERE cfi3.transaction_date {$where}
         UNION
-        SELECT cft4.id, cfi4.amount, cfi4.financial_account_id
+        SELECT cft4.id, cfi4.amount AS credit, 0 AS debit, cfi4.financial_account_id
           FROM civicrm_financial_item cfi4
           INNER JOIN civicrm_entity_financial_trxn ceft4 ON cfi4.id=ceft4.entity_id
             AND ceft4.entity_table='civicrm_financial_item'
@@ -812,8 +812,8 @@ SELECT financial_account_civireport.id as civicrm_financial_account_id,
 financial_account_civireport.name as civicrm_financial_account_name,
 financial_account_civireport.financial_account_type_id as civicrm_financial_account_financial_account_type_id,
 financial_account_civireport.accounting_code as civicrm_financial_account_accounting_code,
-IF (financial_account_type_id NOT IN (" . implode(',', $financialAccountType) . "), SUM(total_amount) + {$financialBalanceField}, 0) as civicrm_financial_trxn_debit,
-IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), SUM(total_amount) + {$financialBalanceField}, 0) as civicrm_financial_trxn_credit  
+SUM(debit) + IF (financial_account_type_id NOT IN (" . implode(',', $financialAccountType) . "), {$financialBalanceField}, 0) as civicrm_financial_trxn_debit,
+SUM(credit) + IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), {$financialBalanceField}, 0) as civicrm_financial_trxn_credit  
   {$from}
   WHERE {$alias['civicrm_financial_account']}.contact_id = %1
   GROUP BY financial_account_civireport.id
