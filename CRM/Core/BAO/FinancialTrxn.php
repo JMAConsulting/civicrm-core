@@ -33,6 +33,14 @@
  *
  */
 class CRM_Core_BAO_FinancialTrxn extends CRM_Financial_DAO_FinancialTrxn {
+
+  /**
+   * Static field to hold financial trxn data.
+   *
+   * @var array
+   */
+  static $_financialTrxnData = array();
+
   /**
    * Class constructor.
    *
@@ -944,15 +952,61 @@ IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), 
    * @param int $contributionID
    *   Contribution ID
    *
-   * @return array
+   * @param string $returnField
+   *
+   * @return int
    */
-  public static function hasPaymentProcessorTrxn($contributionID) {
-    $sql = "SELECT payment_processor_id FROM civicrm_financial_trxn cft
+  public static function hasPaymentProcessorTrxn($contributionID, $returnField = 'payment_processor_id') {
+    if (empty(self::$_financialTrxnData[$contributionID])) {
+      $sql = "SELECT payment_processor_id, financial_trxn_id FROM civicrm_financial_trxn cft
         INNER JOIN civicrm_entity_financial_trxn ceft ON ceft.financial_trxn_id = cft.id
       WHERE ceft.entity_table = 'civicrm_contribution'
         AND ceft.entity_id = {$contributionID}
         AND cft.is_payment = 1 ORDER BY cft.id DESC LIMIT 1";
-    return CRM_Core_DAO::singleValueQuery($sql);
+      $result = CRM_Core_DAO::executeQuery($sql);
+      if ($result->fetch()) {
+        self::$_financialTrxnData[$contributionID] = array(
+          'payment_processor_id' => $result->payment_processor_id,
+          'financial_trxn_id' => $result->financial_trxn_id,
+        );
+      }
+      else {
+        return NULL;
+      }
+    }
+    return self::$_financialTrxnData[$contributionID][$returnField];
+  }
+
+  /**
+   * Update Credit Card Details.
+   *
+   * @param array $params
+   *   Contribution params
+   *
+   */
+  public static function updateCreditCardDetails($params) {
+    if (self::hasPaymentProcessorTrxn($params['contribution']->id)) {
+      return NULL;
+    }
+    $financialTrxnId = self::hasPaymentProcessorTrxn($params['contribution']->id, 'financial_trxn_id');
+    $queryParams = array(1 => array($financialTrxnId, 'Integer'));
+    $fields = array();
+    if (CRM_Utils_Array::value('credit_card_type', $params)) {
+      $fields[]= 'credit_card_type = %2';
+      $queryParams[2] = array($params['credit_card_type'], 'Integer');
+    }
+    if (CRM_Utils_Array::value('credit_card_number', $params)) {
+      $fields[]= 'credit_card_number = %3';
+      $queryParams[3] = array($params['credit_card_number'], 'Integer');
+    }
+    if (empty($fields)) {
+      return;
+    }
+    $query = 'UPDATE civicrm_financial_trxn
+      SET ' . implode(', ', $fields) 
+      . ' WHERE id = %1
+    ';
+    CRM_Core_DAO::executeQuery($query, $queryParams);
   }
 
 }
