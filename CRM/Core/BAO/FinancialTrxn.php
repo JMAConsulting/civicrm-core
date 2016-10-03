@@ -997,7 +997,7 @@ IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), 
     }
     if (CRM_Utils_Array::value('credit_card_number', $params)) {
       $fields[]= 'credit_card_number = %3';
-      $queryParams[3] = array($params['credit_card_number'], 'Integer');
+      $queryParams[3] = array($params['credit_card_number'], 'String');
     }
     if (empty($fields)) {
       return;
