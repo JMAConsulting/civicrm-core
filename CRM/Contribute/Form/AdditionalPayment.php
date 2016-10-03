@@ -293,7 +293,7 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     );
     $this->add('text', 'credit_card_number', ts('Credit Card Number'), array(
       'size' => 5,
-      'maxlength' => 10,
+      'maxlength' => 4,
       'autocomplete' => 'off',
     ));
     $this->add('text', 'check_number', ts('Check Number'), $attributes['financial_trxn_check_number']);
@@ -375,6 +375,11 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     $netAmt = $fields['total_amount'] - $fields['fee_amount'];
     if (!empty($fields['net_amount']) && $netAmt != $fields['net_amount']) {
       $errors['net_amount'] = ts('Net amount should be equal to the difference between payment amount and fee amount.');
+    }
+    if (!empty($fields['credit_card_number'])) {
+      if (!is_numeric($fields['credit_card_number']) || strlen($fields['credit_card_number']) != 4) {
+        $errors['credit_card_number'] = ts('Please enter valid last 4 digit credit card number.');
+      }
     }
     return $errors;
   }

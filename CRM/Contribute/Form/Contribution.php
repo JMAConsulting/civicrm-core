@@ -665,7 +665,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
 
       $this->add('text', 'credit_card_number', ts('Credit Card Number'), array(
         'size' => 5,
-        'maxlength' => 10,
+        'maxlength' => 4,
         'autocomplete' => 'off',
       ));
       if ($this->_id && CRM_Core_BAO_FinancialTrxn::hasPaymentProcessorTrxn($this->_id)) {
@@ -1038,6 +1038,11 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     catch (CRM_Core_Exception $e) {
       $errors['financial_type_id'] = ' ';
       $errors['_qf_default'] = $e->getMessage();
+    }
+    if (!empty($fields['credit_card_number'])) {
+      if (!is_numeric($fields['credit_card_number']) || strlen($fields['credit_card_number']) != 4) {
+        $errors['credit_card_number'] = ts('Please enter valid last 4 digit credit card number.');
+      }
     }
     $errors = array_merge($errors, $softErrors);
     return $errors;

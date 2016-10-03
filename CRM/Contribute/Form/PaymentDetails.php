@@ -107,7 +107,7 @@ class CRM_Contribute_Form_PaymentDetails {
     );
     $form->add('text', 'credit_card_number', ts('Credit Card Number'), array(
       'size' => 5,
-      'maxlength' => 10,
+      'maxlength' => 4,
       'autocomplete' => 'off',
     ));
 
@@ -158,4 +158,25 @@ class CRM_Contribute_Form_PaymentDetails {
     $form->addRule('total_amount', ts('Please enter a valid amount.'), 'money');
   }
 
+  /**
+   * Global form rule.
+   *
+   * @param array $fields
+   *
+   * @param array $errors
+   *
+   */
+  public static function formRule($fields, &$errors) {
+    if (empty($fields['financial_type_id'])) {
+      $errors['financial_type_id'] = ts('Please enter the associated Financial Type');
+    }
+    if (empty($fields['payment_instrument_id'])) {
+      $errors['payment_instrument_id'] = ts('Payment Method is a required field.');
+    }
+    if (!empty($fields['credit_card_number'])) {
+      if (!is_numeric($fields['credit_card_number']) || strlen($fields['credit_card_number']) != 4) {
+        $errors['credit_card_number'] = ts('Please enter valid last 4 digit credit card number.');
+      }
+    }
+  }
 }

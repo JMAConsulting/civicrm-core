@@ -746,8 +746,8 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
       return $errors;
     }
 
-    if (!empty($params['record_contribution']) && empty($params['payment_instrument_id'])) {
-      $errors['payment_instrument_id'] = ts('Payment Method is a required field.');
+    if (!empty($params['record_contribution'])) {
+      CRM_Contribute_Form_PaymentDetails::formRule($params, $errors);
     }
 
     if (!empty($params['is_different_contribution_contact'])) {
