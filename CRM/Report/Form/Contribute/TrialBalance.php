@@ -76,12 +76,12 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
           'debit' => array(
             'title' => ts('Debit'),
             'required' => TRUE,
-            'dbAlias' => 'IF (financial_account_type_id NOT IN (' . implode(',', $financialAccountType) . "), SUM(total_amount) + {$financialBalanceField}, 0)",
+            'dbAlias' => 'SUM(debit) + IF (financial_account_type_id NOT IN (' . implode(',', $financialAccountType) . "), {$financialBalanceField}, 0)",
           ),
           'credit' => array(
             'title' => ts('Credit'),
             'required' => TRUE,
-            'dbAlias' => 'IF (financial_account_type_id IN (' . implode(',', $financialAccountType) . "), SUM(total_amount) + {$financialBalanceField}, 0)",
+            'dbAlias' => 'SUM(credit) + IF (financial_account_type_id IN (' . implode(',', $financialAccountType) . "), {$financialBalanceField}, 0)",
           ),
         ),
       ),
@@ -103,20 +103,20 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
     }
     else {
       $priorDate = date('Y-m-d', strtotime($priorDate));
-      $where = " BETWEEN '$priorDate' AND $closingDate ";
+      $where = " BETWEEN DATE('$priorDate') AND $closingDate ";
     }
     $this->_from = "
       FROM (
-        SELECT cft1.id, cft1.total_amount AS total_amount,
+        SELECT cft1.id, 0 AS credit, cft1.total_amount AS debit,
           cft1.to_financial_account_id AS financial_account_id
           FROM civicrm_financial_trxn cft1
           WHERE cft1.trxn_date {$where}
         UNION
-        SELECT cft2.id, -cft2.total_amount, cft2.from_financial_account_id
+        SELECT cft2.id, cft2.total_amount AS credit, 0 AS debit, cft2.from_financial_account_id
           FROM civicrm_financial_trxn cft2
           WHERE cft2.trxn_date {$where}
         UNION
-        SELECT cft3.id, -cfi3.amount, cfi3.financial_account_id
+        SELECT cft3.id, 0 AS credit, cfi3.amount AS debit, cfi3.financial_account_id
           FROM civicrm_financial_item cfi3
             INNER JOIN civicrm_entity_financial_trxn ceft3 ON cfi3.id = ceft3.entity_id
               AND ceft3.entity_table = 'civicrm_financial_item'
@@ -124,7 +124,7 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
               AND cft3.to_financial_account_id IS NULL
           WHERE cfi3.transaction_date {$where}
         UNION
-        SELECT cft4.id, cfi4.amount, cfi4.financial_account_id
+        SELECT cft4.id, cfi4.amount AS credit, 0 AS debit, cfi4.financial_account_id
           FROM civicrm_financial_item cfi4
           INNER JOIN civicrm_entity_financial_trxn ceft4 ON cfi4.id=ceft4.entity_id
             AND ceft4.entity_table='civicrm_financial_item'
