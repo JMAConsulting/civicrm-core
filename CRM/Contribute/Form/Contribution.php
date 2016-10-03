@@ -389,7 +389,8 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       $defaults['payment_instrument_id'] = key(CRM_Core_OptionGroup::values('payment_instrument', FALSE, FALSE, FALSE, 'AND is_default = 1'));
     }
     if ($this->_id) {
-      $creditCardDetails = CRM_Core_BAO_FinancialTrxn::getCreditCardDetails($this->_id);
+      $isPaymentProcessorTrxn = CRM_Core_BAO_FinancialTrxn::hasPaymentProcessorTrxn($this->_id);
+      $creditCardDetails = CRM_Core_BAO_FinancialTrxn::getCreditCardDetails($this->_id, $isPaymentProcessorTrxn);
       $defaults = array_merge($defaults, $creditCardDetails);
     }
 
@@ -658,18 +659,17 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         array('' => ts('- select -')) + CRM_Contribute_PseudoConstant::paymentInstrument(),
         TRUE
       );
-      $creditCardType = $this->addSelect('credit_card_type',
+      $this->addSelect('credit_card_type',
         array('entity' => 'financialTrxn', 'label' => ts('Credit Card Type'), 'option_url' => NULL, 'placeholder' => ts('- any -'))
       );
 
-      $creditCardNumber = $this->add('text', 'credit_card_number', ts('Credit Card Number'), array(
+      $this->add('text', 'credit_card_number', ts('Credit Card Number'), array(
         'size' => 5,
         'maxlength' => 10,
         'autocomplete' => 'off',
       ));
-      if ($this->_id) {
-        $creditCardType->freeze();
-        $creditCardNumber->freeze();
+      if ($this->_id && CRM_Core_BAO_FinancialTrxn::hasPaymentProcessorTrxn($this->_id)) {
+        $this->freeze(array('credit_card_type', 'credit_card_number'));
       }
     }
     $trxnId = $this->add('text', 'trxn_id', ts('Transaction ID'), array('class' => 'twelve') + $attributes['trxn_id']);
