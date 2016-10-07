@@ -812,7 +812,7 @@ SELECT financial_account_civireport.id as civicrm_financial_account_id,
 financial_account_civireport.name as civicrm_financial_account_name,
 financial_account_civireport.financial_account_type_id as civicrm_financial_account_financial_account_type_id,
 financial_account_civireport.accounting_code as civicrm_financial_account_accounting_code,
-SUM(debit) + IF (financial_account_type_id NOT IN (" . implode(',', $financialAccountType) . "), {$financialBalanceField}, 0) as civicrm_financial_trxn_debit,
+SUM(debit) + IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), {$financialBalanceField}, 0) as civicrm_financial_trxn_debit,
 SUM(credit) + IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), {$financialBalanceField}, 0) as civicrm_financial_trxn_credit  
   {$from}
   WHERE {$alias['civicrm_financial_account']}.contact_id = %1
@@ -849,7 +849,7 @@ SUM(credit) + IF (financial_account_type_id IN (" . implode(',', $financialAccou
       // Update current_period_opening_balance
       $financialAccountParams = array(
         'id' => $result->civicrm_financial_account_id,
-        'current_period_opening_balance' => ($financialAccountType[$result->civicrm_financial_account_financial_account_type_id] == 'Asset') ? $result->civicrm_financial_trxn_debit : $result->civicrm_financial_trxn_credit,
+        'current_period_opening_balance' => $result->civicrm_financial_trxn_debit - $result->civicrm_financial_trxn_credit,
       );
       civicrm_api3('FinancialAccount', 'Create', $financialAccountParams);
     }
