@@ -41,7 +41,7 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
     $financialAccountType = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialAccount', 'financial_account_type_id', $params);
     $financialAccountType = array(
       array_search('Liability', $financialAccountType),
-      array_search('Revenue', $financialAccountType),
+      array_search('Asset', $financialAccountType),
     );
     $financialBalanceField = 'opening_balance';
     if (CRM_Contribute_BAO_Contribution::checkContributeSettings('prior_financial_period')) {
