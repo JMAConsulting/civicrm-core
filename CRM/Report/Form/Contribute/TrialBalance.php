@@ -95,11 +95,15 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
     $closingDate = 'now()';
     $priorDate = CRM_Contribute_BAO_Contribution::checkContributeSettings('prior_financial_period');
     if (empty($priorDate)) {
-      $where = " <= $closingDate ";
+      $date = new DateTime();
+      $date->modify("last day of previous month");
+      $priorEndDate = $date->format("Y-m-d");
+      $where = " <= DATE('{$priorEndDate}') ";
     }
     else {
-      $priorDate = date('Y-m-d', strtotime($priorDate));
-      $where = " BETWEEN DATE('$priorDate') AND $closingDate ";
+      $priorDate = date('Y-m-d', strtotime($priorDate . '+1 Day'));
+      $closingDate = date('Y-m-t', strtotime($priorDate));
+      $where = " BETWEEN DATE('$priorDate') AND DATE('$closingDate') ";
     }
     $this->_from = "
       FROM (
