@@ -803,17 +803,13 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
     }
     $params['labelColumn'] = 'name';
     $financialAccountType = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialAccount', 'financial_account_type_id', $params);
-    $financialAccountType = array(
-      array_search('Liability', $financialAccountType),
-      array_search('Revenue', $financialAccountType),
-    );
     $query = "
 SELECT financial_account_civireport.id as civicrm_financial_account_id,
 financial_account_civireport.name as civicrm_financial_account_name,
 financial_account_civireport.financial_account_type_id as civicrm_financial_account_financial_account_type_id,
 financial_account_civireport.accounting_code as civicrm_financial_account_accounting_code,
-SUM(debit) + IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), {$financialBalanceField}, 0) as civicrm_financial_trxn_debit,
-SUM(credit) + IF (financial_account_type_id IN (" . implode(',', $financialAccountType) . "), {$financialBalanceField}, 0) as civicrm_financial_trxn_credit  
+SUM(debit) + IF (financial_account_type_id = " . array_search('Asset', $financialAccountType) . ", {$financialBalanceField}, 0) as civicrm_financial_trxn_debit,
+SUM(credit) + IF (financial_account_type_id = " . array_search('Liability', $financialAccountType) . ", {$financialBalanceField}, 0) as civicrm_financial_trxn_credit  
   {$from}
   WHERE {$alias['civicrm_financial_account']}.contact_id = %1
   GROUP BY financial_account_civireport.id
