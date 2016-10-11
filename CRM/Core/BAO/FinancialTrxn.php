@@ -845,8 +845,13 @@ SUM(credit) + IF (financial_account_type_id = " . array_search('Liability', $fin
       // Update current_period_opening_balance
       $financialAccountParams = array(
         'id' => $result->civicrm_financial_account_id,
-        'current_period_opening_balance' => $result->civicrm_financial_trxn_debit - $result->civicrm_financial_trxn_credit,
       );
+      if (array_search('Asset', $financialAccountType)) {
+        $financialAccountParams['current_period_opening_balance'] = $result->civicrm_financial_trxn_debit - $result->civicrm_financial_trxn_credit;
+      }
+      else {
+        $financialAccountParams['current_period_opening_balance'] = $result->civicrm_financial_trxn_credit - $result->civicrm_financial_trxn_debit;
+      }
       civicrm_api3('FinancialAccount', 'Create', $financialAccountParams);
     }
     if (empty($rows)) {
