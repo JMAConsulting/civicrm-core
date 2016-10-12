@@ -136,7 +136,7 @@ class CRM_Report_Form_Contribute_TrialBalance extends CRM_Report_Form {
         UNION
         SELECT 0 as tid, 0 as fid, IF (financial_account_type_id = " . array_search('Liability', $financialAccountType) . ", {$financialBalanceField}, 0) AS credit, IF (financial_account_type_id = " . array_search('Asset', $financialAccountType) . ", {$financialBalanceField}, 0) AS debit, cfa5.id
           FROM civicrm_financial_account cfa5
-          WHERE cfa5.financial_account_type_id IN (" . implode(', ', $financialAccountTypes) . ")
+          WHERE cfa5.financial_account_type_id IN (" . implode(', ', $financialAccountTypes) . ") AND {$financialBalanceField} <> 0
 
       ) AS {$this->_aliases['civicrm_financial_trxn']}
       INNER JOIN civicrm_financial_account {$this->_aliases['civicrm_financial_account']} ON {$this->_aliases['civicrm_financial_trxn']}.financial_account_id = {$this->_aliases['civicrm_financial_account']}.id
