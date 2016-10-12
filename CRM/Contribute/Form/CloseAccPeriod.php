@@ -149,7 +149,7 @@ class CRM_Contribute_Form_CloseAccPeriod extends CRM_Core_Form {
         'name'
       ),
       'activity_date_time' => date('YmdHis'),
-      'details' => ts('Trial Balance Report ' . (empty($previousPriorFinPeriod) ? 'for All Time Prior' : "From {$previousPriorFinPeriod}") . " To {$priorFinPeriod}."),
+      'details' => ts('Trial Balance Report ' . (empty($previousPriorFinPeriod) ? 'for All Time Prior' : "From " . date('m/d/Y', strtotime($previousPriorFinPeriod))) . " To {$priorFinPeriod}."),
     );
     $fileName = CRM_Core_BAO_FinancialTrxn::createTrialBalanceExport($params['contact_id']);
     if ($fileName) {
