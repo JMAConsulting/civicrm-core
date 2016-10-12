@@ -753,19 +753,23 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
    * @return string
    */
   public static function getTrialBalanceQuery($alias, $onlyFromClause = FALSE) {
-    $closingDate = 'now()';
     if (!$onlyFromClause && Civi::settings()->get('closing_date')) {
       $closingDate = Civi::settings()->get('closing_date');
-      $closingDate = "'" . date('Y-m-t', mktime(0, 0, 0, $closingDate['M'], 1, $closingDate['Y'])) . "'";
+      $closingDate = date('Y-m-t', mktime(0, 0, 0, $closingDate['M'], 1, $closingDate['Y']));
+    }
+    if (empty($closingDate)) {
+      $date = new DateTime();
+      $date->modify("last day of previous month");
+      $closingDate = $date->format("Y-m-d");
     }
     $priorDate = CRM_Contribute_BAO_Contribution::checkContributeSettings('prior_financial_period');
     if (empty($priorDate)) {
-      $where = " <= $closingDate ";
+      $where = " <= DATE('$closingDate') ";
       $financialBalanceField = 'opening_balance';
     }
     else {
-      $priorDate = date('Y-m-d', strtotime($priorDate));
-      $where = " BETWEEN DATE('$priorDate') AND $closingDate ";
+      $priorDate = date('Y-m-d', strtotime($priorDate . '+1 Day'));
+      $where = " BETWEEN DATE('$priorDate') AND DATE('$closingDate') ";
       $financialBalanceField = 'current_period_opening_balance';
     }
     $from = "
