@@ -41,4 +41,3 @@ INSERT IGNORE INTO
 VALUES
   ('Deferred Revenue - Event Fee', @domainContactId, @opLiability, 'Event revenue to be recognized in future months when the events occur', '2730', 'OCLIAB', 0, 1, 0, 0),
   ('Deferred Revenue - Member Dues', @domainContactId, @opLiability, 'Membership revenue to be recognized in future months', '2740', 'OCLIAB', 0, 1, 0, 0);
-
