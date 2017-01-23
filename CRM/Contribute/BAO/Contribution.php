@@ -3369,7 +3369,6 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
             }
           }
         }
-        exit;
       }
 
       if (!$update) {
@@ -5362,7 +5361,7 @@ LEFT JOIN  civicrm_contribution on (civicrm_contribution.contact_id = civicrm_co
         $ignoreChangeAmount = TRUE;
         $changeFTAmount = $totalAmount;
       }
-      elseif ($taxAmount) {
+      else {
         self::calculateTaxForChangeInFinancialType($params, $totalAmount, $taxAmounts, $changeFTAmount);
       }
     }
