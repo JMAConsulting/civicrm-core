@@ -327,4 +327,36 @@ class CRM_Core_BAO_FinancialTrxnTest extends CiviUnitTestCase {
     $this->assertEquals($financialTrxn['pan_truncation'], 4567);
   }
 
+  /**
+   * Test for generateRevenueRecognitionDate().
+   */
+  public function testGenerateRevenueRecognitionDate() {
+    Civi::settings()->set('contribution_invoice_settings', array('deferred_revenue_enabled' => TRUE));
+    $orgID = $this->organizationCreate();
+    $membershipTypeID = $this->membershipTypeCreate(array('member_of_contact_id' => $orgID));
+    // add a random number to avoid silly conflicts with old data
+    $membershipStatusID = $this->membershipStatusCreate('test status' . rand(1, 1000));
+    $contactId = $this->individualCreate();
+
+    $params = array(
+      'contact_id' => $contactId,
+      'membership_type_id' => $membershipTypeID,
+      'join_date' => date('Ymd'),
+      'start_date' => date('Ymd'),
+      'end_date' => date('Ymd', strtotime('+1 year')),
+      'source' => 'Payment',
+      'is_override' => 1,
+      'status_id' => $membershipStatusID,
+    );
+    $ids = array();
+    CRM_Member_BAO_Membership::create($params, $ids);
+
+    $membershipId = $this->assertDBNotNull('CRM_Member_BAO_Membership', $contactId, 'id',
+      'contact_id', 'Database check for created membership.'
+    );
+    $params = array('membership_id' => $membershipId);
+    CRM_Core_BAO_FinancialTrxn::generateRevenueRecognitionDate($params, NULL);
+    $this->assertEquals($params['revenue_recognition_date'], date('Ymd'), "The dates do not match.");
+  }
+
 }
