@@ -295,6 +295,9 @@ class CRM_Report_Form_Contribute_Repeat extends CRM_Report_Form {
           ),
         ),
       ),
+      'civicrm_entity_financial_trxn' => array(
+        'dao' => 'CRM_Financial_DAO_EntityFinancialTrxn',
+      ),
     );
 
     $this->_groupFilter = TRUE;
