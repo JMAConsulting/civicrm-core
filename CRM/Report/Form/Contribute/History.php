@@ -269,6 +269,26 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
         ),
       ),
     );
+    $this->_columns += array(
+      'civicrm_financial_trxn' => array(
+        'dao' => 'CRM_Financial_DAO_FinancialTrxn',
+        'fields' => array(
+          'credit_card_type' => array('title' => ts('Credit Card Type')),
+        ),
+        'filters' => array(
+          'credit_card_type' => array(
+            'title' => ts('Credit Card Type'),
+            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
+            'options' => CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn', 'credit_card_type'),
+            'default' => NULL,
+            'type' => CRM_Utils_Type::T_STRING,
+          ),
+        ),
+      ),
+      'civicrm_entity_financial_trxn' => array(
+        'dao' => 'CRM_Financial_DAO_EntityFinancialTrxn',
+      ),
+    );
 
     $this->_columns['civicrm_contribution']['fields']['civicrm_upto_' .
     $this->_yearStatisticsFrom] = array(
@@ -400,6 +420,15 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
                          ON {$this->_aliases['civicrm_contact']}.id =
                             {$this->_aliases['civicrm_address']}.contact_id AND
                             {$this->_aliases['civicrm_address']}.is_primary = 1\n";
+    }
+
+    // for credit card type
+    if ($this->isTableSelected('civicrm_financial_trxn')) {
+      $this->_from .= "\n LEFT JOIN civicrm_entity_financial_trxn {$this->_aliases['civicrm_entity_financial_trxn']}
+                    ON ({$this->_aliases['civicrm_contribution']}.id = {$this->_aliases['civicrm_entity_financial_trxn']}.entity_id AND
+                        {$this->_aliases['civicrm_entity_financial_trxn']}.entity_table = 'civicrm_contribution')
+              LEFT JOIN civicrm_financial_trxn {$this->_aliases['civicrm_financial_trxn']}
+                    ON {$this->_aliases['civicrm_financial_trxn']}.id = {$this->_aliases['civicrm_entity_financial_trxn']}.financial_trxn_id";
     }
   }
 
@@ -811,6 +840,7 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
     if (empty($rows)) {
       return;
     }
+    $creditCardTypes = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn', 'credit_card_type');
 
     $last_primary = NULL;
     foreach ($rows as $rowNum => $row) {
@@ -857,6 +887,11 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
         );
         $rows[$rowNum]['civicrm_contact_sort_name_link'] = $url;
         $rows[$rowNum]['civicrm_contact_sort_name_hover'] = ts("View Contribution Details for this Contact.");
+      }
+
+      if (!empty($row['civicrm_financial_trxn_credit_card_type'])) {
+        $rows[$rowNum]['civicrm_financial_trxn_credit_card_type'] = CRM_Utils_Array::value($row['civicrm_financial_trxn_credit_card_type'], $creditCardTypes);
+        $entryFound = TRUE;
       }
 
       // display birthday in the configured custom format
