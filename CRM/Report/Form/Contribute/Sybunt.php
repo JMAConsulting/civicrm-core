@@ -246,6 +246,26 @@ class CRM_Report_Form_Contribute_Sybunt extends CRM_Report_Form {
         ),
       ),
     );
+    $this->_columns += array(
+      'civicrm_financial_trxn' => array(
+        'dao' => 'CRM_Financial_DAO_FinancialTrxn',
+        'fields' => array(
+          'credit_card_type' => array('title' => ts('Credit Card Type')),
+        ),
+        'filters' => array(
+          'credit_card_type' => array(
+            'title' => ts('Credit Card Type'),
+            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
+            'options' => CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn', 'credit_card_type'),
+            'default' => NULL,
+            'type' => CRM_Utils_Type::T_STRING,
+          ),
+        ),
+      ),
+      'civicrm_entity_financial_trxn' => array(
+        'dao' => 'CRM_Financial_DAO_EntityFinancialTrxn',
+      ),
+    );
 
     // If we have a campaign, build out the relevant elements
     if ($campaignEnabled && !empty($this->activeCampaigns)) {
@@ -343,6 +363,14 @@ class CRM_Report_Form_Contribute_Sybunt extends CRM_Report_Form {
               LEFT  JOIN civicrm_phone  {$this->_aliases['civicrm_phone']}
                       ON {$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_phone']}.contact_id AND
                          {$this->_aliases['civicrm_phone']}.is_primary = 1";
+    }
+    // for credit card type
+    if ($this->isTableSelected('civicrm_financial_trxn')) {
+      $this->_from .= "\n LEFT JOIN civicrm_entity_financial_trxn {$this->_aliases['civicrm_entity_financial_trxn']}
+                    ON ({$this->_aliases['civicrm_contribution']}.id = {$this->_aliases['civicrm_entity_financial_trxn']}.entity_id AND
+                        {$this->_aliases['civicrm_entity_financial_trxn']}.entity_table = 'civicrm_contribution')
+              LEFT JOIN civicrm_financial_trxn {$this->_aliases['civicrm_financial_trxn']}
+                    ON {$this->_aliases['civicrm_financial_trxn']}.id = {$this->_aliases['civicrm_entity_financial_trxn']}.financial_trxn_id";
     }
     $this->addAddressFromClause();
   }
@@ -568,6 +596,7 @@ class CRM_Report_Form_Contribute_Sybunt extends CRM_Report_Form {
    */
   public function alterDisplay(&$rows) {
     $entryFound = FALSE;
+    $creditCardTypes = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn', 'credit_card_type');
 
     foreach ($rows as $rowNum => $row) {
       //Convert Display name into link
@@ -609,6 +638,11 @@ class CRM_Report_Form_Contribute_Sybunt extends CRM_Report_Form {
         if ($birthDate) {
           $rows[$rowNum]['civicrm_contact_birth_date'] = CRM_Utils_Date::customFormat($birthDate, '%Y%m%d');
         }
+        $entryFound = TRUE;
+      }
+
+      if (!empty($row['civicrm_financial_trxn_credit_card_type'])) {
+        $rows[$rowNum]['civicrm_financial_trxn_credit_card_type'] = CRM_Utils_Array::value($row['civicrm_financial_trxn_credit_card_type'], $creditCardTypes);
         $entryFound = TRUE;
       }
 
