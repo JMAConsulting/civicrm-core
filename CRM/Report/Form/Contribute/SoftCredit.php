@@ -302,6 +302,24 @@ class CRM_Report_Form_Contribute_SoftCredit extends CRM_Report_Form {
         ),
         'grouping' => 'softcredit-fields',
       ),
+      'civicrm_financial_trxn' => array(
+        'dao' => 'CRM_Financial_DAO_FinancialTrxn',
+        'fields' => array(
+          'credit_card_type' => array('title' => ts('Credit Card Type')),
+        ),
+        'filters' => array(
+          'credit_card_type' => array(
+            'title' => ts('Credit Card Type'),
+            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
+            'options' => CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn', 'credit_card_type'),
+            'default' => NULL,
+            'type' => CRM_Utils_Type::T_STRING,
+          ),
+        ),
+      ),
+      'civicrm_entity_financial_trxn' => array(
+        'dao' => 'CRM_Financial_DAO_EntityFinancialTrxn',
+      ),
     );
 
     // If we have a campaign, build out the relevant elements
@@ -468,6 +486,14 @@ class CRM_Report_Form_Contribute_SoftCredit extends CRM_Report_Form {
                          {$alias}.contact_id  AND
                          {$alias}.is_primary = 1\n";
     }
+    // for credit card type
+    if ($this->isTableSelected('civicrm_financial_trxn')) {
+      $this->_from .= "\n LEFT JOIN civicrm_entity_financial_trxn {$this->_aliases['civicrm_entity_financial_trxn']}
+                    ON ({$this->_aliases['civicrm_contribution']}.id = {$this->_aliases['civicrm_entity_financial_trxn']}.entity_id AND
+                        {$this->_aliases['civicrm_entity_financial_trxn']}.entity_table = 'civicrm_contribution')
+              LEFT JOIN civicrm_financial_trxn {$this->_aliases['civicrm_financial_trxn']}
+                    ON {$this->_aliases['civicrm_financial_trxn']}.id = {$this->_aliases['civicrm_entity_financial_trxn']}.financial_trxn_id";
+    }
   }
 
   public function groupBy() {
@@ -568,6 +594,7 @@ GROUP BY   {$this->_aliases['civicrm_contribution']}.currency
     $entryFound = FALSE;
     $dispname_flag = $phone_flag = $email_flag = 0;
     $prev_email = $prev_dispname = $prev_phone = NULL;
+    $creditCardTypes = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn', 'credit_card_type');
 
     foreach ($rows as $rowNum => $row) {
       // Link constituent (contributor) to contribution detail
@@ -638,6 +665,11 @@ GROUP BY   {$this->_aliases['civicrm_contribution']}.currency
         if ($birthDate) {
           $rows[$rowNum]['civicrm_contact_birth_date'] = CRM_Utils_Date::customFormat($birthDate, '%Y%m%d');
         }
+        $entryFound = TRUE;
+      }
+
+      if (!empty($row['civicrm_financial_trxn_credit_card_type'])) {
+        $rows[$rowNum]['civicrm_financial_trxn_credit_card_type'] = CRM_Utils_Array::value($row['civicrm_financial_trxn_credit_card_type'], $creditCardTypes);
         $entryFound = TRUE;
       }
 
