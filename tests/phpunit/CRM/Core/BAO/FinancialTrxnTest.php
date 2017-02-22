@@ -243,4 +243,26 @@ class CRM_Core_BAO_FinancialTrxnTest extends CiviUnitTestCase {
     $this->checkArrayEquals($creditCardDetails, $expectedResult);
   }
 
+  /**
+   * Test for formatCreditCardDetails().
+   */
+  public function testFormatCreditCardDetails() {
+    $params = array(
+      'credit_card_type' => 1,
+      'credit_card_number' => 4111458974511258,
+    );
+    $expectedResult = array_merge(
+      $params,
+      array(
+        'card_type' => 1,
+        'pan_truncation' => 1258,
+      )
+    );
+    CRM_Core_BAO_FinancialTrxn::formatCreditCardDetails($params);
+    $this->checkArrayEquals($params, $expectedResult);
+    $params['credit_card_type'] = $expectedResult['credit_card_type'] = 'Visa';
+    CRM_Core_BAO_FinancialTrxn::formatCreditCardDetails($params);
+    $this->checkArrayEquals($params, $expectedResult);
+  }
+
 }
