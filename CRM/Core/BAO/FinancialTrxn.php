@@ -853,4 +853,36 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
     return self::$_financialTrxnData[$contributionID][$returnField];
   }
 
+  /**
+   * Update Credit Card Details.
+   *
+   * @param array $params
+   *   Contribution params
+   *
+   */
+  public static function updateCreditCardDetails($params) {
+    if (self::hasPaymentProcessorTrxn($params['contribution']->id)) {
+      return NULL;
+    }
+    $financialTrxnId = self::hasPaymentProcessorTrxn($params['contribution']->id, 'financial_trxn_id');
+    $queryParams = array(1 => array($financialTrxnId, 'Integer'));
+    $fields = array();
+    if (CRM_Utils_Array::value('card_type', $params)) {
+      $fields[] = 'card_type = %2';
+      $queryParams[2] = array($params['card_type'], 'Integer');
+    }
+    if (CRM_Utils_Array::value('pan_truncation', $params)) {
+      $fields[] = 'pan_truncation = %3';
+      $queryParams[3] = array($params['pan_truncation'], 'String');
+    }
+    if (empty($fields)) {
+      return;
+    }
+    $query = 'UPDATE civicrm_financial_trxn
+      SET ' . implode(', ', $fields)
+      . ' WHERE id = %1
+    ';
+    CRM_Core_DAO::executeQuery($query, $queryParams);
+  }
+
 }
