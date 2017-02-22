@@ -278,7 +278,7 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     $label = ($this->_refund) ? ts('Refund Amount') : ts('Payment Amount');
     $this->addMoney('total_amount',
       $label,
-      FALSE,
+      TRUE,
       $attributes['total_amount'],
       TRUE, 'currency', NULL
     );
@@ -286,8 +286,16 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     $this->add('select', 'payment_instrument_id',
       ts('Payment Method'),
       array('' => ts('- select -')) + CRM_Contribute_PseudoConstant::paymentInstrument(),
-      TRUE, array('onChange' => "return showHideByValue('payment_instrument_id','4','checkNumber','table-row','select',false);")
+      TRUE
     );
+    $this->addSelect('credit_card_type',
+      array('entity' => 'financialTrxn', 'label' => ts('Card Type'), 'option_url' => NULL, 'placeholder' => ts('- any -'))
+    );
+    $this->add('text', 'Credit Card Number', ts('Card Number'), array(
+      'size' => 5,
+      'maxlength' => 4,
+      'autocomplete' => 'off',
+    ));
 
     $this->add('text', 'check_number', ts('Check Number'), $attributes['financial_trxn_check_number']);
     $this->add('text', 'trxn_id', ts('Transaction ID'), array('class' => 'twelve') + $attributes['trxn_id']);
@@ -369,6 +377,11 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     if (!empty($fields['net_amount']) && $netAmt != $fields['net_amount']) {
       $errors['net_amount'] = ts('Net amount should be equal to the difference between payment amount and fee amount.');
     }
+    if (!empty($fields['credit_card_number'])) {
+      if (!is_numeric($fields['credit_card_number']) || strlen($fields['credit_card_number']) != 4) {
+        $errors['credit_card_number'] = ts('Please enter valid last 4 digit credit card number.');
+      }
+    }
     return $errors;
   }
 
@@ -387,13 +400,7 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     );
     $contributionStatusID = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $this->_contributionId, 'contribution_status_id');
     if ($contributionStatuses[$contributionStatusID] == 'Pending') {
-      civicrm_api3('Contribution', 'create',
-        array(
-          'id' => $this->_contributionId,
-          'contribution_status_id' => array_search('Partially paid', $contributionStatuses),
-          'is_pay_later' => 0,
-        )
-      );
+      CRM_Core_DAO::setFieldValue('CRM_Contribute_DAO_Contribution', $this->_contributionId, 'contribution_status_id', array_search('Partially paid', $contributionStatuses));
     }
     $submittedValues['trxn_date'] = CRM_Utils_Date::processDate($submittedValues['trxn_date'], $submittedValues['trxn_date_time']);
     if ($this->_mode) {
@@ -430,12 +437,8 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
         $statusMsg .= ' ' . ts('A receipt has been emailed to the contributor.');
       }
       CRM_Core_Session::setStatus($statusMsg, ts('Saved'), 'success');
-
-      $session = CRM_Core_Session::singleton();
-      $session->replaceUserContext(CRM_Utils_System::url('civicrm/contact/view',
-        "reset=1&cid={$this->_contactId}&selectedChild={$childTab}"
-      ));
     }
+
   }
 
   /**
