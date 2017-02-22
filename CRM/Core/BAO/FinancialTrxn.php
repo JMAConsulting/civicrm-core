@@ -787,4 +787,30 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
     return $creditCardDetails;
   }
 
+  /**
+   * Format Credit Card type.
+   *
+   * @param array $params
+   *
+   */
+  public static function formatCreditCardDetails(&$params) {
+    $creditCardType = CRM_Utils_Array::value('credit_card_type', $params);
+    if ($creditCardType) {
+      if (!is_numeric($creditCardType)) {
+        $creditCardTypes = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn',
+          'card_type',
+          array('labelColumn' => 'name')
+        );
+        $params['card_type'] = array_search($creditCardType, $creditCardTypes);
+      }
+      else {
+        $params['card_type'] = $creditCardType;
+      }
+    }
+    $ccNumber = CRM_Utils_Array::value('credit_card_number', $params);
+    if ($ccNumber) {
+      $params['pan_truncation'] = substr($ccNumber, -4);
+    }
+  }
+
 }
