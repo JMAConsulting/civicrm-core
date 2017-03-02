@@ -158,6 +158,11 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
       'civicrm_batch' => array(
         'dao' => 'CRM_Batch_DAO_EntityBatch',
         'grouping' => 'contri-fields',
+        'fields' => array(
+          'batch_id' => array(
+            'title' => ts('Batch Title'),
+          ),
+        ),
         'filters' => array(
           'batch_id' => array(
             'title' => ts('Batch Title'),
@@ -178,6 +183,15 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
           ),
           'source' => array(
             'title' => ts('Source'),
+          ),
+          'receive_date' => array(
+            'title' => ts('Receive Date'),
+          ),
+          'cancel_date' => array(
+            'title' => ts('Cancel Date'),
+          ),
+          'revenue_recognition_date' => array(
+            'title' => ts('Revenue Recognition Date'),
           ),
         ),
         'filters' => array(
@@ -281,14 +295,9 @@ LEFT JOIN civicrm_participant {$this->_aliases['civicrm_participant']}
     ELSE {$this->_aliases['civicrm_participant']}.id = 0
   END
 LEFT JOIN civicrm_event {$this->_aliases['civicrm_event']} ON {$this->_aliases['civicrm_participant']}.event_id = {$this->_aliases['civicrm_event']}.id
-";
-
-    if (!empty($this->_params['batch_id_value'])) {
-      $this->_from .= "
-        LEFT JOIN civicrm_entity_batch {$this->_aliases['civicrm_batch']}
+LEFT JOIN civicrm_entity_batch {$this->_aliases['civicrm_batch']}
           ON {$this->_aliases['civicrm_batch']}.entity_id = {$this->_aliases['civicrm_financial_trxn_1']}.id AND
             {$this->_aliases['civicrm_batch']}.entity_table = 'civicrm_financial_trxn'\n";
-    }
   }
 
   /**
@@ -352,14 +361,28 @@ LEFT JOIN civicrm_event {$this->_aliases['civicrm_event']} ON {$this->_aliases['
         'Transaction Date' => CRM_Utils_Date::customFormat($dao->civicrm_financial_trxn_trxn_date, $dateFormat),
         'Amount' => CRM_Utils_Money::format($dao->civicrm_financial_trxn_total_amount),
       );
+      if (isset($submittedFields['fields']['batch_id'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Batch Title'] = CRM_Core_DAO::getFieldValue('CRM_Batch_BAO_Batch', $dao->civicrm_batch_batch_id, 'title');
+        $columns['Batch Title'] = 1;
+      }
       if (isset($submittedFields['fields']['status_id'])) {
         $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Transaction'] = $statuses[$dao->civicrm_financial_trxn_status_id];
         $columns['Transaction'] = 1;
       }
-      $columns += array(
-        'Transaction Date' => 1,
-        'Amount' => 1,
-      );
+      $columns['Transaction Date'] = 1;
+      if (isset($submittedFields['fields']['receive_date'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Receive Date'] = CRM_Utils_Date::customFormat($dao->civicrm_contribution_receive_date, $dateFormat);
+        $columns['Receive Date'] = 1;
+      }
+      if (isset($submittedFields['fields']['cancel_date'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Cancel Date'] = CRM_Utils_Date::customFormat($dao->civicrm_contribution_cancel_date, $dateFormat);
+        $columns['Cancel Date'] = 1;
+      }
+      if (isset($submittedFields['fields']['revenue_recognition_date'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Revenue Recognition Date'] = CRM_Utils_Date::customFormat($dao->civicrm_contribution_revenue_recognition_date, $dateFormat);
+        $columns['Revenue Recognition Date'] = 1;
+      }
+      $columns['Amount'] = 1;
       if (isset($submittedFields['fields']['contribution_id'])) {
         $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Contribution ID'] = $dao->civicrm_contribution_id;
         $columns['Contribution ID'] = 1;
