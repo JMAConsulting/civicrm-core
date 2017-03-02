@@ -392,7 +392,7 @@ LEFT JOIN civicrm_event {$this->_aliases['civicrm_event']} ON {$this->_aliases['
       }
       if (isset($submittedFields['fields']['membership_end_date'])) {
         $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['End Date'] = CRM_Utils_Date::customFormat($dao->civicrm_membership_end_date, $dateFormat);
-        $columns['Start Date'] = 1;
+        $columns['End Date'] = 1;
       }
       $trxnDate = explode(',', $dao->civicrm_financial_trxn_1_trxn_date);
       $trxnAmount = explode(',', $dao->civicrm_financial_trxn_1_total_amount);
