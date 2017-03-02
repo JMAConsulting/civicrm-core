@@ -107,9 +107,7 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
             'no_display' => TRUE,
           ),
           'description' => array(
-            'title' => ts('Description'),
-            'required' => TRUE,
-            'no_display' => TRUE,
+            'title' => ts('Item'),
           ),
         ),
       ),
@@ -134,9 +132,7 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
         'dao' => 'CRM_Contact_DAO_Contact',
         'fields' => array(
           'display_name' => array(
-            'title' => ts('Display_name'),
-            'required' => TRUE,
-            'no_display' => TRUE,
+            'title' => ts('Contact Name'),
           ),
         ),
       ),
@@ -145,14 +141,10 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
         'fields' => array(
           'start_date' => array(
             'title' => ts('Start Date'),
-            'required' => TRUE,
-            'no_display' => TRUE,
             'dbAlias' => 'IFNULL(membership_civireport.start_date, event_civireport.start_date)',
           ),
           'end_date' => array(
             'title' => ts('End Date'),
-            'required' => TRUE,
-            'no_display' => TRUE,
             'dbdbAlias' => 'IFNULL(membership_civireport.end_date, event_civireport.end_date)',
           ),
         ),
@@ -180,18 +172,12 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
         'fields' => array(
           'id' => array(
             'title' => ts('Contribution ID'),
-            'required' => TRUE,
-            'no_display' => TRUE,
           ),
           'contact_id' => array(
             'title' => ts('Contact ID'),
-            'required' => TRUE,
-            'no_display' => TRUE,
           ),
           'source' => array(
             'title' => ts('Source'),
-            'required' => TRUE,
-            'no_display' => TRUE,
           ),
         ),
         'filters' => array(
@@ -217,8 +203,6 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
         'fields' => array(
           'status_id' => array(
             'title' => ts('Transaction Status'),
-            'required' => TRUE,
-            'no_display' => TRUE,
           ),
           'trxn_date' => array(
             'title' => ts('Transaction Date'),
@@ -356,40 +340,54 @@ LEFT JOIN civicrm_event {$this->_aliases['civicrm_event']} ON {$this->_aliases['
     }
     $statuses = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
     $dateColumn = array();
-    $columns = array(
-      'Transaction' => 1,
-      'Date of Transaction' => 1,
-      'Amount' => 1,
-      'Contribution ID' => 1,
-      'Item' => 1,
-      'Contact ID' => 1,
-      'Contact Name' => 1,
-      'Source' => 1,
-      'Start Date' => 1,
-      'End Date' => 1,
-    );
     $dateFormat = Civi::settings()->get('dateformatFinancialBatch');
-    for ($i = 0; $i < 12; $i++) {
-      //$columns[date('M, Y', strtotime("+1 month", date('Y-m-d')))] = 1;
-      $columns[date('M, Y', strtotime(date('Y-m-d') . "+{$i} month"))] = 1;
-    }
+    $submittedFields = $this->getVar('_params');
+    $columns = array();
     while ($dao->fetch()) {
       $arraykey = $dao->civicrm_financial_account_id . '_' . $dao->civicrm_financial_account_1_id;
       if (empty($rows[$arraykey])) {
         $rows[$arraykey]['label'] = "Deferred Revenue Account: {$dao->civicrm_financial_account_name} ({$dao->civicrm_financial_account_accounting_code}), Revenue Account: {$dao->civicrm_financial_account_1_name} {$dao->civicrm_financial_account_1_accounting_code}";
       }
       $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id] = array(
-        'Transaction' => $statuses[$dao->civicrm_financial_trxn_status_id],
-        'Date of Transaction' => CRM_Utils_Date::customFormat($dao->civicrm_financial_trxn_trxn_date, $dateFormat),
+        'Transaction Date' => CRM_Utils_Date::customFormat($dao->civicrm_financial_trxn_trxn_date, $dateFormat),
         'Amount' => CRM_Utils_Money::format($dao->civicrm_financial_trxn_total_amount),
-        'Contribution ID' => $dao->civicrm_contribution_id,
-        'Item' => $dao->civicrm_financial_item_description,
-        'Contact ID' => $dao->civicrm_contribution_contact_id,
-        'Contact Name' => $dao->civicrm_contact_display_name,
-        'Source' => $dao->civicrm_contribution_source,
-        'Start Date' => CRM_Utils_Date::customFormat($dao->civicrm_membership_start_date, $dateFormat),
-        'End Date' => CRM_Utils_Date::customFormat($dao->civicrm_membership_end_date, $dateFormat),
       );
+      if (isset($submittedFields['fields']['status_id'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Transaction'] = $statuses[$dao->civicrm_financial_trxn_status_id];
+        $columns['Transaction'] = 1;
+      }
+      $columns += array(
+        'Transaction Date' => 1,
+        'Amount' => 1,
+      );
+      if (isset($submittedFields['fields']['contribution_id'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Contribution ID'] = $dao->civicrm_contribution_id;
+        $columns['Contribution ID'] = 1;
+      }
+      if (isset($submittedFields['fields']['description'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Item'] = $dao->civicrm_financial_item_description;
+        $columns['Item'] = 1;
+      }
+      if (isset($submittedFields['fields']['contact_id'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Contact ID'] = $dao->civicrm_contribution_contact_id;
+        $columns['Contact ID'] = 1;
+      }
+      if (isset($submittedFields['fields']['display_name'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Contact Name'] = $dao->civicrm_contact_display_name;
+        $columns['Contact Name'] = 1;
+      }
+      if (isset($submittedFields['fields']['source'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Source'] = $dao->civicrm_contribution_source;
+        $columns['Source'] = 1;
+      }
+      if (isset($submittedFields['fields']['membership_start_date'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Start Date'] = CRM_Utils_Date::customFormat($dao->civicrm_membership_start_date, $dateFormat);
+        $columns['Start Date'] = 1;
+      }
+      if (isset($submittedFields['fields']['membership_end_date'])) {
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['End Date'] = CRM_Utils_Date::customFormat($dao->civicrm_membership_end_date, $dateFormat);
+        $columns['Start Date'] = 1;
+      }
       $trxnDate = explode(',', $dao->civicrm_financial_trxn_1_trxn_date);
       $trxnAmount = explode(',', $dao->civicrm_financial_trxn_1_total_amount);
       foreach ($trxnDate as $key => $date) {
@@ -399,6 +397,10 @@ LEFT JOIN civicrm_event {$this->_aliases['civicrm_event']} ON {$this->_aliases['
         }
         $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id][$keyDate] = CRM_Utils_Money::format($trxnAmount[$key]);
       }
+    }
+    for ($i = 0; $i < 12; $i++) {
+      //$columns[date('M, Y', strtotime("+1 month", date('Y-m-d')))] = 1;
+      $columns[date('M, Y', strtotime(date('Y-m-d') . "+{$i} month"))] = 1;
     }
     $this->_columnHeaders = $columns;
   }
