@@ -289,6 +289,20 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
       TRUE, array('onChange' => "return showHideByValue('payment_instrument_id','4','checkNumber','table-row','select',false);")
     );
 
+    $creditCardTypes = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn',
+        'card_type'
+    );
+    $this->add('select', 'credit_card_type',
+      ts('Card Type'),
+      $creditCardTypes,
+      FALSE
+    );
+    $this->add('text', 'credit_card_number', ts('Card Number'), array(
+      'size' => 5,
+      'maxlength' => 4,
+      'autocomplete' => 'off',
+    ));
+
     $this->add('text', 'check_number', ts('Check Number'), $attributes['financial_trxn_check_number']);
     $this->add('text', 'trxn_id', ts('Transaction ID'), array('class' => 'twelve') + $attributes['trxn_id']);
 
