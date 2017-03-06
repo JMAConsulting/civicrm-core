@@ -378,14 +378,22 @@ LEFT JOIN civicrm_event {$this->_aliases['civicrm_event']} ON {$this->_aliases['
       if (empty($rows[$arraykey])) {
         $rows[$arraykey]['label'] = "Deferred Revenue Account: {$dao->civicrm_financial_account_name} ({$dao->civicrm_financial_account_accounting_code}), Revenue Account: {$dao->civicrm_financial_account_1_name} {$dao->civicrm_financial_account_1_accounting_code}";
       }
+      $contactUrl = CRM_Utils_System::url("civicrm/contact/view",
+       'reset=1&cid=' . $dao->civicrm_contribution_contact_id,
+       $this->_absoluteUrl
+      );
+      $contributionUrl = CRM_Utils_System::url("civicrm/contact/view/contribution",
+       'reset=1&action=view&cid=' . $dao->civicrm_contribution_contact_id . '&id=' . $dao->civicrm_contribution_id,
+       $this->_absoluteUrl
+      );
       $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id] = array(
         'Transaction' => $statuses[$dao->civicrm_financial_trxn_status_id],
         'Date of Transaction' => CRM_Utils_Date::customFormat($dao->civicrm_financial_trxn_trxn_date, $dateFormat),
-        'Amount' => CRM_Utils_Money::format($dao->civicrm_financial_trxn_total_amount),
-        'Contribution ID' => $dao->civicrm_contribution_id,
+        'Amount' => "<a href={$contributionUrl}>" . CRM_Utils_Money::format($dao->civicrm_financial_trxn_total_amount) . "</a>",
+        'Contribution ID' => "<a href={$contributionUrl}>{$dao->civicrm_contribution_id}</a>",
         'Item' => $dao->civicrm_financial_item_description,
-        'Contact ID' => $dao->civicrm_contribution_contact_id,
-        'Contact Name' => $dao->civicrm_contact_display_name,
+        'Contact ID' => "<a href={$contactUrl}>{$dao->civicrm_contribution_contact_id}</a>",
+        'Contact Name' => "<a href={$contactUrl}>{$dao->civicrm_contact_display_name}</a>",
         'Source' => $dao->civicrm_contribution_source,
         'Start Date' => CRM_Utils_Date::customFormat($dao->civicrm_membership_start_date, $dateFormat),
         'End Date' => CRM_Utils_Date::customFormat($dao->civicrm_membership_end_date, $dateFormat),
