@@ -294,8 +294,9 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     );
     $this->add('select', 'credit_card_type',
       ts('Card Type'),
-      $creditCardTypes,
-      FALSE
+      array('' => 'Select') + $creditCardTypes,
+      FALSE,
+      array('class' => 'crm-select2 eight')
     );
     $this->add('text', 'credit_card_number', ts('Card Number'), array(
       'size' => 5,
