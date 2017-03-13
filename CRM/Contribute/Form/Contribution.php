@@ -665,8 +665,9 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       );
       $this->add('select', 'credit_card_type',
         ts('Card Type'),
-        $creditCardTypes,
-        FALSE
+        array('' => 'Select') + $creditCardTypes,
+        FALSE,
+        array('class' => 'crm-select2 eight')
       );
       $this->add('text', 'credit_card_number', ts('Card Number'), array(
         'size' => 5,

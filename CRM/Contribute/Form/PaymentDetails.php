@@ -58,9 +58,9 @@ class CRM_Contribute_Form_PaymentDetails {
 
     list($defaults['receive_date'], $defaults['receive_date_time']) = CRM_Utils_Date::setDateDefaults();
 
-    if ($contriId) {
+    if ($contributionId) {
       $contribution = new CRM_Contribute_DAO_Contribution();
-      $contribution->id = $contriId;
+      $contribution->id = $contributionId;
       $contribution->find(TRUE);
       foreach (array(
         'financial_type_id',
@@ -128,8 +128,9 @@ class CRM_Contribute_Form_PaymentDetails {
     );
     $form->add('select', 'credit_card_type',
       ts('Card Type'),
-      $creditCardTypes,
-      FALSE
+      array('' => 'Select') + $creditCardTypes,
+      FALSE,
+      array('class' => 'crm-select2 eight')
     );
     $status = CRM_Contribute_PseudoConstant::contributionStatus();
 
