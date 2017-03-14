@@ -4867,4 +4867,17 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
     }
   }
 
+  public function getGroupCreditCardType($row) {
+    $creditCardTypes = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn', 'credit_card_type');
+    $types = explode(',', $row);
+    $ccLabels = array();
+    foreach ($types as $ccType) {
+      $label = CRM_Utils_Array::value($ccType, $creditCardTypes);
+      if (!in_array($label, $ccLabels)) {
+        $ccLabels[] = $label;
+      }
+    }
+    return implode(', ', array_filter($ccLabels));
+  }
+
 }

@@ -229,7 +229,10 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
       'civicrm_financial_trxn' => array(
         'dao' => 'CRM_Financial_DAO_FinancialTrxn',
         'fields' => array(
-          'credit_card_type' => array('title' => ts('Credit Card Type')),
+          'credit_card_type' => array(
+            'title' => ts('Credit Card Type'),
+            'dbAlias' => 'GROUP_CONCAT(financial_trxn_civireport.credit_card_type SEPARATOR ",")',
+          ),
         ),
         'filters' => array(
           'credit_card_type' => array(
@@ -871,7 +874,6 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
   public function alterDisplay(&$rows) {
     $entryFound = FALSE;
     $contributionStatus = CRM_Contribute_PseudoConstant::contributionStatus();
-    $creditCardTypes = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn', 'credit_card_type');
 
     foreach ($rows as $rowNum => $row) {
       // make count columns point to detail report
@@ -957,7 +959,7 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
       }
 
       if (!empty($row['civicrm_financial_trxn_credit_card_type'])) {
-        $rows[$rowNum]['civicrm_financial_trxn_credit_card_type'] = CRM_Utils_Array::value($row['civicrm_financial_trxn_credit_card_type'], $creditCardTypes);
+        $rows[$rowNum]['civicrm_financial_trxn_credit_card_type'] = $this->getGroupCreditCardType($row['civicrm_financial_trxn_credit_card_type']);
         $entryFound = TRUE;
       }
 
