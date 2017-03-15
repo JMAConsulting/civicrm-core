@@ -946,6 +946,13 @@ class CRM_Contribute_BAO_Query extends CRM_Core_BAO_Query {
       )
     );
 
+    // CRM-20286
+    $form->add('select', 'financial_trxn_card_type',
+      ts('Card Type'),
+      CRM_Contribute_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn', 'card_type'),
+      FALSE, array('class' => 'crm-select2', 'multiple' => 'multiple', 'placeholder' => ts('- any -'))
+    );
+
     // CRM-16713 - contribution search by premiums on 'Find Contribution' form.
     $form->add('select', 'contribution_product_id',
       ts('Premium'),
