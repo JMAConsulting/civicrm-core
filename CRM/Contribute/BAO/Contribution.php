@@ -3104,6 +3104,10 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
       $update = TRUE;
     }
 
+    // format card_type
+    $creditCardType = CRM_Utils_Array::value('card_type', $params);
+    $params['card_type'] = CRM_Core_BAO_FinancialTrxn::formatCreditCardDetails($creditCardType);
+
     $statusId = $params['contribution']->contribution_status_id;
     // CRM-13964 partial payment
     if ($contributionStatus == 'Partially paid'
@@ -3795,6 +3799,10 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
     if (!$participantId) {
       $participantId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_ParticipantPayment', $contributionId, 'participant_id', 'contribution_id');
     }
+
+    // format card_type
+    $creditCardType = CRM_Utils_Array::value('card_type', $trxnsData);
+    $trxnsData['card_type'] = CRM_Core_BAO_FinancialTrxn::formatCreditCardDetails($creditCardType);
 
     if ($paymentType == 'owed') {
       // build params for recording financial trxn entry
