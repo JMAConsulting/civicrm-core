@@ -463,7 +463,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     }
 
     if ($this->_id) {
-      $financialTrxn = $this->getlatestPayments();
+      $financialTrxn = $this->getLatestPayment();
       if ($financialTrxn) {
         $paymentProcessorID = CRM_Utils_Array::value('financial_trxn_id.payment_processor_id', $financialTrxn);
         $result = civicrm_api3('FinancialTrxn', 'getsingle', array(
@@ -473,6 +473,8 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         $defaults['card_type'] = CRM_Utils_Array::value('card_type', $result);
         $defaults['pan_truncation'] = CRM_Utils_Array::value('pan_truncation', $result);
 
+        // If the contribution's last payment was done through payment processor then
+        // freeze Card type and Pan Truncation field, so that it cannot be updated
         if ($paymentProcessorID) {
           if ($defaults['pan_truncation']) {
             $defaults['pan_truncation'] = "**** **** **** " . $defaults['pan_truncation'];
@@ -1048,14 +1050,14 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     }
     if (!$self->_mode && !empty($fields['pan_truncation'])
     ) {
-      $contributionDoneViaPaymentProcesor = FALSE;
+      $contributionDoneViaPaymentProcessor = FALSE;
       if ($self->_id) {
-        $financialTrxn = $self->getlatestPayments();
+        $financialTrxn = $self->getLatestPayment();
         if (!empty($financialTrxn['financial_trxn_id.payment_processor_id'])) {
-          $contributionDoneViaPaymentProcesor = TRUE;
+          $contributionDoneViaPaymentProcessor = TRUE;
         }
       }
-      if (!$contributionDoneViaPaymentProcesor
+      if (!$contributionDoneViaPaymentProcessor
         && (!is_numeric($fields['pan_truncation'])
           || strlen($fields['pan_truncation']) != 4
         )
@@ -1884,12 +1886,13 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
   }
 
   /**
-   * Get last payment for contribution
+   * Get last payment for contribution.
+   *
    * ie latest entry in civicrm_financial_trxn for entity_table civicrm_contribution.
    *
    * @return array
    */
-  protected function getlatestPayments() {
+  protected function getLatestPayment() {
     $financialTrxn = civicrm_api3('EntityFinancialTrxn', 'get', array(
        'return' => array('financial_trxn_id.payment_processor_id', 'financial_trxn_id'),
        'entity_table' => 'civicrm_contribution',
