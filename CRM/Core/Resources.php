@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.7                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2015                                |
+  | Copyright CiviCRM LLC (c) 2004-2016                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -37,7 +37,7 @@
  * should incorporte services for aggregation, minimization, etc.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -603,7 +603,7 @@ class CRM_Core_Resources {
         }
       }
 
-      global $tsLocale;
+      $tsLocale = CRM_Core_I18n::getLocale();
       // Dynamic localization script
       $this->addScriptUrl(CRM_Utils_System::url('civicrm/ajax/l10n-js/' . $tsLocale, array('r' => $this->getCacheCode())), $jsWeight++, $region);
 
@@ -753,7 +753,7 @@ class CRM_Core_Resources {
       $items[] = "js/crm.optionEdit.js";
     }
 
-    global $tsLocale;
+    $tsLocale = CRM_Core_I18n::getLocale();
     // Add localized jQuery UI files
     if ($tsLocale && $tsLocale != 'en_US') {
       // Search for i18n file in order of specificity (try fr-CA, then fr)
@@ -788,8 +788,8 @@ class CRM_Core_Resources {
 
   /**
    * Provide a list of available entityRef filters.
-   * FIXME: This function doesn't really belong in this class
-   * @TODO: Provide a sane way to extend this list for other entities - a hook or??
+   * @todo: move component filters into their respective components (e.g. CiviEvent)
+   *
    * @return array
    */
   public static function getEntityRefFilters() {
@@ -834,6 +834,7 @@ class CRM_Core_Resources {
       array('key' => 'country', 'value' => ts('Country'), 'entity' => 'address'),
       array('key' => 'gender_id', 'value' => ts('Gender')),
       array('key' => 'is_deceased', 'value' => ts('Deceased')),
+      array('key' => 'source', 'value' => ts('Contact Source'), 'type' => 'text'),
     );
 
     if (in_array('CiviCase', $config->enableComponents)) {
@@ -855,6 +856,8 @@ class CRM_Core_Resources {
         $filters['case'][] = $filter;
       }
     }
+
+    CRM_Utils_Hook::entityRefFilters($filters);
 
     return $filters;
   }

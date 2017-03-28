@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -287,22 +287,32 @@ class CRM_Utils_File {
   }
 
   /**
-   * @param $dsn
+   * @param string|NULL $dsn
+   *   Use NULL to load the default/active connection from CRM_Core_DAO.
+   *   Otherwise, give a full DSN string.
    * @param string $fileName
    * @param null $prefix
    * @param bool $isQueryString
    * @param bool $dieOnErrors
    */
   public static function sourceSQLFile($dsn, $fileName, $prefix = NULL, $isQueryString = FALSE, $dieOnErrors = TRUE) {
-    require_once 'DB.php';
+    if ($dsn === NULL) {
+      $db = CRM_Core_DAO::getConnection();
+    }
+    else {
+      require_once 'DB.php';
+      $db = DB::connect($dsn);
+    }
 
-    $db = DB::connect($dsn);
     if (PEAR::isError($db)) {
       die("Cannot open $dsn: " . $db->getMessage());
     }
     if (CRM_Utils_Constant::value('CIVICRM_MYSQL_STRICT', CRM_Utils_System::isDevelopment())) {
       $db->query('SET SESSION sql_mode = STRICT_TRANS_TABLES');
     }
+    $db->query('SET NAMES utf8');
+    $transactionId = CRM_Utils_Type::escape(CRM_Utils_Request::id(), 'String');
+    $db->query('SET @uniqueID = ' . "'$transactionId'");
 
     if (!$isQueryString) {
       $string = $prefix . file_get_contents($fileName);
@@ -757,6 +767,21 @@ HTACCESS;
       return FALSE;
     }
     return TRUE;
+  }
+
+  public static function formatFile(&$param, $fileName, $extraParams = array()) {
+    if (empty($param[$fileName])) {
+      return;
+    }
+
+    $fileParams = array(
+      'uri' => $param[$fileName]['name'],
+      'type' => $param[$fileName]['type'],
+      'location' => $param[$fileName]['name'],
+      'upload_date' => date('YmdHis'),
+    ) + $extraParams;
+
+    $param[$fileName] = $fileParams;
   }
 
 }

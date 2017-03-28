@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -213,7 +213,12 @@
         </td>
       </tr>
     {/if}
-
+    {if $form.revenue_recognition_date}
+      <tr class="crm-contribution-form-block-revenue_recognition_date">
+        <td class="label">{$form.revenue_recognition_date.label}</td>
+        <td>{$form.revenue_recognition_date.html}</td>
+      </tr>
+    {/if}
   </table>
 
   {include file='CRM/Core/BillingBlockWrapper.tpl'}
@@ -297,6 +302,11 @@
           <tr class="crm-contribution-form-block-payment_instrument_id">
             <td class="label">{$form.payment_instrument_id.label}</td>
             <td {$valueStyle}>{$form.payment_instrument_id.html} {help id="payment_instrument_id"}</td>
+            </td>
+          </tr>
+          <tr class="crm-contribution-form-block-credit_card_number">
+            <td class="label">{$form.credit_card_number.label}</td>
+            <td {$valueStyle}>{$form.credit_card_number.html}</td>
             </td>
           </tr>
           {if $showCheckNumber || !$isOnline}
@@ -608,11 +618,14 @@ function showStartDate( ) {
 }
 
 {/literal}{/if}{literal}
+var thousandMarker = "{/literal}{$config->monetaryThousandSeparator}{literal}";
+var separator = "{/literal}{$config->monetaryDecimalPoint}{literal}";
+
 cj('#fee_amount').change( function() {
-  var totalAmount = cj('#total_amount').val();
-  var feeAmount = cj('#fee_amount').val();
-  var netAmount = totalAmount.replace(/,/g, '') - feeAmount.replace(/,/g, '');
-  if (!cj('#net_amount').val() && totalAmount) {
+  var totalAmount = cj('#total_amount').val().replace(thousandMarker,'').replace(separator,'.');
+  var feeAmount = cj('#fee_amount').val().replace(thousandMarker,'').replace(separator,'.');
+  var netAmount = totalAmount - feeAmount;
+  if (totalAmount) {
     cj('#net_amount').val(CRM.formatMoney(netAmount, true));
   }
 });
@@ -650,16 +663,14 @@ CRM.$(function($) {
           cj("#totalTaxAmount").show( );
         }
         var totalAmount = $('#total_amount').val();
-        var thousandMarker = '{/literal}{$config->monetaryThousandSeparator}{literal}';
-        var seperator = '{/literal}{$config->monetaryDecimalPoint}{literal}';
-        // replace all thousandMarker and change the seperator to a dot
-  totalAmount = totalAmount.replace(thousandMarker,'').replace(seperator,'.');
+        // replace all thousandMarker and change the separator to a dot
+        totalAmount = totalAmount.replace(thousandMarker,'').replace(separator,'.');
 
         var totalTaxAmount = '{/literal}{$totalTaxAmount}{literal}';
         var taxAmount = (taxRate/100)*totalAmount;
         taxAmount = isNaN (taxAmount) ? 0:taxAmount;
         var totalTaxAmount = taxAmount + Number(totalAmount);
-        totalTaxAmount = formatMoney( totalTaxAmount, 2, seperator, thousandMarker );
+        totalTaxAmount = formatMoney( totalTaxAmount, 2, separator, thousandMarker );
 
         $("#totalTaxAmount" ).html('Amount with tax : <span id="currencySymbolShow">' + currencySymbol + '</span> '+ totalTaxAmount);
       }

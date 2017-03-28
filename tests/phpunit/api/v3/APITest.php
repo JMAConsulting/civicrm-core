@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -74,7 +74,7 @@ class api_v3_APITest extends CiviUnitTestCase {
       'RandomFile',
       'get',
       array(),
-      'API (RandomFile,get) does not exist (join the API team and  implement it!)'
+      'API (RandomFile, get) does not exist (join the API team and implement it!)'
     );
   }
 

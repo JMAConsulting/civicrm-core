@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -87,7 +87,6 @@ class CRM_Contact_Form_Search extends CRM_Core_Form_Search {
    */
   public $_group;
   public $_groupElement;
-  public $_groupIterator;
 
   /**
    * The tag elements.
@@ -500,7 +499,6 @@ class CRM_Contact_Form_Search extends CRM_Core_Form_Search {
 
     $this->_group = CRM_Core_PseudoConstant::group();
 
-    $this->_groupIterator = CRM_Core_PseudoConstant::groupIterator();
     $this->_tag = CRM_Core_BAO_Tag::getTags();
     $this->_done = FALSE;
 

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -78,7 +78,7 @@ class CRM_Campaign_BAO_Survey extends CRM_Campaign_DAO_Survey {
 
     if (!empty($params['is_default'])) {
       $query = "UPDATE civicrm_survey SET is_default = 0";
-      CRM_Core_DAO::executeQuery($query, CRM_Core_DAO::$_nullArray);
+      CRM_Core_DAO::executeQuery($query);
     }
 
     if (!(CRM_Utils_Array::value('id', $params))) {
@@ -479,8 +479,7 @@ SELECT  survey.id    as id,
       $query = "
   SELECT  contact.id as contactId, $selectClause
     FROM  $fromClause
-   WHERE  $whereClause
-Group By  contact.id";
+   WHERE  $whereClause";
 
       $contact = CRM_Core_DAO::executeQuery($query);
       while ($contact->fetch()) {

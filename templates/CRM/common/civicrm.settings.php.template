@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -212,10 +212,10 @@ if (!defined('CIVICRM_UF_BASEURL')) {
  //  global $civicrm_setting;
 
  // Override the Temporary Files directory.
- // $civicrm_setting['Directory Preferences']['customFileUploadDir'] = '/path/to/upload';
+ // $civicrm_setting['Directory Preferences']['uploadDir'] = '/path/to/upload-dir' ;
 
  // Override the custom files upload directory.
- // $civicrm_setting['Directory Preferences']['uploadDir'] = '/path/to/upload-dir' ;
+ // $civicrm_setting['Directory Preferences']['customFileUploadDir'] = '/path/to/custom-dir';
 
  // Override the images directory.
  // $civicrm_setting['Directory Preferences']['imageUploadDir'] = '/path/to/image-upload-dir' ;
@@ -247,8 +247,18 @@ if (!defined('CIVICRM_UF_BASEURL')) {
  // Disable automatic download / installation of extensions
  // $civicrm_setting['Extension Preferences']['ext_repo_url'] = false;
 
+ // set triggers to be managed offline per CRM-18212
+ // $civicrm_setting['CiviCRM Preferences']['logging_no_trigger_permission'] = 1;
+
  // Override the CMS root path defined by cmsRootPath.
  // define('CIVICRM_CMSDIR', '/path/to/install/root/');
+
+ // Opt-out of announcements by the CiviCRM core team for releases, paid services, events, etc. Separate each preferred optout category with a comma:
+ //   "offers": paid service offers
+ //   "asks": requests for donations or membership signup/renewal to CiviCRM
+ //   "releases": major release announcements
+ //   "events": announcements of local/national upcoming events
+ // $civicrm_setting['CiviCRM Preferences']['communityMessagesUrl'] = 'https://alert.civicrm.org/alert?prot=1&ver={ver}&uf={uf}&sid={sid}&lang={lang}&co={co}&optout=offers,asks';
 
 
 /**
@@ -322,14 +332,16 @@ if (!defined('CIVICRM_DB_CACHE_HOST')) {
 }
 
 /**
- * Change this if you are not using the standard port for your cache server
+ * Change this if you are not using the standard port for your cache server.
+ *
+ * The standard port for Memcache & APCCache is 11211. For Redis it is 6379.
  */
 if (!defined('CIVICRM_DB_CACHE_PORT')) {
   define('CIVICRM_DB_CACHE_PORT', 11211 );
 }
 
 /**
- * Change this if your cache server requires a password (currently only works 
+ * Change this if your cache server requires a password (currently only works
  * with Redis)
  */
 if (!defined('CIVICRM_DB_CACHE_PASSWORD')) {

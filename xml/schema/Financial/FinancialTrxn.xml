@@ -141,7 +141,7 @@
       <table>civicrm_currency</table>
       <keyColumn>name</keyColumn>
       <labelColumn>full_name</labelColumn>
-      <nameColumn>numeric_code</nameColumn>
+      <nameColumn>name</nameColumn>
     </pseudoconstant>
     <html>
       <type>Select</type>
@@ -180,7 +180,7 @@
   </index>
   <field>
     <name>trxn_result_code</name>
-    <title>Transaction result Code</title>
+    <title>Transaction Result Code</title>
     <type>varchar</type>
     <length>255</length>
     <comment>processor result code</comment>
@@ -250,4 +250,16 @@
     <fieldName>check_number</fieldName>
     <add>4.3</add>
   </index>
+  <field>
+    <name>credit_card_number</name>
+    <uniqueName>financial_trxn_credit_card_number</uniqueName>
+    <title>Credit Card Number</title>
+    <type>int unsigned</type>
+    <html>
+      <type>Text</type>
+      <size>6</size>
+    </html>
+    <comment>Last 4 digits of credit card</comment>
+    <add>4.7</add>
+  </field>
 </table>

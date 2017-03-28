@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Contact_BAO_Contact_Permission {
 
@@ -260,7 +260,7 @@ AND    $operationClause LIMIT 1";
       }
     }
     if ($contactID == $selectedContactID &&
-      (CRM_Core_Permission::check('edit my contact') || CRM_Core_Permission::check('view my contact'))
+      (CRM_Core_Permission::check('edit my contact'))
     ) {
       return TRUE;
     }

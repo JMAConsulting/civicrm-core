@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Report_Form_Contribute_Bookkeeping extends CRM_Report_Form {
   protected $_addressField = FALSE;
@@ -47,6 +45,20 @@ class CRM_Report_Form_Contribute_Bookkeeping extends CRM_Report_Form {
   );
 
   /**
+   * This report has not been optimised for group filtering.
+   *
+   * The functionality for group filtering has been improved but not
+   * all reports have been adjusted to take care of it. This report has not
+   * and will run an inefficient query until fixed.
+   *
+   * CRM-19170
+   *
+   * @var bool
+   */
+  protected $groupFilterNotOptimised = TRUE;
+
+  /**
+   * Class constructor.
    */
   public function __construct() {
     $this->_autoIncludeIndexedFieldsAsOrderBys = 1;
@@ -230,6 +242,21 @@ class CRM_Report_Form_Contribute_Bookkeeping extends CRM_Report_Form {
           'financial_type_id' => array('title' => ts('Financial Type')),
         ),
       ),
+      'civicrm_batch' => array(
+        'dao' => 'CRM_Batch_DAO_Batch',
+        'fields' => array(
+          'title' => array(
+            'title' => ts('Batch Title'),
+            'alias' => 'batch',
+            'default' => FALSE,
+          ),
+          'name' => array(
+            'title' => ts('Batch Name'),
+            'alias' => 'batch',
+            'default' => TRUE,
+          ),
+        ),
+      ),
       'civicrm_contribution' => array(
         'dao' => 'CRM_Contribute_DAO_Contribution',
         'fields' => array(
@@ -297,7 +324,7 @@ class CRM_Report_Form_Contribute_Bookkeeping extends CRM_Report_Form {
             'options' => CRM_Contribute_PseudoConstant::paymentInstrument(),
           ),
           'currency' => array(
-            'title' => 'Currency',
+            'title' => ts('Currency'),
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
             'options' => CRM_Core_OptionGroup::values('currencies_enabled'),
             'default' => NULL,
@@ -382,6 +409,7 @@ class CRM_Report_Form_Contribute_Bookkeeping extends CRM_Report_Form {
         }
       }
     }
+    $this->_selectClauses = $select;
 
     $this->_select = 'SELECT ' . implode(', ', $select) . ' ';
   }
@@ -415,6 +443,13 @@ class CRM_Report_Form_Contribute_Bookkeeping extends CRM_Report_Form {
                     ON fitem.financial_account_id = {$this->_aliases['civicrm_financial_account']}_credit_2.id
               LEFT JOIN civicrm_line_item {$this->_aliases['civicrm_line_item']}
                     ON  fitem.entity_id = {$this->_aliases['civicrm_line_item']}.id AND fitem.entity_table = 'civicrm_line_item' ";
+    if ($this->isTableSelected('civicrm_batch')) {
+      $this->_from .= "LEFT JOIN civicrm_entity_batch ent_batch
+                    ON  {$this->_aliases['civicrm_financial_trxn']}.id = ent_batch.entity_id AND ent_batch.entity_table = 'civicrm_financial_trxn'
+              LEFT JOIN civicrm_batch batch
+                    ON  ent_batch.batch_id = batch.id";
+    }
+
     $this->getPermissionedFTQuery($this, "civicrm_line_item_1");
   }
 
@@ -490,7 +525,11 @@ class CRM_Report_Form_Contribute_Bookkeeping extends CRM_Report_Form {
   }
 
   public function groupBy() {
-    $this->_groupBy = " GROUP BY  {$this->_aliases['civicrm_entity_financial_trxn']}.id, {$this->_aliases['civicrm_line_item']}.id ";
+    $groupBy = array(
+      "{$this->_aliases['civicrm_entity_financial_trxn']}.id",
+      "{$this->_aliases['civicrm_line_item']}.id",
+    );
+    $this->_groupBy = CRM_Contact_BAO_Query::getGroupByFromSelectColumns($this->_selectClauses, $groupBy);
   }
 
   /**
@@ -501,13 +540,20 @@ class CRM_Report_Form_Contribute_Bookkeeping extends CRM_Report_Form {
   public function statistics(&$rows) {
     $statistics = parent::statistics($rows);
     $tempTableName = CRM_Core_DAO::createTempTableName('civicrm_contribution');
-    $select = "SELECT {$this->_aliases['civicrm_contribution']}.id, {$this->_aliases['civicrm_entity_financial_trxn']}.id as trxnID, {$this->_aliases['civicrm_contribution']}.currency,
-               CASE
-                 WHEN {$this->_aliases['civicrm_entity_financial_trxn']}_item.entity_id IS NOT NULL
-                 THEN {$this->_aliases['civicrm_entity_financial_trxn']}_item.amount
-                 ELSE {$this->_aliases['civicrm_entity_financial_trxn']}.amount
-               END as amount
-";
+    $financialSelect = "CASE WHEN {$this->_aliases['civicrm_entity_financial_trxn']}_item.entity_id IS NOT NULL
+            THEN {$this->_aliases['civicrm_entity_financial_trxn']}_item.amount
+            ELSE {$this->_aliases['civicrm_entity_financial_trxn']}.amount
+            END as amount";
+
+    $this->_selectClauses = array(
+      "{$this->_aliases['civicrm_contribution']}.id",
+      "{$this->_aliases['civicrm_entity_financial_trxn']}.id as trxnID",
+      "{$this->_aliases['civicrm_contribution']}.currency",
+      $financialSelect,
+    );
+    $select = "SELECT " . implode(', ', $this->_selectClauses);
+
+    $this->groupBy();
 
     $tempQuery = "CREATE TEMPORARY TABLE {$tempTableName} CHARACTER SET utf8 COLLATE utf8_unicode_ci AS
                   {$select} {$this->_from} {$this->_where} {$this->_groupBy} ";
@@ -526,12 +572,12 @@ class CRM_Report_Form_Contribute_Bookkeeping extends CRM_Report_Form {
 
     $statistics['counts']['amount'] = array(
       'value' => implode(', ', $amount),
-      'title' => 'Total Amount',
+      'title' => ts('Total Amount'),
       'type' => CRM_Utils_Type::T_STRING,
     );
     $statistics['counts']['avg'] = array(
       'value' => implode(', ', $avg),
-      'title' => 'Average',
+      'title' => ts('Average'),
       'type' => CRM_Utils_Type::T_STRING,
     );
     return $statistics;

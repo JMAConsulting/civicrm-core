@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_PCP_BAO_PCP extends CRM_PCP_DAO_PCP {
 
@@ -118,6 +118,7 @@ WHERE  civicrm_pcp.contact_id = civicrm_contact.id
 
     $query = "
 SELECT * FROM civicrm_pcp pcp
+LEFT JOIN civicrm_pcp_block block ON block.id = pcp.pcp_block_id
 WHERE pcp.is_active = 1
   AND pcp.contact_id = %1
 ORDER BY page_type, page_id";
@@ -149,7 +150,7 @@ ORDER BY page_type, page_id";
 
       if ($pcpInfoDao->status_id != $approved || $pcpInfoDao->is_active != 1) {
         $class = 'disabled';
-        if (!$pcpInfoDao->tellfriend) {
+        if (!$pcpInfoDao->is_tellfriend_enabled) {
           $mask -= CRM_Core_Action::DETACH;
         }
       }
@@ -193,7 +194,7 @@ FROM civicrm_pcp_block block
 LEFT JOIN civicrm_pcp pcp ON pcp.pcp_block_id = block.id
 WHERE block.is_active = 1
 {$clause}
-GROUP BY block.id
+GROUP BY block.id, pcp.id
 ORDER BY target_entity_type, target_entity_id
 ";
     $pcpBlockDao = CRM_Core_DAO::executeQuery($query);

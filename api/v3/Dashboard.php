@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -61,6 +61,7 @@ function civicrm_api3_dashboard_create($params) {
  *   array of parameters determined by getfields.
  */
 function _civicrm_api3_dashboard_create_spec(&$params) {
+  $params['is_active']['api.default'] = 1;
   unset($params['version']);
 }
 

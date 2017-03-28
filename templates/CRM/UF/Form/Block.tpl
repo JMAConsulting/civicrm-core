@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -120,8 +120,7 @@
                 {include file="CRM/Profile/Form/GreetingType.tpl"}
               {elseif ($n eq 'group' && $form.group) || ($n eq 'tag' && $form.tag)}
                 {include file="CRM/Contact/Form/Edit/TagsAndGroups.tpl" type=$n title=null context="profile"}
-              {elseif ( ( $field.data_type eq 'Date' ) or
-                ( $n|substr:-5:5 eq '_date' ) ) AND
+              {elseif ( $n|substr:-5:5 eq '_date' ) AND
               ( $form.formName neq 'Confirm' )  AND
               ( $form.formName neq 'ThankYou' ) }
                 {include file="CRM/common/jcalendar.tpl" elementName=$n}

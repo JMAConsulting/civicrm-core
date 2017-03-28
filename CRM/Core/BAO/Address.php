@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -483,8 +483,13 @@ class CRM_Core_BAO_Address extends CRM_Core_DAO_Address {
         return $addresses;
       }
     }
-    //get primary address as a first block.
-    $address->orderBy('is_primary desc, id');
+    if (isset($entityBlock['is_billing']) && $entityBlock['is_billing'] == 1) {
+      $address->orderBy('is_billing desc, id');
+    }
+    else {
+      //get primary address as a first block.
+      $address->orderBy('is_primary desc, id');
+    }
 
     $address->find();
 

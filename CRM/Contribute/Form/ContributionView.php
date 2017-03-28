@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -46,6 +46,10 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
     $this->assign('context', $context);
 
     $values = CRM_Contribute_BAO_Contribution::getValuesWithMappings($params);
+    $ccNumber = CRM_Core_BAO_FinancialTrxn::getCreditCardNumber($id);
+    if ($ccNumber) {
+      $values['credit_card_number'] = $ccNumber;
+    }
 
     if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus() && $this->_action & CRM_Core_Action::VIEW) {
       $financialTypeID = CRM_Contribute_PseudoConstant::financialType($values['financial_type_id']);
@@ -167,7 +171,7 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
       $values['campaign'] = $campaigns[$campaignId];
     }
     if ($values['contribution_status'] == 'Refunded') {
-      $this->assign('refund_trxn_id', CRM_Core_BAO_FinancialTrxn::getRefundTransactionTrxnIDgi($id));
+      $this->assign('refund_trxn_id', CRM_Core_BAO_FinancialTrxn::getRefundTransactionTrxnID($id));
     }
 
     // assign values to the template
@@ -175,6 +179,7 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
     $invoiceSettings = Civi::settings()->get('contribution_invoice_settings');
     $invoicing = CRM_Utils_Array::value('invoicing', $invoiceSettings);
     $this->assign('invoicing', $invoicing);
+    $this->assign('isDeferred', CRM_Utils_Array::value('deferred_revenue_enabled', $invoiceSettings));
     if ($invoicing && isset($values['tax_amount'])) {
       $this->assign('totalTaxAmount', $values['tax_amount']);
     }

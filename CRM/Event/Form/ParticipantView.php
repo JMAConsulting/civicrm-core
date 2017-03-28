@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -140,7 +140,7 @@ class CRM_Event_Form_ParticipantView extends CRM_Core_Form {
 
     foreach ($allRoleIDs as $k => $v) {
       $roleGroupTree = CRM_Core_BAO_CustomGroup::getTree('Participant', $this, $participantID, NULL, $v, $roleCustomDataTypeID);
-      $eventGroupTree = &CRM_Core_BAO_CustomGroup::getTree('Participant', $this, $participantID, NULL,
+      $eventGroupTree = CRM_Core_BAO_CustomGroup::getTree('Participant', $this, $participantID, NULL,
         $values[$participantID]['event_id'], $eventNameCustomDataTypeID
       );
       $eventTypeID = CRM_Core_DAO::getFieldValue("CRM_Event_DAO_Event", $values[$participantID]['event_id'], 'event_type_id', 'id');

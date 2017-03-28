@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -354,6 +354,13 @@ class CRM_Contact_Form_Edit_Address {
             ))) {
               $streetAddress .= ' ';
             }
+            // CRM-17619 - if the street number suffix begins with a number, add a space
+            $numsuffix = CRM_Utils_Array::value($fld, $address);
+            if ($fld === 'street_number_suffix' && !empty($numsuffix)) {
+              if (ctype_digit(substr($numsuffix, 0, 1))) {
+                $streetAddress .= ' ';
+              }
+            }
             $streetAddress .= CRM_Utils_Array::value($fld, $address);
           }
           $streetAddress = trim($streetAddress);
@@ -361,9 +368,15 @@ class CRM_Contact_Form_Edit_Address {
             $address['street_address'] = $streetAddress;
           }
           if (isset($address['street_number'])) {
-            $address['street_number'] .= CRM_Utils_Array::value('street_number_suffix', $address);
+            // CRM-17619 - if the street number suffix begins with a number, add a space
+            $thesuffix = CRM_Utils_Array::value('street_number_suffix', $address);
+            if ($thesuffix) {
+              if (ctype_digit(substr($thesuffix, 0, 1))) {
+                $address['street_number'] .= " ";
+              }
+            }
+            $address['street_number'] .= $thesuffix;
           }
-
           // build array for set default.
           foreach ($parseFields as $field) {
             $addressValues["{$field}_{$cnt}"] = CRM_Utils_Array::value($field, $address);

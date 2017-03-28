@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -39,7 +39,6 @@ class CRM_Core_BAO_ActionScheduleTest extends CiviUnitTestCase {
   public function setUp() {
     parent::setUp();
 
-    require_once 'CiviTest/CiviMailUtils.php';
     $this->mut = new CiviMailUtils($this, TRUE);
 
     $this->fixtures['rolling_membership'] = array(
@@ -1288,6 +1287,13 @@ class CRM_Core_BAO_ActionScheduleTest extends CiviUnitTestCase {
          // After the 2-week of the changed join date 2012-03-29, send an email
         'time' => '2012-04-12 01:00:00',
         'recipients' => array(array('member@example.com')),
+      ),
+    ));
+    $this->assertCronRuns(array(
+      array(
+        // It should not re-send on the same day
+        'time' => '2012-04-12 01:00:00',
+        'recipients' => array(),
       ),
     ));
   }

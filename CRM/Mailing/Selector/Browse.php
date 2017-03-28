@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -393,8 +393,19 @@ LEFT JOIN  civicrm_contact scheduledContact ON ( $mailing.scheduled_id = schedul
         }
         // get status strings as per locale settings CRM-4411.
         $rows[$key]['status'] = CRM_Mailing_BAO_MailingJob::status($row['status']);
+        $validLinks = $actionLinks;
+        if (($mailingUrl = CRM_Mailing_BAO_Mailing::getPublicViewUrl($row['id'])) != FALSE) {
+          $validLinks[] = array(
+            'name' => ts('Public View'),
+            'url' => 'civicrm/mailing/view',
+            'qs' => 'id=%%mid%%&reset=1',
+            'title' => ts('Public View'),
+            'fe' => TRUE,
+          );
+        }
 
-        $rows[$key]['action'] = CRM_Core_Action::formLink($actionLinks,
+        $rows[$key]['action'] = CRM_Core_Action::formLink(
+          $validLinks,
           $actionMask,
           array('mid' => $row['id']),
           "more",
@@ -598,7 +609,7 @@ LEFT JOIN civicrm_mailing_job ON (civicrm_mailing_job.mailing_id = civicrm_maili
 LEFT JOIN civicrm_contact createdContact ON ( civicrm_mailing.created_id = createdContact.id )
 LEFT JOIN civicrm_contact scheduledContact ON ( civicrm_mailing.scheduled_id = scheduledContact.id )
 WHERE $whereClause
-ORDER BY LEFT(name, 1)
+ORDER BY UPPER(LEFT(name, 1))
 ";
 
     $dao = CRM_Core_DAO::executeQuery($query, $params);

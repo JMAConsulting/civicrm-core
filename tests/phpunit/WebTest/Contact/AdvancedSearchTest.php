@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -197,7 +197,7 @@ class WebTest_Contact_AdvancedSearchTest extends CiviSeleniumTestCase {
 
         //pagination and row count assertion
         $pagerCount = "Contact {$j} - {$subTotal} of {$count}";
-        $this->verifyText("xpath=//div[@class='crm-search-results']/div[@class='crm-pager']/span[@class='crm-pager-nav']", preg_quote($pagerCount));
+        $this->assertElementContainsText("xpath=//div[@class='crm-search-results']/div[@class='crm-pager']/span[@class='crm-pager-nav']", $pagerCount);
         $this->assertEquals($perPageRow, $this->getXpathCount("//div[@class='crm-search-results']/table/tbody/tr"));
 
         //go to next page
@@ -209,7 +209,7 @@ class WebTest_Contact_AdvancedSearchTest extends CiviSeleniumTestCase {
       //pagination and row count assertion for the remaining last page
       if ($mod) {
         $pagerCount = "Contact {$lastPageSub} - {$count} of {$count}";
-        $this->verifyText("xpath=//div[@class='crm-search-results']/div[@class='crm-pager']/span[@class='crm-pager-nav']", preg_quote($pagerCount));
+        $this->assertElementContainsText("xpath=//div[@class='crm-search-results']/div[@class='crm-pager']/span[@class='crm-pager-nav']", $pagerCount);
         $this->assertEquals($mod, $this->getXpathCount("//div[@class='crm-search-results']/table/tbody/tr"));
       }
     }

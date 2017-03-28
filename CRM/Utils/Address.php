@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
  * Address Utilities
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Utils_Address {
 
@@ -91,6 +91,22 @@ class CRM_Utils_Address {
     foreach ($emptyFields as $f) {
       if (!isset($fields[$f])) {
         $fields[$f] = NULL;
+      }
+    }
+
+    //CRM-16876 Display countries in all caps when in mailing mode.
+    if ($mailing && !empty($fields['country'])) {
+      if (Civi::settings()->get('hideCountryMailingLabels')) {
+        $domain = CRM_Core_BAO_Domain::getDomain();
+        $domainLocation = CRM_Core_BAO_Location::getValues(array('contact_id' => $domain->contact_id));
+        $domainAddress = $domainLocation['address'][1];
+        $domainCountryId = $domainAddress['country_id'];
+        if ($fields['country'] == CRM_Core_PseudoConstant::country($domainCountryId)) {
+          $fields['country'] = NULL;
+        }
+      }
+      else {
+        $fields['country'] = strtoupper($fields['country']);
       }
     }
 

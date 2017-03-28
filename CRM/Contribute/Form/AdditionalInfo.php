@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.7                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2015                                |
+  | Copyright CiviCRM LLC (c) 2004-2016                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Contribute_Form_AdditionalInfo {
 
@@ -52,7 +52,7 @@ class CRM_Contribute_Form_AdditionalInfo {
     $dao->is_active = 1;
     $dao->find();
     $min_amount = array();
-    $sel1[0] = '-select product-';
+    $sel1[0] = ts('-select product-');
     while ($dao->fetch()) {
       $sel1[$dao->id] = $dao->name . " ( " . $dao->sku . " )";
       $min_amount[$dao->id] = $dao->min_contribution;

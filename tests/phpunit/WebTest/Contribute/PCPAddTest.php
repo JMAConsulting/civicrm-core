@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -203,8 +203,8 @@ class WebTest_Contribute_PCPAddTest extends CiviSeleniumTestCase {
 
     // Check PCP Summary Report
     $this->openCiviPage('report/instance/17', 'reset=1');
-    $this->verifyText("PCP", preg_quote($pcpTitle));
-    $this->verifyText("PCP", preg_quote("{$lastName}, {$firstName}"));
+    $this->assertElementContainsText("PCP", $pcpTitle);
+    $this->assertElementContainsText("PCP", "{$lastName}, {$firstName}");
   }
 
 }

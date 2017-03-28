@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -118,13 +118,13 @@ class CRM_Core_Config_MagicMerge {
       'backtrace' => array('setting'),
       'contact_default_language' => array('setting'),
       'countryLimit' => array('setting'),
-      'dashboardCacheTimeout' => array('setting'),
       'dateInputFormat' => array('setting'),
       'dateformatDatetime' => array('setting'),
       'dateformatFull' => array('setting'),
       'dateformatPartial' => array('setting'),
       'dateformatTime' => array('setting'),
       'dateformatYear' => array('setting'),
+      'dateformatFinancialBatch' => array('setting'),
       'debug' => array('setting', 'debug_enabled'), // renamed.
       'defaultContactCountry' => array('setting'),
       'defaultContactStateProvince' => array('setting'),

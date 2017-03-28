@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +30,7 @@ namespace Civi\Core\Transaction;
 /**
  *
  * @package Civi
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class Manager {
 
@@ -163,7 +163,7 @@ class Manager {
    * @return \Civi\Core\Transaction\Frame
    */
   protected function createBaseFrame() {
-    return new Frame($this->dao, 'BEGIN', 'COMMIT', 'ROLLBACK');;
+    return new Frame($this->dao, 'BEGIN', 'COMMIT', 'ROLLBACK');
   }
 
   /**

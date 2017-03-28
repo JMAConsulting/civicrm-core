@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -316,11 +316,11 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
    *
    * @param string $entityType
    *   Of the contact whose contact type is needed.
-   * @param CRM_Core_Form $form
-   *   Not used
+   * @param CRM_Core_Form $deprecated
+   *   Not used.
    * @param int $entityID
    * @param int $groupID
-   * @param string $subType
+   * @param array $subTypes
    * @param string $subName
    * @param bool $fromCache
    * @param bool $onlySubType
@@ -343,12 +343,12 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
    *   The reason for the info array in unclear and it could be determined from parsing the group tree after creation
    *   With caching the performance impact would be small & the function would be cleaner
    */
-  public static function &getTree(
+  public static function getTree(
     $entityType,
-    $form = NULL,
+    $deprecated = NULL,
     $entityID = NULL,
     $groupID = NULL,
-    $subType = NULL,
+    $subTypes = array(),
     $subName = NULL,
     $fromCache = TRUE,
     $onlySubType = NULL,
@@ -358,10 +358,22 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
     if ($entityID) {
       $entityID = CRM_Utils_Type::escape($entityID, 'Integer');
     }
+    if (!is_array($subTypes)) {
+      if (empty($subTypes)) {
+        $subTypes = array();
+      }
+      else {
+        if (stristr($subTypes, ',')) {
+          $subTypes = explode(',', $subTypes);
+        }
+        else {
+          $subTypes = explode(CRM_Core_DAO::VALUE_SEPARATOR, trim($subTypes, CRM_Core_DAO::VALUE_SEPARATOR));
+        }
+      }
+    }
 
     // create a new tree
-    $strSelect = $strFrom = $strWhere = $orderBy = '';
-    $tableData = array();
+    $strWhere = $orderBy = '';
 
     // using tableData to build the queryString
     $tableData = array(
@@ -393,6 +405,7 @@ class CRM_Core_BAO_CustomGroup extends CRM_Core_DAO_CustomGroup {
         'help_pre',
         'help_post',
         'collapse_display',
+        'style',
         'is_multiple',
         'extends',
         'extends_entity_column_id',
@@ -432,41 +445,13 @@ LEFT JOIN civicrm_custom_field ON (civicrm_custom_field.custom_group_id = civicr
       $in = "'$entityType'";
     }
 
-    if ($subType) {
-      $subTypeClause = '';
-      if (is_array($subType)) {
-        $subType = implode(',', $subType);
+    if (!empty($subTypes)) {
+      foreach ($subTypes as $key => $subType) {
+        $subTypeClauses[] = self::whereListHas("civicrm_custom_group.extends_entity_column_value", self::validateSubTypeByEntity($entityType, $subType));
       }
-      if (strpos($subType, ',')) {
-        $subTypeParts = explode(',', $subType);
-        $subTypeClauses = array();
-        foreach ($subTypeParts as $subTypePart) {
-          $subTypePart = CRM_Core_DAO::VALUE_SEPARATOR .
-            trim($subTypePart, CRM_Core_DAO::VALUE_SEPARATOR) .
-            CRM_Core_DAO::VALUE_SEPARATOR;
-          $subTypeClauses[] = "civicrm_custom_group.extends_entity_column_value LIKE '%$subTypePart%'";
-        }
-
-        if ($onlySubType) {
-          $subTypeClause = '(' . implode(' OR ', $subTypeClauses) . ')';
-        }
-        else {
-          $subTypeClause = '(' . implode(' OR ', $subTypeClauses) .
-            " OR civicrm_custom_group.extends_entity_column_value IS NULL )";
-        }
-      }
-      else {
-        $subType = CRM_Core_DAO::VALUE_SEPARATOR .
-          trim($subType, CRM_Core_DAO::VALUE_SEPARATOR) .
-          CRM_Core_DAO::VALUE_SEPARATOR;
-
-        if ($onlySubType) {
-          $subTypeClause = "( civicrm_custom_group.extends_entity_column_value LIKE '%$subType%' )";
-        }
-        else {
-          $subTypeClause = "( civicrm_custom_group.extends_entity_column_value LIKE '%$subType%'
-    OR    civicrm_custom_group.extends_entity_column_value IS NULL )";
-        }
+      $subTypeClause = '(' .  implode(' OR ', $subTypeClauses) . ')';
+      if (!$onlySubType) {
+        $subTypeClause = '(' . $subTypeClause . '  OR civicrm_custom_group.extends_entity_column_value IS NULL )';
       }
 
       $strWhere = "
@@ -563,8 +548,10 @@ ORDER BY civicrm_custom_group.weight,
               continue;
             }
             // CRM-5507
-            if ($fieldName == 'extends_entity_column_value' && $subType) {
-              $groupTree[$groupID]['subtype'] = trim($subType, CRM_Core_DAO::VALUE_SEPARATOR);
+            // This is an old bit of code - per the CRM number & probably does not work reliably if
+            // that one contact sub-type exists.
+            if ($fieldName == 'extends_entity_column_value' && !empty($subTypes[0])) {
+              $groupTree[$groupID]['subtype'] = self::validateSubTypeByEntity($entityType, $subType);
             }
             $groupTree[$groupID][$fieldName] = $crmDAO->$fullFieldName;
           }
@@ -648,6 +635,49 @@ ORDER BY civicrm_custom_group.weight,
 
     }
     return $groupTree;
+  }
+
+  /**
+   * Clean and validate the filter before it is used in a db query.
+   *
+   * @param string $entityType
+   * @param string $subType
+   *
+   * @return string
+   * @throws \CRM_Core_Exception
+   * @throws \CiviCRM_API3_Exception
+   */
+  protected static function validateSubTypeByEntity($entityType, $subType) {
+    $subType = trim($subType, CRM_Core_DAO::VALUE_SEPARATOR);
+    if (is_numeric($subType)) {
+      return $subType;
+    }
+
+    $contactTypes = CRM_Contact_BAO_ContactType::basicTypeInfo(TRUE);
+    if ($entityType != 'Contact' && !array_key_exists($entityType, $contactTypes)) {
+      throw new CRM_Core_Exception('Invalid Entity Filter');
+    }
+    $subTypes = CRM_Contact_BAO_ContactType::subTypeInfo($entityType, TRUE);
+    if (!array_key_exists($subType, $subTypes)) {
+      throw new CRM_Core_Exception('Invalid Filter');
+    }
+    return $subType;
+  }
+
+  /**
+   * Suppose you have a SQL column, $column, which includes a delimited list, and you want
+   * a WHERE condition for rows that include $value. Use whereListHas().
+   *
+   * @param string $column
+   * @param string $value
+   * @param string $delimiter
+   * @return string
+   *   SQL condition.
+   */
+  static private function whereListHas($column, $value, $delimiter = CRM_Core_DAO::VALUE_SEPARATOR) {
+    $bareValue = trim($value, $delimiter); // ?
+    $escapedValue = CRM_Utils_Type::escape("%{$delimiter}{$bareValue}{$delimiter}%", 'String', FALSE);
+    return "($column LIKE \"$escapedValue\")";
   }
 
   /**
@@ -1351,7 +1381,13 @@ ORDER BY civicrm_custom_group.weight,
                 }
               }
               else {
-                $checkedValue = explode(CRM_Core_DAO::VALUE_SEPARATOR, substr($value, 1, -1));
+                if (is_array($value) && count($value)) {
+                  CRM_Utils_Array::formatArrayKeys($value);
+                  $checkedValue = $value;
+                }
+                else {
+                  $checkedValue = explode(CRM_Core_DAO::VALUE_SEPARATOR, substr($value, 1, -1));
+                }
                 foreach ($customOption as $val) {
                   if (in_array($val['value'], $checkedValue)) {
                     if ($field['html_type'] == 'CheckBox') {
@@ -1488,7 +1524,7 @@ ORDER BY civicrm_custom_group.weight,
 
             //store the file in d/b
             $entityId = explode('=', $groupTree['info']['where'][0]);
-            $fileParams = array('upload_date' => date('Ymdhis'));
+            $fileParams = array('upload_date' => date('YmdHis'));
 
             if ($groupTree[$groupID]['fields'][$fieldId]['customValue']['fid']) {
               $fileParams['id'] = $groupTree[$groupID]['fields'][$fieldId]['customValue']['fid'];
@@ -1577,7 +1613,7 @@ ORDER BY civicrm_custom_group.weight,
       return array();
     }
 
-    $groupTree = CRM_Core_BAO_CustomGroup::getTree($type, $form);
+    $groupTree = CRM_Core_BAO_CustomGroup::getTree($type);
     $customValue = array();
     $htmlType = array(
       'CheckBox',
@@ -1792,9 +1828,17 @@ SELECT IF( EXISTS(SELECT name FROM civicrm_contact_type WHERE name like %1), 1, 
    *
    * @return array
    */
-  public static function formatGroupTree(&$groupTree, $groupCount = 1, &$form) {
+  public static function formatGroupTree(&$groupTree, $groupCount = 1, &$form = NULL) {
     $formattedGroupTree = array();
-    $uploadNames = array();
+    $uploadNames = $formValues = array();
+
+    // retrieve qf key from url
+    $qfKey = CRM_Utils_Request::retrieve('qf', 'String');
+
+    // fetch submitted custom field values later use to set as a default values
+    if ($qfKey) {
+      $submittedValues = CRM_Core_BAO_Cache::getItem('custom data', $qfKey);
+    }
 
     foreach ($groupTree as $key => $value) {
       if ($key === 'info') {
@@ -1808,6 +1852,7 @@ SELECT IF( EXISTS(SELECT name FROM civicrm_contact_type WHERE name like %1), 1, 
       $formattedGroupTree[$key]['help_post'] = CRM_Utils_Array::value('help_post', $value);
       $formattedGroupTree[$key]['collapse_display'] = CRM_Utils_Array::value('collapse_display', $value);
       $formattedGroupTree[$key]['collapse_adv_display'] = CRM_Utils_Array::value('collapse_adv_display', $value);
+      $formattedGroupTree[$key]['style'] = CRM_Utils_Array::value('style', $value);
 
       // this params needed of bulding multiple values
       $formattedGroupTree[$key]['is_multiple'] = CRM_Utils_Array::value('is_multiple', $value);
@@ -1820,8 +1865,15 @@ SELECT IF( EXISTS(SELECT name FROM civicrm_contact_type WHERE name like %1), 1, 
       // add field information
       foreach ($value['fields'] as $k => $properties) {
         $properties['element_name'] = "custom_{$k}_-{$groupCount}";
+        if ($value = CRM_Utils_Request::retrieve($properties['element_name'], 'String', $form, FALSE, NULL, 'POST')) {
+          $formValues[$properties['element_name']] = $value;
+        }
+        elseif (isset($submittedValues[$properties['element_name']])) {
+          $properties['element_value'] = $submittedValues[$properties['element_name']];
+        }
         if (isset($properties['customValue']) &&
-          !CRM_Utils_System::isNull($properties['customValue'])
+          !CRM_Utils_System::isNull($properties['customValue']) &&
+          !isset($properties['element_value'])
         ) {
           if (isset($properties['customValue'][$groupCount])) {
             $properties['element_name'] = "custom_{$k}_{$properties['customValue'][$groupCount]['id']}";
@@ -1841,6 +1893,12 @@ SELECT IF( EXISTS(SELECT name FROM civicrm_contact_type WHERE name like %1), 1, 
     }
 
     if ($form) {
+      if (count($formValues)) {
+        $qf = $form->get('qfKey');
+        $form->assign('qfKey', $qf);
+        CRM_Core_BAO_Cache::setItem($formValues, 'custom data', $qf);
+      }
+
       // hack for field type File
       $formUploadNames = $form->get('uploadNames');
       if (is_array($formUploadNames)) {
@@ -1888,6 +1946,7 @@ SELECT IF( EXISTS(SELECT name FROM civicrm_contact_type WHERE name like %1), 1, 
             $details[$groupID][$values['id']]['help_post'] = CRM_Utils_Array::value('help_post', $group);
             $details[$groupID][$values['id']]['collapse_display'] = CRM_Utils_Array::value('collapse_display', $group);
             $details[$groupID][$values['id']]['collapse_adv_display'] = CRM_Utils_Array::value('collapse_adv_display', $group);
+            $details[$groupID][$values['id']]['style'] = CRM_Utils_Array::value('style', $group);
             $details[$groupID][$values['id']]['fields'][$k] = array(
               'field_title' => CRM_Utils_Array::value('label', $properties),
               'field_type' => CRM_Utils_Array::value('html_type', $properties),
@@ -1913,6 +1972,7 @@ SELECT IF( EXISTS(SELECT name FROM civicrm_contact_type WHERE name like %1), 1, 
           $details[$groupID][0]['help_post'] = CRM_Utils_Array::value('help_post', $group);
           $details[$groupID][0]['collapse_display'] = CRM_Utils_Array::value('collapse_display', $group);
           $details[$groupID][0]['collapse_adv_display'] = CRM_Utils_Array::value('collapse_adv_display', $group);
+          $details[$groupID][0]['style'] = CRM_Utils_Array::value('style', $group);
           $details[$groupID][0]['fields'][$k] = array('field_title' => CRM_Utils_Array::value('label', $properties));
         }
       }

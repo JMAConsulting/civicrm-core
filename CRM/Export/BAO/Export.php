@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -41,7 +41,7 @@ class CRM_Export_BAO_Export {
   // increase this number a lot to avoid making too many queries
   // LIMIT is not much faster than a no LIMIT query
   // CRM-7675
-  const EXPORT_ROW_COUNT = 10000;
+  const EXPORT_ROW_COUNT = 100000;
 
   /**
    * Get Querymode based on ExportMode
@@ -172,37 +172,40 @@ class CRM_Export_BAO_Export {
    *   Group By Clause
    */
   public static function getGroupBy($exportMode, $queryMode, $returnProperties, $query) {
+    $groupBy = '';
     if (!empty($returnProperties['tags']) || !empty($returnProperties['groups']) ||
       CRM_Utils_Array::value('notes', $returnProperties) ||
       // CRM-9552
       ($queryMode & CRM_Contact_BAO_Query::MODE_CONTACTS && $query->_useGroupBy)
     ) {
-      $groupBy = " GROUP BY contact_a.id";
+      $groupBy = "contact_a.id";
     }
 
     switch ($exportMode) {
       case CRM_Export_Form_Select::CONTRIBUTE_EXPORT:
-        $groupBy = 'GROUP BY civicrm_contribution.id';
+        $groupBy = 'civicrm_contribution.id';
         if (CRM_Contribute_BAO_Query::isSoftCreditOptionEnabled()) {
           // especial group by  when soft credit columns are included
-          $groupBy = 'GROUP BY contribution_search_scredit_combined.id, contribution_search_scredit_combined.scredit_id';
+          $groupBy = array('contribution_search_scredit_combined.id', 'contribution_search_scredit_combined.scredit_id');
         }
         break;
 
       case CRM_Export_Form_Select::EVENT_EXPORT:
-        $groupBy = 'GROUP BY civicrm_participant.id';
+        $groupBy = 'civicrm_participant.id';
         break;
 
       case CRM_Export_Form_Select::MEMBER_EXPORT:
-        $groupBy = " GROUP BY civicrm_membership.id";
+        $groupBy = "civicrm_membership.id";
         break;
     }
 
     if ($queryMode & CRM_Contact_BAO_Query::MODE_ACTIVITY) {
-      $groupBy = " GROUP BY civicrm_activity.id ";
+      $groupBy = "civicrm_activity.id ";
     }
 
-    $groupBy = !empty($groupBy) ? $groupBy : '';
+    if (!empty($groupBy)) {
+      $groupBy = CRM_Contact_BAO_Query::getGroupByFromSelectColumns($query->_select, $groupBy);
+    }
 
     return $groupBy;
   }
@@ -432,8 +435,9 @@ class CRM_Export_BAO_Export {
           }
         }
       }
-      if (!empty(self::defaultReturnProperty($exportMode))) {
-        $returnProperties[self::defaultReturnProperty($exportMode)] = 1;
+      $defaultExportMode = self::defaultReturnProperty($exportMode);
+      if ($defaultExportMode) {
+        $returnProperties[$defaultExportMode] = 1;
       }
     }
     else {
@@ -757,17 +761,20 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
 
     // for CRM-3157 purposes
     $i18n = CRM_Core_I18n::singleton();
+
     list($outputColumns, $headerRows, $sqlColumns, $metadata) = self::getExportStructureArrays($returnProperties, $query, $phoneTypes, $imProviders, $contactRelationshipTypes, $relationQuery, $selectedPaymentFields);
 
-    while (1) {
+    $limitReached = FALSE;
+    while (!$limitReached) {
       $limitQuery = "{$queryString} LIMIT {$offset}, {$rowCount}";
       $dao = CRM_Core_DAO::executeQuery($limitQuery);
-      if ($dao->N <= 0) {
-        break;
-      }
+      // If this is less than our limit by the end of the iteration we do not need to run the query again to
+      // check if some remain.
+      $rowsThisIteration = 0;
 
       while ($dao->fetch()) {
         $count++;
+        $rowsThisIteration++;
         $row = array();
 
         //convert the pseudo constants
@@ -1084,6 +1091,9 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
         }
       }
       $dao->free();
+      if ($rowsThisIteration < self::EXPORT_ROW_COUNT) {
+        $limitReached = TRUE;
+      }
       $offset += $rowCount;
     }
 
@@ -1339,7 +1349,7 @@ INSERT INTO {$componentTable} SELECT distinct gc.contact_id FROM civicrm_group_c
         // to accommodate different systems - CRM-13739
         static $notRealIDFields = NULL;
         if ($notRealIDFields == NULL) {
-          $notRealIDFields = array('trxn_id', 'componentpaymentfield_transaction_id');
+          $notRealIDFields = array('trxn_id', 'componentpaymentfield_transaction_id', 'phone_type_id');
         }
 
         if (in_array($fieldName, $notRealIDFields)) {

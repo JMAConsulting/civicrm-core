@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.7                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2015                                |
+  | Copyright CiviCRM LLC (c) 2004-2016                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -289,15 +289,10 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
     $this->buildCustom($this->_values['custom_pre_id'], 'customPre');
     $this->buildCustom($this->_values['custom_post_id'], 'customPost');
 
-    $this->buildComponentForm($this->_id, $this);
+    // CRM-18399: used by template to pass pre profile id as a url arg
+    $this->assign('custom_pre_id', $this->_values['custom_pre_id']);
 
-    if (!empty($this->_fields) && !empty($this->_values['custom_pre_id'])) {
-      $profileAddressFields = array();
-      foreach ($this->_fields as $key => $value) {
-        CRM_Core_BAO_UFField::assignAddressField($key, $profileAddressFields, array('uf_group_id' => $this->_values['custom_pre_id']));
-      }
-      $this->set('profileAddressFields', $profileAddressFields);
-    }
+    $this->buildComponentForm($this->_id, $this);
 
     // Build payment processor form
     CRM_Core_Payment_ProcessorForm::buildQuickForm($this);
@@ -600,6 +595,11 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
   public static function formRule($fields, $files, $self) {
     $errors = array();
     $amount = self::computeAmount($fields, $self->_values);
+    if (CRM_Utils_Array::value('auto_renew', $fields) &&
+      CRM_Utils_Array::value('payment_processor_id', $fields) == 0
+    ) {
+      $errors['auto_renew'] = ts('You cannot have auto-renewal on if you are paying later.');
+    }
 
     if ((!empty($fields['selectMembership']) &&
         $fields['selectMembership'] != 'no_thanks'
@@ -880,10 +880,10 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
           if (CRM_Utils_Array::value('pledge_installments', $fields) == NULL) {
             $errors['pledge_installments'] = ts('Pledge Installments is required field.');
           }
-          elseif (CRM_Utils_array::value('pledge_installments', $fields) == 1) {
+          elseif (CRM_Utils_Array::value('pledge_installments', $fields) == 1) {
             $errors['pledge_installments'] = ts('Pledges consist of multiple scheduled payments. Select one-time contribution if you want to make your gift in a single payment.');
           }
-          elseif (CRM_Utils_array::value('pledge_installments', $fields) == 0) {
+          elseif (CRM_Utils_Array::value('pledge_installments', $fields) == 0) {
             $errors['pledge_installments'] = ts('Pledge Installments field must be > 1.');
           }
         }
@@ -896,7 +896,7 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
           if (CRM_Utils_Array::value('pledge_frequency_interval', $fields) == NULL) {
             $errors['pledge_frequency_interval'] = ts('Pledge Frequency Interval. is required field.');
           }
-          elseif (CRM_Utils_array::value('pledge_frequency_interval', $fields) == 0) {
+          elseif (CRM_Utils_Array::value('pledge_frequency_interval', $fields) == 0) {
             $errors['pledge_frequency_interval'] = ts('Pledge frequency interval field must be > 0');
           }
         }
@@ -1050,27 +1050,6 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
     }
     // from here on down, $params['amount'] holds a monetary value (or null) rather than an option ID
     $params['amount'] = self::computeAmount($params, $this->_values);
-    if (($this->_values['is_pay_later'] &&
-        empty($this->_paymentProcessor) &&
-        !array_key_exists('hidden_processor', $params)) ||
-      (CRM_Utils_Array::value('payment_processor_id', $params) == 0)
-      && ($is_quick_config == 0 || $params['amount'] != 0)
-    ) {
-      $params['is_pay_later'] = 1;
-    }
-    else {
-      $params['is_pay_later'] = 0;
-    }
-
-    // Would be nice to someday understand the point of this set.
-    $this->set('is_pay_later', $params['is_pay_later']);
-    // assign pay later stuff
-    $this->_params['is_pay_later'] = CRM_Utils_Array::value('is_pay_later', $params, FALSE);
-    $this->assign('is_pay_later', $params['is_pay_later']);
-    if ($params['is_pay_later']) {
-      $this->assign('pay_later_text', $this->_values['pay_later_text']);
-      $this->assign('pay_later_receipt', $this->_values['pay_later_receipt']);
-    }
 
     $params['separate_amount'] = $params['amount'];
     $memFee = NULL;
@@ -1161,6 +1140,27 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
         }
       }
       $this->set('lineItem', $lineItem);
+    }
+
+    if ($params['amount'] != 0 && (($this->_values['is_pay_later'] &&
+          empty($this->_paymentProcessor) &&
+          !array_key_exists('hidden_processor', $params)) ||
+        (CRM_Utils_Array::value('payment_processor_id', $params) == 0))
+    ) {
+      $params['is_pay_later'] = 1;
+    }
+    else {
+      $params['is_pay_later'] = 0;
+    }
+
+    // Would be nice to someday understand the point of this set.
+    $this->set('is_pay_later', $params['is_pay_later']);
+    // assign pay later stuff
+    $this->_params['is_pay_later'] = CRM_Utils_Array::value('is_pay_later', $params, FALSE);
+    $this->assign('is_pay_later', $params['is_pay_later']);
+    if ($params['is_pay_later']) {
+      $this->assign('pay_later_text', $this->_values['pay_later_text']);
+      $this->assign('pay_later_receipt', $this->_values['pay_later_receipt']);
     }
 
     if ($this->_membershipBlock['is_separate_payment'] && !empty($params['separate_amount'])) {

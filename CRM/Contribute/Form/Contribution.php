@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -384,6 +384,10 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       $defaults['payment_instrument_id'] = key(CRM_Core_OptionGroup::values('payment_instrument', FALSE, FALSE, FALSE, 'AND is_default = 1'));
     }
 
+    if ($this->_id) {
+      $defaults['credit_card_number'] = "**** **** **** " . CRM_Core_BAO_FinancialTrxn::getCreditCardNumber($this->_id);
+    }
+
     if (!empty($defaults['is_test'])) {
       $this->assign('is_test', TRUE);
     }
@@ -648,6 +652,9 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         array('' => ts('- select -')) + CRM_Contribute_PseudoConstant::paymentInstrument(),
         TRUE, array('onChange' => "return showHideByValue('payment_instrument_id','4','checkNumber','table-row','select',false);")
       );
+
+      $creditCardNumber = $this->addElement('text', 'credit_card_number', ts('Credit Card Number'));
+      $creditCardNumber->freeze();
     }
 
     $trxnId = $this->add('text', 'trxn_id', ts('Transaction ID'), array('class' => 'twelve') + $attributes['trxn_id']);
@@ -748,6 +755,11 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       $status,
       FALSE
     );
+
+    // CRM-16189, add Revenue Recognition Date
+    if (CRM_Contribute_BAO_Contribution::checkContributeSettings('deferred_revenue_enabled')) {
+      $this->add('date', 'revenue_recognition_date', ts('Revenue Recognition Date'), CRM_Core_SelectValues::date(NULL, 'M Y', NULL, 5));
+    }
 
     // add various dates
     $this->addDateTime('receive_date', ts('Received'), FALSE, array('formatType' => 'activityDateTime'));
@@ -998,7 +1010,19 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         $errors['trxn_id'] = ts('Transaction ID\'s must be unique. Transaction \'%1\' already exists in your database.', array(1 => $fields['trxn_id']));
       }
     }
-
+    if (!empty($fields['revenue_recognition_date'])
+      && count(array_filter($fields['revenue_recognition_date'])) == 1
+    ) {
+      $errors['revenue_recognition_date'] = ts('Month and Year are required field for Revenue Recognition.');
+    }
+    // CRM-16189
+    try {
+      CRM_Financial_BAO_FinancialAccount::checkFinancialTypeHasDeferred($fields, $self->_id, $self->_priceSet['fields']);
+    }
+    catch (CRM_Core_Exception $e) {
+      $errors['financial_type_id'] = ' ';
+      $errors['_qf_default'] = $e->getMessage();
+    }
     $errors = array_merge($errors, $softErrors);
     return $errors;
   }
@@ -1257,6 +1281,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
               'payment_processor_id' => $this->_paymentProcessor['id'],
               'is_transactional' => FALSE,
               'fee_amount' => CRM_Utils_Array::value('fee_amount', $result),
+              'credit_card_number' => CRM_Utils_Array::value('credit_card_number', $paymentParams, NULL),
             ));
             // This has now been set to 1 in the DB - declare it here also
             $contribution->contribution_status_id = 1;
@@ -1622,6 +1647,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         'cancel_reason',
         'source',
         'check_number',
+        'credit_card_number',
       );
       foreach ($fields as $f) {
         $params[$f] = CRM_Utils_Array::value($f, $formValues);
@@ -1631,7 +1657,14 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       if ($priceSetId) {
         $params['skipCleanMoney'] = 1;
       }
-
+      $params['revenue_recognition_date'] = NULL;
+      if (!empty($formValues['revenue_recognition_date'])
+        && count(array_filter($formValues['revenue_recognition_date'])) == 2
+      ) {
+        $params['revenue_recognition_date'] = CRM_Utils_Date::processDate(
+          '01-' . implode('-', $formValues['revenue_recognition_date'])
+        );
+      }
       $dates = array(
         'receive_date',
         'receipt_date',
@@ -1639,7 +1672,9 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       );
 
       foreach ($dates as $d) {
-        $params[$d] = CRM_Utils_Date::processDate($formValues[$d], $formValues[$d . '_time'], TRUE);
+        if (isset($formValues[$d])) {
+          $params[$d] = CRM_Utils_Date::processDate($formValues[$d], CRM_Utils_Array::value($d . '_time', $formValues), TRUE);
+        }
       }
 
       if (!empty($formValues['is_email_receipt'])) {
@@ -1696,7 +1731,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
 
       // process associated membership / participant, CRM-4395
       if ($contribution->id && $action & CRM_Core_Action::UPDATE) {
-        $this->statusMessage[] = $this->updateRelatedComponent($contribution->id,
+        $this->statusMessage[] = CRM_Contribute_BAO_Contribution::transitionComponentWithReturnMessage($contribution->id,
           $contribution->contribution_status_id,
           CRM_Utils_Array::value('contribution_status_id',
             $this->_values

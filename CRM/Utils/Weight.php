@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.7                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2015                                |
+  | Copyright CiviCRM LLC (c) 2004-2016                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -53,7 +53,7 @@ class CRM_Utils_Weight {
    */
   public static function correctDuplicateWeights($daoName, $fieldValues = NULL, $weightField = 'weight') {
     $selectField = "MIN(id) AS dupeId, count(id) as dupeCount, $weightField as dupeWeight";
-    $groupBy = "$weightField having dupeCount>1";
+    $groupBy = "$weightField having count(id)>1";
 
     $minDupeID = CRM_Utils_Weight::query('SELECT', $daoName, $fieldValues, $selectField, NULL, NULL, $groupBy);
 

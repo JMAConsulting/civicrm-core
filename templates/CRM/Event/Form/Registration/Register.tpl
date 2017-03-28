@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -141,7 +141,9 @@
       </fieldset>
     {/if}
 
-    {include file='CRM/Core/BillingBlockWrapper.tpl'}
+    {if $priceSet}
+      {include file='CRM/Core/BillingBlockWrapper.tpl'}
+    {/if}
 
     <div class="crm-public-form-item crm-section custom_pre-section">
       {include file="CRM/UF/Form/Block.tpl" fields=$customPost}

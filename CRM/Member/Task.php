@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -105,7 +105,7 @@ class CRM_Member_Task {
           'result' => TRUE,
         ),
         7 => array(
-          'title' => ts('PDF letters - print for memberships'),
+          'title' => ts('Print/merge document for memberships'),
           'class' => 'CRM_Member_Form_Task_PDFLetter',
           'result' => FALSE,
         ),

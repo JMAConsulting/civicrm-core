@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -1088,6 +1088,36 @@ class CRM_Core_PseudoConstantTest extends CiviUnitTestCase {
         'flip' => TRUE,
       ));
     $this->assertEquals(array_flip($byId), $result);
+  }
+
+  public function testGetTaxRates() {
+    $contact = $this->createLoggedInUser();
+    $financialType = $this->callAPISuccess('financial_type', 'create', array(
+      'name' => 'Test taxable financial Type',
+      'is_reserved' => 0,
+      'is_active' => 1,
+    ));
+    $financialAccount = $this->callAPISuccess('financial_account', 'create', array(
+       'name' => 'Test Tax financial account ',
+       'contact_id' => $contact,
+       'financial_account_type_id' => 2,
+       'is_tax' => 1,
+       'tax_rate' => 5.00,
+       'is_reserved' => 0,
+       'is_active' => 1,
+       'is_default' => 0,
+    ));
+    $financialTypeId = $financialType['id'];
+    $financialAccountId = $financialAccount['id'];
+    $financialAccountParams = array(
+      'entity_table' => 'civicrm_financial_type',
+      'entity_id' => $financialTypeId,
+      'account_relationship' => 10,
+      'financial_account_id' => $financialAccountId,
+    );
+    CRM_Financial_BAO_FinancialTypeAccount::add($financialAccountParams);
+    $taxRates = CRM_Core_PseudoConstant::getTaxRates();
+    $this->assertEquals('5.00', $taxRates[$financialType['id']]);
   }
 
 }

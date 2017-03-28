@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -36,7 +36,7 @@
      </tr>
      {foreach from=$rows item=row}
      <tr>
-       <td>{$row.total_amount|crmMoney}</td>
+       <td>{$row.total_amount|crmMoney:$row.currency}</td>
        <td>{$row.financial_type}</td>
        <td>{$row.payment_instrument}{if $row.check_number} (#{$row.check_number}){/if}</td>
        <td>{$row.receive_date|crmDate}</td>

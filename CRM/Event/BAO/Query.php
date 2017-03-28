@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -368,6 +368,7 @@ class CRM_Event_BAO_Query {
       case 'participant_fee_amount':
       case 'participant_fee_level':
       case 'participant_campaign_id':
+      case 'participant_registered_by_id':
 
         $qillName = $name;
         if (in_array($name, array(
@@ -379,6 +380,7 @@ class CRM_Event_BAO_Query {
           'participant_fee_level',
           'participant_is_pay_later',
           'participant_campaign_id',
+          'participant_registered_by_id',
         ))
         ) {
           $name = str_replace('participant_', '', $name);
@@ -414,7 +416,7 @@ class CRM_Event_BAO_Query {
         }
         if (!strstr($op, 'NULL') && !strstr($op, 'EMPTY') && !strstr($op, 'LIKE')) {
           $regexOp = (strstr($op, '!') || strstr($op, 'NOT')) ? 'NOT REGEXP' : 'REGEXP';
-          $regexp = "[[:cntrl:]]*" . implode('[[:>:]]*|[[:<:]]*', (array) $value) . "[[:cntrl:]]*";
+          $regexp = "([[:cntrl:]]|^)" . implode('([[:cntrl:]]|$)|([[:cntrl:]]|^)', (array) $value) . "([[:cntrl:]]|$)";
           $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("civicrm_participant.$name", $regexOp, $regexp, 'String');
         }
         else {

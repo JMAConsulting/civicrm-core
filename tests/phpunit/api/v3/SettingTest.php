@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -50,6 +50,7 @@ class api_v3_SettingTest extends CiviUnitTestCase {
     parent::setUp();
     $params = array(
       'name' => 'Default Domain Name',
+      'domain_version' => '4.7',
     );
     $result = $this->callAPISuccess('domain', 'get', $params);
     if (empty($result['id'])) {
@@ -513,6 +514,7 @@ class api_v3_SettingTest extends CiviUnitTestCase {
   public function testDefaults() {
     $domparams = array(
       'name' => 'B Team Domain',
+      'domain_version' => '4.7',
     );
     $dom = $this->callAPISuccess('domain', 'create', $domparams);
     $params = array(

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -259,8 +259,9 @@ class WebTest_Contribute_ContributionPageAddTest extends CiviSeleniumTestCase {
     $this->waitForElementPresent("financial_type_id");
     $this->type("sort_name", $firstName);
     $this->select('financial_type_id', "label=Donation");
-    $this->clickLink('_qf_Search_refresh', "xpath=//table[@class='selector row-highlight']/tbody/tr/td[10]/span//a[text()='View']", FALSE);
-    $this->click("xpath=//div[@id='contributionSearch']/table[@class='selector row-highlight']/tbody/tr/td[10]/span//a[text()='View']");
+    $this->clickLink('_qf_Search_refresh', "xpath=//table[@class='selector row-highlight']/tbody/tr/td[4][text()='Donation']/../td[10]/span//a[text()='View']", FALSE);
+    $this->click("xpath=//table[@class='selector row-highlight']/tbody/tr/td[4][text()='Donation']/../td[10]/span//a[text()='View']");
+    $this->waitForElementPresent("xpath=//table/tbody/tr/td[text()='From']/following-sibling::td");
     $this->waitForAjaxContent();
     $expected = array(
       'From' => "{$firstName} {$lastName}",

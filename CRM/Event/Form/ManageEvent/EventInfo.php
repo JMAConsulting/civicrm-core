@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,7 +27,7 @@
 
 /**
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -62,6 +62,7 @@ class CRM_Event_Form_ManageEvent_EventInfo extends CRM_Event_Form_ManageEvent {
     if (!empty($_POST['hidden_custom'])) {
       $this->set('type', 'Event');
       $this->set('subType', CRM_Utils_Array::value('event_type_id', $_POST));
+      $this->assign('customDataSubType', CRM_Utils_Array::value('event_type_id', $_POST));
       $this->set('entityId', $this->_id);
 
       CRM_Custom_Form_CustomData::preProcess($this, NULL, $this->_eventType, 1, 'Event', $this->_id);

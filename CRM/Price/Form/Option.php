@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -216,6 +216,8 @@ class CRM_Price_Form_Option extends CRM_Core_Form {
       $this->addRule('amount', ts('Please enter a monetary value for this field.'), 'money');
 
       $this->add('textarea', 'description', ts('Description'));
+      $this->add('textarea', 'help_pre', ts('Pre Option Help'));
+      $this->add('textarea', 'help_post', ts('Post Option Help'));
 
       // weight
       $this->add('text', 'weight', ts('Order'), NULL, TRUE);
@@ -283,7 +285,13 @@ class CRM_Price_Form_Option extends CRM_Core_Form {
     ) {
       $errors['count'] = ts('Participant count can not be greater than max participants.');
     }
-
+    // CRM-16189
+    try {
+      CRM_Financial_BAO_FinancialAccount::validateFinancialType($fields['financial_type_id'], $form->_fid, 'PriceField');
+    }
+    catch (CRM_Core_Exception $e) {
+      $errors['financial_type_id'] = $e->getMessage();
+    }
     return empty($errors) ? TRUE : $errors;
   }
 

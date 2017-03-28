@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -46,6 +46,10 @@
     <div class="float-left" id="contribution_check_number_wrapper">
       {$form.contribution_check_number.label} <br />
       {$form.contribution_check_number.html}
+    </div>
+    <div class="float-left" id="credit_card_number_wrapper">
+      {$form.credit_card_number.label} <br />
+      {$form.credit_card_number.html}
     </div>
   </td>
   <td>

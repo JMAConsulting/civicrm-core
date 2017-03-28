@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -174,6 +174,10 @@ class CRM_Admin_Form_Preferences extends CRM_Core_Form {
               $this->addRadio($fieldName, $fieldValue['title'], $options, NULL, '&nbsp;&nbsp;');
               break;
 
+            case 'YesNo':
+              $this->addRadio($fieldName, $fieldValue['title'], array(0 => 'No', 1 => 'Yes'), NULL, '&nbsp;&nbsp;');
+              break;
+
             case 'checkboxes':
               $options = array_flip(CRM_Core_OptionGroup::values($fieldName, FALSE, FALSE, TRUE));
               $newOptions = array();
@@ -269,6 +273,7 @@ class CRM_Admin_Form_Preferences extends CRM_Core_Form {
           case 'text':
           case 'select':
           case 'radio':
+          case 'YesNo':
           case 'entity_reference':
             $this->_config->$settingName = CRM_Utils_Array::value($settingName, $this->_params);
             break;

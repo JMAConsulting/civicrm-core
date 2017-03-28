@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Utils_Mail_Incoming {
   const
@@ -81,6 +81,11 @@ class CRM_Utils_Mail_Incoming {
 
     if ($part instanceof ezcMailMultiPart) {
       return self::formatMailMultipart($part, $attachments);
+    }
+
+    // CRM-19111 - Handle blank emails with a subject.
+    if (!$part) {
+      return NULL;
     }
 
     CRM_Core_Error::fatal(ts("No clue about the %1", array(1 => get_class($part))));
@@ -313,6 +318,14 @@ class CRM_Utils_Mail_Incoming {
     // and put it in a standardized format
     $params = array('is_error' => 0);
 
+    // Sometimes $mail->from is unset because ezcMail didn't handle format
+    // of From header. CRM-19215.
+    if (!isset($mail->from)) {
+      if (preg_match('/^([^ ]*)( (.*))?$/', $mail->getHeader('from'), $matches)) {
+        $mail->from = new ezcMailAddress($matches[1], trim($matches[2]));
+      }
+    }
+
     $params['from'] = array();
     self::parseAddress($mail->from, $field, $params['from'], $mail);
 
@@ -338,7 +351,7 @@ class CRM_Utils_Mail_Incoming {
 
     // format and move attachments to the civicrm area
     if (!empty($attachments)) {
-      $date = date('Ymdhis');
+      $date = date('YmdHis');
       $config = CRM_Core_Config::singleton();
       for ($i = 0; $i < count($attachments); $i++) {
         $attachNum = $i + 1;

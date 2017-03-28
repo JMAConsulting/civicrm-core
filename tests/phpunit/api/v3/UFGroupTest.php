@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -196,7 +196,7 @@ class api_v3_UFGroupTest extends CiviUnitTestCase {
   }
 
   public function testUFGroupUpdateWithEmptyParams() {
-    $result = $this->callAPIFailure('uf_group', 'create', array(), $this->_ufGroupId);
+    $result = $this->callAPIFailure('uf_group', 'create', array(), 'Mandatory key(s) missing from params array: title');
   }
 
   public function testUFGroupDelete() {

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Contribute_BAO_Query {
 
@@ -103,6 +103,7 @@ class CRM_Contribute_BAO_Query {
     if (!empty($query->_returnProperties['contribution_batch'])) {
       $query->_select['contribution_batch'] = "civicrm_batch.title as contribution_batch";
       $query->_element['contribution_batch'] = 1;
+      $query->_tables['civicrm_financial_trxn'] = 1;
       $query->_tables['contribution_batch'] = 1;
     }
 
@@ -239,7 +240,7 @@ class CRM_Contribute_BAO_Query {
     // Adding address_id in a way that is more easily extendable since the above is a bit ... wordy.
     $supportedBasicReturnValues = array('address_id');
     foreach ($supportedBasicReturnValues as $fieldName) {
-      if (!empty($query->_returnProperties[$fieldName])) {
+      if (!empty($query->_returnProperties[$fieldName]) && empty($query->_select[$fieldName])) {
         $query->_select[$fieldName] = "civicrm_contribution.{$fieldName} as $fieldName";
         $query->_element[$fieldName] = $query->_tables['civicrm_contribution'] = 1;
       }
@@ -265,7 +266,11 @@ class CRM_Contribute_BAO_Query {
       if (empty($query->_params[$id][0])) {
         continue;
       }
-      if (substr($query->_params[$id][0], 0, 13) == 'contribution_' || substr($query->_params[$id][0], 0, 10) == 'financial_'  || substr($query->_params[$id][0], 0, 8) == 'payment_') {
+      if (substr($query->_params[$id][0], 0, 13) == 'contribution_'
+        || substr($query->_params[$id][0], 0, 10) == 'financial_'
+        || substr($query->_params[$id][0], 0, 8) == 'payment_'
+        || $query->_params[$id][0] == 'credit_card_number'
+      ) {
         if ($query->_mode == CRM_Contact_BAO_QUERY::MODE_CONTACTS) {
           $query->_useDistinct = TRUE;
         }
@@ -571,6 +576,7 @@ class CRM_Contribute_BAO_Query {
         $query->_where[$grouping][] = " civicrm_entity_batch.batch_id $op $value";
         $query->_qill[$grouping][] = ts('Batch Name %1 %2', array(1 => $op, 2 => $batches[$value]));
         $query->_tables['civicrm_contribution'] = $query->_whereTables['civicrm_contribution'] = 1;
+        $query->_tables['civicrm_financial_trxn'] = $query->_whereTables['civicrm_financial_trxn'] = 1;
         $query->_tables['contribution_batch'] = $query->_whereTables['contribution_batch'] = 1;
         return;
 
@@ -585,7 +591,14 @@ class CRM_Contribute_BAO_Query {
 
       case 'contribution_is_payment':
         $query->_where[$grouping][] = " civicrm_financial_trxn.is_payment $op $value";
-        $query->_tables['contribution_financial_trxn'] = $query->_whereTables['contribution_financial_trxn'] = 1;
+        $query->_tables['civicrm_financial_trxn'] = $query->_whereTables['civicrm_financial_trxn'] = 1;
+        return;
+
+      case 'credit_card_number':
+        $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("civicrm_financial_trxn.credit_card_number", $op, $value);
+        $query->_tables['civicrm_financial_trxn'] = $query->_whereTables['civicrm_financial_trxn'] = 1;
+        list($op, $value) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Financial_DAO_FinancialTrxn', 'credit_card_number', $value, $op);
+        $query->_qill[$grouping][] = ts('%1 %2 %3', array(1 => ts('Credit Card Number'), 2 => $op, 3 => $value));
         return;
 
       default:
@@ -760,17 +773,18 @@ class CRM_Contribute_BAO_Query {
         break;
 
       case 'contribution_batch':
-        $from .= " $side JOIN civicrm_entity_financial_trxn ON (
-        civicrm_entity_financial_trxn.entity_table = 'civicrm_contribution'
-        AND civicrm_contribution.id = civicrm_entity_financial_trxn.entity_id )";
-
-        $from .= " $side JOIN civicrm_financial_trxn ON (
-        civicrm_entity_financial_trxn.financial_trxn_id = civicrm_financial_trxn.id )";
-
         $from .= " $side JOIN civicrm_entity_batch ON ( civicrm_entity_batch.entity_table = 'civicrm_financial_trxn'
         AND civicrm_financial_trxn.id = civicrm_entity_batch.entity_id )";
 
         $from .= " $side JOIN civicrm_batch ON civicrm_entity_batch.batch_id = civicrm_batch.id";
+        break;
+
+      case 'civicrm_financial_trxn':
+        $from .= " $side JOIN civicrm_entity_financial_trxn ON (
+        civicrm_entity_financial_trxn.entity_table = 'civicrm_contribution'
+        AND civicrm_contribution.id = civicrm_entity_financial_trxn.entity_id )";
+        $from .= " $side JOIN civicrm_financial_trxn ON (
+        civicrm_entity_financial_trxn.financial_trxn_id = civicrm_financial_trxn.id )";
         break;
     }
     return $from;
@@ -825,7 +839,7 @@ class CRM_Contribute_BAO_Query {
                SELECT con.id as id, con.contact_id, cso.id as filter_id, NULL as scredit_id
                  FROM civicrm_contribution con
             LEFT JOIN civicrm_contribution_soft cso ON con.id = cso.contribution_id
-             GROUP BY id, contact_id, scredit_id
+             GROUP BY id, contact_id, scredit_id, cso.id
             UNION ALL
                SELECT scredit.contribution_id as id, scredit.contact_id, scredit.id as filter_id, scredit.id as scredit_id
                  FROM civicrm_contribution_soft as scredit";
@@ -886,6 +900,7 @@ class CRM_Contribute_BAO_Query {
       // on what field to show instead.
       'contribution_product_id' => 1,
       'product_name' => 1,
+      'currency' => 1,
     );
     if (self::isSoftCreditOptionEnabled()) {
       $properties = array_merge($properties, self::softCreditReturnProperties());
@@ -1103,6 +1118,8 @@ class CRM_Contribute_BAO_Query {
         'context' => 'search',
       )
     );
+
+    $form->addElement('text', 'credit_card_number', ts('Credit Card Number'));
 
     // CRM-16713 - contribution search by premiums on 'Find Contribution' form.
     $form->add('select', 'contribution_product_id',

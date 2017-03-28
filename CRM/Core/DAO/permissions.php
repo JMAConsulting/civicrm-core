@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -172,6 +172,12 @@ function _civicrm_api3_permissions($entity, $action, &$params) {
     'delete' => array(
       'access CiviCRM',
       'delete activities',
+    ),
+    'get' => array(
+      'access CiviCRM',
+      // Note that view all activities is also required within the api
+      // if the id is not passed in. Where the id is passed in the activity
+      // specific check functions are used and tested.
     ),
     'default' => array(
       'access CiviCRM',

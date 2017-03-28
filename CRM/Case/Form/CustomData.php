@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -65,7 +65,7 @@ class CRM_Case_Form_CustomData extends CRM_Core_Form {
     $this->_subTypeID = CRM_Utils_Request::retrieve('subType', 'Positive', $this, TRUE);
     $this->_contactID = CRM_Utils_Request::retrieve('cid', 'Positive', $this, TRUE);
 
-    $groupTree = &CRM_Core_BAO_CustomGroup::getTree('Case',
+    $groupTree = CRM_Core_BAO_CustomGroup::getTree('Case',
       $this,
       $this->_entityID,
       $this->_groupID,

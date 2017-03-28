@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -269,7 +269,6 @@ class CRM_Core_Payment_BaseIPNTest extends CiviUnitTestCase {
   public function testsendMailParticipantObjectsCheckLog() {
     $this->_setUpParticipantObjects();
     $values = array();
-    require_once 'CiviTest/CiviMailUtils.php';
     $mut = new CiviMailUtils($this, TRUE);
     $this->IPN->loadObjects($this->input, $this->ids, $this->objects, FALSE, $this->_processorId);
     $this->IPN->sendMail($this->input, $this->ids, $this->objects, $values, FALSE, FALSE);
@@ -296,7 +295,6 @@ class CRM_Core_Payment_BaseIPNTest extends CiviUnitTestCase {
       'civicrm_mailing_spool',
     );
     $this->quickCleanup($tablesToTruncate, FALSE);
-    require_once 'CiviTest/CiviMailUtils.php';
     $mut = new CiviMailUtils($this, TRUE);
     $this->IPN->loadObjects($this->input, $this->ids, $this->objects, FALSE, $this->_processorId);
     $this->IPN->sendMail($this->input, $this->ids, $this->objects, $values, FALSE, FALSE);
@@ -644,7 +642,7 @@ class CRM_Core_Payment_BaseIPNTest extends CiviUnitTestCase {
    * Set up participant requirements for test.
    */
   public function _setUpPledgeObjects() {
-    $this->_pledgeId = $this->pledgeCreate($this->_contactId);
+    $this->_pledgeId = $this->pledgeCreate(array('contact_id' => $this->_contactId));
     //we'll create membership payment here because to make setup more re-usable
     $pledgePayment = $this->callAPISuccess('pledge_payment', 'create', array(
       'version' => 3,

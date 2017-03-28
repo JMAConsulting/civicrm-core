@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -155,7 +155,7 @@ class CRM_Contact_Form_CustomData extends CRM_Core_Form {
 
     // when custom data is included in this page
     if (!empty($_POST['hidden_custom'])) {
-      for ($i = 0; $i <= $_POST['hidden_custom_group_count'][$this->_groupID]; $i++) {
+      for ($i = 1; $i <= $_POST['hidden_custom_group_count'][$this->_groupID]; $i++) {
         CRM_Custom_Form_CustomData::preProcess($this, NULL, $this->_contactSubType, $i, $this->_contactType, $this->_tableID);
         CRM_Custom_Form_CustomData::buildQuickForm($this);
         CRM_Custom_Form_CustomData::setDefaultValues($this);
@@ -230,7 +230,7 @@ class CRM_Contact_Form_CustomData extends CRM_Core_Form {
     if ($this->_cdType || $this->_multiRecordDisplay == 'single') {
       if ($this->_copyValueId) {
         // cached tree is fetched
-        $groupTree = &CRM_Core_BAO_CustomGroup::getTree($this->_type,
+        $groupTree = CRM_Core_BAO_CustomGroup::getTree($this->_type,
           $this,
           $this->_entityId,
           $this->_groupID
@@ -253,7 +253,7 @@ class CRM_Contact_Form_CustomData extends CRM_Core_Form {
       return $customDefaultValue;
     }
 
-    $groupTree = &CRM_Core_BAO_CustomGroup::getTree($this->_contactType,
+    $groupTree = CRM_Core_BAO_CustomGroup::getTree($this->_contactType,
       $this,
       $this->_tableID,
       $this->_groupID,
@@ -262,7 +262,7 @@ class CRM_Contact_Form_CustomData extends CRM_Core_Form {
 
     if (empty($_POST['hidden_custom_group_count'])) {
       // custom data building in edit mode (required to handle multi-value)
-      $groupTree = &CRM_Core_BAO_CustomGroup::getTree($this->_contactType, $this, $this->_tableID,
+      $groupTree = CRM_Core_BAO_CustomGroup::getTree($this->_contactType, $this, $this->_tableID,
         $this->_groupID, $this->_contactSubType
       );
       $customValueCount = CRM_Core_BAO_CustomGroup::buildCustomDataView($this, $groupTree, TRUE, $this->_groupID, NULL, NULL, $this->_tableID);
@@ -309,8 +309,7 @@ class CRM_Contact_Form_CustomData extends CRM_Core_Form {
       $this->ajaxResponse += CRM_Contact_Form_Inline::renderFooter($this->_tableID);
     }
 
-    // reset the group contact cache for this group
-    CRM_Contact_BAO_GroupContactCache::remove();
+    CRM_Contact_BAO_GroupContactCache::opportunisticCacheFlush();
   }
 
 }

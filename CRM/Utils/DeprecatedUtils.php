@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.7                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2015                                |
+  | Copyright CiviCRM LLC (c) 2004-2016                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /*
@@ -1527,7 +1527,9 @@ function _civicrm_api3_deprecated_activity_buildmailparams($result, $activityTyp
   $params['activity_type_id'] = $activityTypeID;
 
   $params['status_id'] = 2;
-  $params['source_contact_id'] = $params['assignee_contact_id'] = $result['from']['id'];
+  if (!empty($result['from']['id'])) {
+    $params['source_contact_id'] = $params['assignee_contact_id'] = $result['from']['id'];
+  }
   $params['target_contact_id'] = array();
   $keys = array('to', 'cc', 'bcc');
   foreach ($keys as $key) {

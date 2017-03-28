@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
 | CiviCRM version 4.7                                                |
 +--------------------------------------------------------------------+
-| Copyright CiviCRM LLC (c) 2004-2015                                |
+| Copyright CiviCRM LLC (c) 2004-2016                                |
 +--------------------------------------------------------------------+
 | This file is a part of CiviCRM.                                    |
 |                                                                    |
@@ -142,7 +142,6 @@ class CRM_Utils_SignerTest extends CiviUnitTestCase {
     );
 
     foreach ($cases as $caseId => $case) {
-      require_once 'CRM/Utils/Signer.php';
       $signer = new CRM_Utils_Signer('secret', array('a', 'b', 'c'));
       $signature = $signer->sign($case['signParams']);
       $this->assertTrue(!empty($signature) && is_string($signature)); // arbitrary

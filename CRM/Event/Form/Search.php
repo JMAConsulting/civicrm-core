@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -297,6 +297,7 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
 
     if (!empty($_POST)) {
       $this->_formValues = $this->controller->exportValues($this->_name);
+      CRM_Contact_BAO_Query::processSpecialFormValue($this->_formValues, array('participant_status_id'));
     }
 
     if (empty($this->_formValues)) {
@@ -429,7 +430,7 @@ class CRM_Event_Form_Search extends CRM_Core_Form_Search {
       elseif (is_array($status) && !array_key_exists('IN', $status)) {
         $statusTypes = array_keys($status);
       }
-      $this->_formValues['participant_status_id'] = is_array($statusTypes) ? array_keys($statusTypes) : $statusTypes;
+      $this->_formValues['participant_status_id'] = is_array($statusTypes) ? array('IN' => array_keys($statusTypes)) : $statusTypes;
     }
 
     $role = CRM_Utils_Request::retrieve('role', 'String',

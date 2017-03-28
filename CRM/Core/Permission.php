@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -689,6 +689,10 @@ class CRM_Core_Permission {
       'import contacts' => array(
         $prefix . ts('import contacts'),
         ts('Import contacts and activities'),
+      ),
+      'import SQL datasource' => array(
+        $prefix . ts('import SQL datasource'),
+        ts('When importing, consume data directly from a SQL datasource'),
       ),
       'edit groups' => array(
         $prefix . ts('edit groups'),

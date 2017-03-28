@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -48,16 +48,13 @@ function civicrm_api3_contribution_create(&$params) {
 
   if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()) {
     if (empty($params['id'])) {
-      $op = 'add';
+      $op = CRM_Core_Action::ADD;
     }
     else {
       if (empty($params['financial_type_id'])) {
-        $params['financial_type_id'] = civicrm_api3('Contribution', 'getvalue', array(
-          'id' => $params['id'],
-          'return' => 'financial_type_id',
-        ));
+        $params['financial_type_id'] = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $params['id'], 'financial_type_id');
       }
-      $op = 'edit';
+      $op = CRM_Core_Action::UPDATE;
     }
     CRM_Financial_BAO_FinancialType::getAvailableFinancialTypes($types, $op);
     if (!in_array($params['financial_type_id'], array_keys($types))) {
@@ -82,10 +79,6 @@ function civicrm_api3_contribution_create(&$params) {
     }
   }
   _civicrm_api3_contribution_create_legacy_support_45($params);
-
-  // Make sure tax calculation is handled via api.
-  // @todo this belongs in the BAO NOT the api.
-  $params = CRM_Contribute_BAO_Contribution::checkTaxAmount($params);
 
   return _civicrm_api3_basic_create(_civicrm_api3_get_BAO(__FUNCTION__), $params, 'Contribution');
 }
@@ -389,14 +382,22 @@ function civicrm_api3_contribution_transact($params) {
  * @throws Exception
  */
 function civicrm_api3_contribution_sendconfirmation($params) {
-  $contribution = new CRM_Contribute_BAO_Contribution();
-  $contribution->id = $params['id'];
-  if (!$contribution->find(TRUE)) {
-    throw new Exception('Contribution does not exist');
+  $input = $ids = $values = array();
+  $passThroughParams = array(
+    'receipt_from_email',
+    'receipt_from_name',
+    'receipt_update',
+    'cc_receipt',
+    'bcc_receipt',
+    'receipt_text',
+    'payment_processor_id',
+  );
+  foreach ($passThroughParams as $key) {
+    if (isset($params[$key])) {
+      $input[$key] = $params[$key];
+    }
   }
-  $input = $ids = $cvalues = array('receipt_from_email' => $params['receipt_from_email']);
-  $contribution->loadRelatedObjects($input, $ids, TRUE);
-  $contribution->composeMessageArray($input, $ids, $cvalues, FALSE, FALSE);
+  CRM_Contribute_BAO_Contribution::sendMail($input, $ids, $params['id'], $values);
 }
 
 /**
@@ -410,29 +411,37 @@ function civicrm_api3_contribution_sendconfirmation($params) {
 function _civicrm_api3_contribution_sendconfirmation_spec(&$params) {
   $params['id'] = array(
     'api.required' => 1,
-    'title' => 'Contribution ID',
+    'title' => ts('Contribution ID'),
     'type' => CRM_Utils_Type::T_INT,
   );
   $params['receipt_from_email'] = array(
-    'api.required' => 1,
-    'title' => 'From Email address (string) required until someone provides a patch :-)',
+    'title' => ts('From Email address (string)'),
     'type' => CRM_Utils_Type::T_STRING,
   );
   $params['receipt_from_name'] = array(
-    'title' => 'From Name (string)',
+    'title' => ts('From Name (string)'),
     'type' => CRM_Utils_Type::T_STRING,
   );
   $params['cc_receipt'] = array(
-    'title' => 'CC Email address (string)',
+    'title' => ts('CC Email address (string)'),
     'type' => CRM_Utils_Type::T_STRING,
   );
   $params['bcc_receipt'] = array(
-    'title' => 'BCC Email address (string)',
+    'title' => ts('BCC Email address (string)'),
     'type' => CRM_Utils_Type::T_STRING,
   );
   $params['receipt_text'] = array(
-    'title' => 'Message (string)',
+    'title' => ts('Message (string)'),
     'type' => CRM_Utils_Type::T_STRING,
+  );
+  $params['receipt_update'] = array(
+    'title' => ts('Update the Receipt Date'),
+    'type' => CRM_Utils_Type::T_BOOLEAN,
+    'api.default' => TRUE,
+  );
+  $params['payment_processor_id'] = array(
+    'title' => ts('Payment processor Id (avoids mis-guesses)'),
+    'type' => CRM_Utils_Type::T_INT,
   );
 }
 
@@ -448,8 +457,11 @@ function _civicrm_api3_contribution_sendconfirmation_spec(&$params) {
  * @param array $params
  *   Input parameters.
  *
- * @throws API_Exception
- *   Api result array.
+ * @return array
+ *   API result array
+ * @throws \API_Exception
+ * @throws \CRM_Core_Exception
+ * @throws \Exception
  */
 function civicrm_api3_contribution_completetransaction(&$params) {
 
@@ -474,7 +486,9 @@ function civicrm_api3_contribution_completetransaction(&$params) {
   if (!empty($params['fee_amount'])) {
     $input['fee_amount'] = $params['fee_amount'];
   }
-  $params = _ipn_process_transaction($params, $contribution, $input, $ids);
+  $ccNumber = CRM_Utils_Array::value('credit_card_number', $params, NULL);
+  $input['credit_card_number'] = substr($ccNumber, -4);
+  return _ipn_process_transaction($params, $contribution, $input, $ids);
 
 }
 
@@ -562,13 +576,19 @@ function civicrm_api3_contribution_repeattransaction(&$params) {
     }
 
     unset($contribution->id, $contribution->receive_date, $contribution->invoice_id);
-    $contribution->contribution_status_id = $params['contribution_status_id'];
     $contribution->receive_date = $params['receive_date'];
 
-    $passThroughParams = array('trxn_id', 'total_amount', 'campaign_id', 'fee_amount', 'financial_type_id');
+    $passThroughParams = array(
+      'trxn_id',
+      'total_amount',
+      'campaign_id',
+      'fee_amount',
+      'financial_type_id',
+      'contribution_status_id',
+    );
     $input = array_intersect_key($params, array_fill_keys($passThroughParams, NULL));
 
-    $params = _ipn_process_transaction($params, $contribution, $input, $ids, $original_contribution);
+    return _ipn_process_transaction($params, $contribution, $input, $ids, $original_contribution);
   }
   catch(Exception $e) {
     throw new API_Exception('failed to load related objects' . $e->getMessage() . "\n" . $e->getTraceAsString());
@@ -608,6 +628,9 @@ function _ipn_process_transaction(&$params, $contribution, $input, $ids, $firstC
   if (!empty($params['trxn_date'])) {
     $input['trxn_date'] = $params['trxn_date'];
   }
+  if (!empty($params['receive_date'])) {
+    $input['receive_date'] = $params['receive_date'];
+  }
   if (empty($contribution->contribution_page_id)) {
     static $domainFromName;
     static $domainFromEmail;
@@ -618,9 +641,9 @@ function _ipn_process_transaction(&$params, $contribution, $input, $ids, $firstC
     $input['receipt_from_email'] = CRM_Utils_Array::value('receipt_from_email', $params, $domainFromEmail);
   }
   $transaction = new CRM_Core_Transaction();
-  CRM_Contribute_BAO_Contribution::completeOrder($input, $ids, $objects, $transaction, !empty($contribution->contribution_recur_id), $contribution,
+  return CRM_Contribute_BAO_Contribution::completeOrder($input, $ids, $objects, $transaction, !empty
+  ($contribution->contribution_recur_id), $contribution,
     FALSE, FALSE);
-  return $params;
 }
 
 /**
