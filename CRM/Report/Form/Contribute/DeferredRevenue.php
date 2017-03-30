@@ -43,7 +43,7 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
    */
   public function __construct() {
     $this->_exposeContactID = FALSE;
-    $this->_deferredFinancialAccount = CRM_Financial_BAO_FinancialAccount::getAllDeferredFinancialAccount();
+    $this->_deferredFinancialAccount = CRM_Financial_BAO_FinancialAccount::getAllDeferredFinancialAccount(TRUE);
     $this->_columns = array(
       'civicrm_financial_account' => array(
         'dao' => 'CRM_Financial_DAO_FinancialAccount',
@@ -217,6 +217,12 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
             'title' => ts('Revenue Recognition Date'),
             'operatorType' => CRM_Report_Form::OP_DATE,
             'type' => CRM_Utils_Type::T_DATE,
+          ),
+          'revenue_recognition_date_toggle' => array(
+            'title' => ts("Current month's revenue?"),
+            'type' => CRM_Utils_Type::T_BOOLEAN,
+            'default' => 0,
+            'pseudofield' => TRUE,
           ),
         ),
       ),
@@ -425,8 +431,13 @@ LEFT JOIN civicrm_entity_batch {$this->_aliases['civicrm_batch']}
         $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['End Date'] = CRM_Utils_Date::customFormat($dao->civicrm_membership_end_date, $dateFormat);
         $columns['End Date'] = 1;
       }
-      for ($i = 0; $i < 12; $i++) {
-        $columns[date('M, Y', strtotime(date('Y-m-d') . "+{$i} month"))] = 1;
+      if ($submittedFields['revenue_recognition_date_toggle_value']) {
+        $columns[date('M, Y', strtotime(date('Y-m-d')))] = 1;
+      }
+      else {
+        for ($i = 0; $i < 12; $i++) {
+          $columns[date('M, Y', strtotime(date('Y-m-d') . "+{$i} month"))] = 1;
+        }
       }
       $trxnDate = explode(',', $dao->civicrm_financial_trxn_1_trxn_date);
       $trxnAmount = explode(',', $dao->civicrm_financial_trxn_1_total_amount);
