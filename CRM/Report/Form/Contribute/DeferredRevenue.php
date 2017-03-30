@@ -134,6 +134,12 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
           'display_name' => array(
             'title' => ts('Contact Name'),
           ),
+          'contact_id' => array(
+            'title' => ts('Contact ID'),
+            'dbAlias' => 'contribution_civireport.contact_id',
+            'required' => TRUE,
+            'no_display' => TRUE,
+          ),
         ),
       ),
       'civicrm_membership' => array(
@@ -177,6 +183,8 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
         'fields' => array(
           'id' => array(
             'title' => ts('Contribution ID'),
+            'required' => TRUE,
+            'no_display' => TRUE,
           ),
           'contact_id' => array(
             'title' => ts('Contact ID'),
@@ -356,11 +364,11 @@ LEFT JOIN civicrm_entity_batch {$this->_aliases['civicrm_batch']}
         $rows[$arraykey]['label'] = "Deferred Revenue Account: {$dao->civicrm_financial_account_name} ({$dao->civicrm_financial_account_accounting_code}), Revenue Account: {$dao->civicrm_financial_account_1_name} {$dao->civicrm_financial_account_1_accounting_code}";
       }
       $contactUrl = CRM_Utils_System::url("civicrm/contact/view",
-       'reset=1&cid=' . $dao->civicrm_contribution_contact_id,
+       'reset=1&cid=' . $dao->civicrm_contact_contact_id,
        $this->_absoluteUrl
       );
       $contributionUrl = CRM_Utils_System::url("civicrm/contact/view/contribution",
-       'reset=1&action=view&cid=' . $dao->civicrm_contribution_contact_id . '&id=' . $dao->civicrm_contribution_id,
+       'reset=1&action=view&cid=' . $dao->civicrm_contact_contact_id . '&id=' . $dao->civicrm_contribution_id,
        $this->_absoluteUrl
       );
       $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id] = array(
@@ -417,6 +425,9 @@ LEFT JOIN civicrm_entity_batch {$this->_aliases['civicrm_batch']}
         $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['End Date'] = CRM_Utils_Date::customFormat($dao->civicrm_membership_end_date, $dateFormat);
         $columns['End Date'] = 1;
       }
+      for ($i = 0; $i < 12; $i++) {
+        $columns[date('M, Y', strtotime(date('Y-m-d') . "+{$i} month"))] = 1;
+      }
       $trxnDate = explode(',', $dao->civicrm_financial_trxn_1_trxn_date);
       $trxnAmount = explode(',', $dao->civicrm_financial_trxn_1_total_amount);
       foreach ($trxnDate as $key => $date) {
@@ -426,10 +437,6 @@ LEFT JOIN civicrm_entity_batch {$this->_aliases['civicrm_batch']}
         }
         $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id][$keyDate] = CRM_Utils_Money::format($trxnAmount[$key]);
       }
-    }
-    for ($i = 0; $i < 12; $i++) {
-      //$columns[date('M, Y', strtotime("+1 month", date('Y-m-d')))] = 1;
-      $columns[date('M, Y', strtotime(date('Y-m-d') . "+{$i} month"))] = 1;
     }
     $this->_columnHeaders = $columns;
   }
