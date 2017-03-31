@@ -43,7 +43,7 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
    */
   public function __construct() {
     $this->_exposeContactID = FALSE;
-    $this->_deferredFinancialAccount = CRM_Financial_BAO_FinancialAccount::getAllDeferredFinancialAccount(TRUE);
+    $this->_deferredFinancialAccount = CRM_Financial_BAO_FinancialAccount::getAllDeferredFinancialAccount();
     $this->_columns = array(
       'civicrm_financial_account' => array(
         'dao' => 'CRM_Financial_DAO_FinancialAccount',

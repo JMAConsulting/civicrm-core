@@ -439,20 +439,18 @@ LIMIT 1";
    * @return array of Deferred Financial Account
    *
    */
-  public static function getAllDeferredFinancialAccount($includeCode = FALSE) {
-    $query = "SELECT cfa.id, cfa.name, cfa.accounting_code FROM civicrm_entity_financial_account ce
-INNER JOIN civicrm_financial_account cfa ON ce.financial_account_id = cfa.id
-WHERE `entity_table` = 'civicrm_financial_type' AND cfa.is_active = 1 AND ce.account_relationship = %1 GROUP BY cfa.id";
-    $deferredAccountRel = key(CRM_Core_PseudoConstant::accountOptionValues('account_relationship', NULL, " AND v.name LIKE 'Deferred Revenue Account is' "));
-    $queryParams = array(1 => array($deferredAccountRel, 'Integer'));
-    $dao = CRM_Core_DAO::executeQuery($query, $queryParams);
+  public static function getAllDeferredFinancialAccount() {
     $financialAccount = array();
-    while ($dao->fetch()) {
-      $label = $dao->name;
-      if ($includeCode) {
-        $label .= " ({$dao->accounting_code})" ;
+    $result = civicrm_api3('EntityFinancialAccount', 'get', array(
+      'sequential' => 1,
+      'return' => array("financial_account_id.id", "financial_account_id.name", "financial_account_id.accounting_code"),
+      'entity_table' => "civicrm_financial_type",
+      'account_relationship' => "Deferred Revenue Account is",
+    ));
+    if ($result['count'] > 0) {
+      foreach ($result['values'] as $key => $value) {
+        $financialAccount[$value['financial_account_id.id']] = $value['financial_account_id.name'] . ' (' . $value['financial_account_id.accounting_code'] . ')';
       }
-      $financialAccount[$dao->id] = $label;
     }
     return $financialAccount;
   }
