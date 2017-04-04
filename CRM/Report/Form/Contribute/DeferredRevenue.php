@@ -381,7 +381,7 @@ LEFT JOIN civicrm_entity_batch {$this->_aliases['civicrm_batch']}
         'Transaction Date' => CRM_Utils_Date::customFormat($dao->civicrm_financial_trxn_trxn_date, $dateFormat),
         'Amount' => "<a href={$contributionUrl}>" . CRM_Utils_Money::format($dao->civicrm_financial_trxn_total_amount) . "</a>",
       );
-      if (isset($submittedFields['fields']['batch_id'])) {
+      if (isset($submittedFields['fields']['batch_id']) && $dao->civicrm_batch_batch_id) {
         $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Batch Title'] = CRM_Core_DAO::getFieldValue('CRM_Batch_BAO_Batch', $dao->civicrm_batch_batch_id, 'title');
         $columns['Batch Title'] = 1;
       }
