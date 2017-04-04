@@ -379,7 +379,7 @@ LEFT JOIN civicrm_entity_batch {$this->_aliases['civicrm_batch']}
       );
       $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id] = array(
         'Transaction Date' => CRM_Utils_Date::customFormat($dao->civicrm_financial_trxn_trxn_date, $dateFormat),
-        'Amount' => CRM_Utils_Money::format($dao->civicrm_financial_trxn_total_amount),
+        'Amount' => "<a href={$contributionUrl}>" . CRM_Utils_Money::format($dao->civicrm_financial_trxn_total_amount) . "</a>",
       );
       if (isset($submittedFields['fields']['batch_id'])) {
         $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Batch Title'] = CRM_Core_DAO::getFieldValue('CRM_Batch_BAO_Batch', $dao->civicrm_batch_batch_id, 'title');
@@ -404,7 +404,7 @@ LEFT JOIN civicrm_entity_batch {$this->_aliases['civicrm_batch']}
       }
       $columns['Amount'] = 1;
       if (isset($submittedFields['fields']['contribution_id'])) {
-        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Contribution ID'] = $dao->civicrm_contribution_id;
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Contribution ID'] = "<a href={$contributionUrl}>{$dao->civicrm_contribution_id}</a>";
         $columns['Contribution ID'] = 1;
       }
       if (isset($submittedFields['fields']['description'])) {
@@ -412,11 +412,11 @@ LEFT JOIN civicrm_entity_batch {$this->_aliases['civicrm_batch']}
         $columns['Item'] = 1;
       }
       if (isset($submittedFields['fields']['contact_id'])) {
-        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Contact ID'] = $dao->civicrm_contribution_contact_id;
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Contact ID'] = "<a href={$contactUrl}>{$dao->civicrm_contribution_contact_id}</a>";
         $columns['Contact ID'] = 1;
       }
       if (isset($submittedFields['fields']['display_name'])) {
-        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Contact Name'] = $dao->civicrm_contact_display_name;
+        $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id]['Contact Name'] = "<a href={$contactUrl}>{$dao->civicrm_contact_display_name}</a>";
         $columns['Contact Name'] = 1;
       }
       if (isset($submittedFields['fields']['source'])) {
