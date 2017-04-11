@@ -183,8 +183,6 @@ class CRM_Report_Form_Contribute_DeferredRevenue extends CRM_Report_Form {
         'fields' => array(
           'id' => array(
             'title' => ts('Contribution ID'),
-            'required' => TRUE,
-            'no_display' => TRUE,
           ),
           'contact_id' => array(
             'title' => ts('Contact ID'),
@@ -448,6 +446,10 @@ LEFT JOIN civicrm_entity_batch {$this->_aliases['civicrm_batch']}
         }
         $rows[$arraykey]['rows'][$dao->civicrm_financial_item_id][$keyDate] = CRM_Utils_Money::format($trxnAmount[$key]);
       }
+    }
+    for ($i = 0; $i < 12; $i++) {
+      //$columns[date('M, Y', strtotime("+1 month", date('Y-m-d')))] = 1;
+      $columns[date('M, Y', strtotime(date('Y-m-d') . "+{$i} month"))] = 1;
     }
     $this->_columnHeaders = $columns;
   }

@@ -359,4 +359,5 @@ class CRM_Core_BAO_FinancialTrxnTest extends CiviUnitTestCase {
     $this->assertEquals($params['revenue_recognition_date'], date('Ymd'), "The dates do not match.");
   }
 
+>>>>>>> 7f37bdc991516f8eef2843eb1c64d9fe58931665
 }

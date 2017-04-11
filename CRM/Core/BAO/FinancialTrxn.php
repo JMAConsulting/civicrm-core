@@ -33,6 +33,14 @@
  *
  */
 class CRM_Core_BAO_FinancialTrxn extends CRM_Financial_DAO_FinancialTrxn {
+
+  /**
+   * Static field to hold financial trxn data.
+   *
+   * @var array
+   */
+  static $_financialTrxnData = array();
+
   /**
    * Class constructor.
    *
