@@ -1206,8 +1206,8 @@ WHERE eft.entity_id = %1 AND ft.to_financial_account_id <> %2";
       'total_amount' => 100,
       'financial_type_id' => 1,
       'payment_instrument_id' => 1,
-      'credit_card_type' => 'Visa',
-      'credit_card_number' => 4111111125484567,
+      'card_type' => 'Visa',
+      'pan_truncation' => 4567,
     );
     $contribution = CRM_Contribute_BAO_Contribution::create($params);
     $lastFinancialTrxnId = CRM_Core_BAO_FinancialTrxn::getFinancialTrxnId($contribution->id, 'DESC');
@@ -1222,7 +1222,7 @@ WHERE eft.entity_id = %1 AND ft.to_financial_account_id <> %2";
     $this->assertEquals(CRM_Utils_Array::value('pan_truncation', $financialTrxn), 4567);
     $params = array(
       'id' => $contribution->id,
-      'credit_card_number' => 4111548725482345,
+      'pan_truncation' => 2345,
     );
     $contribution = CRM_Contribute_BAO_Contribution::create($params);
     $financialTrxn = $this->callAPISuccessGetSingle(

@@ -1050,6 +1050,12 @@ LEFT JOIN  civicrm_line_item i ON ( i.contribution_id = c.id AND i.entity_table 
       'source_contact_id' => CRM_Core_Session::getLoggedInContactID() ? CRM_Core_Session::getLoggedInContactID() :
         $contactID,
     ));
+
+    // CRM-20336 Make sure that the contribution status is Failed, not Pending.
+    civicrm_api3('contribution', 'create', array(
+      'id' => $contributionID,
+      'contribution_status_id' => 'Failed',
+    ));
   }
 
   /**
@@ -3101,6 +3107,10 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
       $update = TRUE;
     }
 
+    // format card_type
+    $creditCardType = CRM_Utils_Array::value('card_type', $params);
+    $params['card_type'] = CRM_Core_BAO_FinancialTrxn::formatCreditCardDetails($creditCardType);
+
     $statusId = $params['contribution']->contribution_status_id;
     // CRM-13964 partial payment
     if ($contributionStatus == 'Partially paid'
@@ -3131,6 +3141,8 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
         $balanceTrxnParams['status_id'] = $statusId;
         $balanceTrxnParams['payment_instrument_id'] = $params['contribution']->payment_instrument_id;
         $balanceTrxnParams['check_number'] = CRM_Utils_Array::value('check_number', $params);
+        $balanceTrxnParams['card_type'] = CRM_Utils_Array::value('card_type', $params);
+        $balanceTrxnParams['pan_truncation'] = CRM_Utils_Array::value('pan_truncation', $params);
         if (!empty($balanceTrxnParams['from_financial_account_id']) &&
           ($statusId == array_search('Completed', $contributionStatuses) || $statusId == array_search('Partially paid', $contributionStatuses))
         ) {
@@ -3195,6 +3207,8 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
         'status_id' => $statusId,
         'payment_instrument_id' => CRM_Utils_Array::value('payment_instrument_id', $params, $params['contribution']->payment_instrument_id),
         'check_number' => CRM_Utils_Array::value('check_number', $params),
+        'card_type' => CRM_Utils_Array::value('card_type', $params),
+        'pan_truncation' => CRM_Utils_Array::value('pan_truncation', $params),
       );
       if ($contributionStatus == 'Refunded' || $contributionStatus == 'Chargeback' || $contributionStatus == 'Cancelled') {
         $trxnParams['trxn_date'] = !empty($params['contribution']->cancel_date) ? $params['contribution']->cancel_date : date('YmdHis');
@@ -3368,6 +3382,9 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
               civicrm_api3('FinancialTrxn', 'create', array('id' => $refundIDs['financialTrxnId'], 'trxn_id' => $params['refund_trxn_id']));
             }
           }
+          $cardType = CRM_Utils_Array::value('card_type', $params);
+          $panTruncation = CRM_Utils_Array::value('pan_truncation', $params);
+          CRM_Core_BAO_FinancialTrxn::updateCreditCardDetails($params['contribution']->id, $panTruncation, $cardType);
         }
       }
 
@@ -3796,6 +3813,10 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
     if (!$participantId) {
       $participantId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_ParticipantPayment', $contributionId, 'participant_id', 'contribution_id');
     }
+
+    // format card_type
+    $creditCardType = CRM_Utils_Array::value('card_type', $trxnsData);
+    $trxnsData['card_type'] = CRM_Core_BAO_FinancialTrxn::formatCreditCardDetails($creditCardType);
 
     if ($paymentType == 'owed') {
       // build params for recording financial trxn entry
@@ -4469,6 +4490,8 @@ WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
       'receive_date',
       'receipt_date',
       'contribution_status_id',
+      'card_type',
+      'pan_truncation',
     );
     if (self::isSingleLineItem($primaryContributionID)) {
       $inputContributionWhiteList[] = 'financial_type_id';

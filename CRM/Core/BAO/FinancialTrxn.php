@@ -724,10 +724,10 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
         }
         foreach ($results['values'] as $result) {
           if ($result['account_relationship'] == $accountRel) {
-            $trxnParams['to_financial_account_id'] = $result['financial_account_id'];
+            $trxnParams['from_financial_account_id'] = $result['financial_account_id'];
           }
           else {
-            $trxnParams['from_financial_account_id'] = $result['financial_account_id'];
+            $trxnParams['to_financial_account_id'] = $result['financial_account_id'];
           }
         }
         foreach ($deferredRevenue['revenue'] as $revenue) {
@@ -744,6 +744,61 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
         }
       }
     }
+  }
+
+  /**
+   * Update Credit Card Details in civicrm_financial_trxn table.
+   *
+   * @param int $contributionID
+   * @param int $panTruncation
+   * @param int $cardType
+   *
+   */
+  public static function updateCreditCardDetails($contributionID, $panTruncation, $cardType) {
+    $financialTrxn = civicrm_api3('EntityFinancialTrxn', 'get', array(
+      'return' => array('financial_trxn_id.payment_processor_id', 'financial_trxn_id'),
+      'entity_table' => 'civicrm_contribution',
+      'entity_id' => $contributionID,
+      'financial_trxn_id.is_payment' => TRUE,
+      'options' => array('sort' => 'financial_trxn_id DESC', 'limit' => 1),
+    ));
+
+    // In case of Contribution status is Pending From Incomplete Transaction or Failed there is no Financial Entries created for Contribution.
+    // Above api will return 0 count, in such case we won't update card type and pan truncation field.
+    if (!$financialTrxn['count']) {
+      return NULL;
+    }
+
+    $financialTrxn = $financialTrxn['values'][$financialTrxn['id']];
+    $paymentProcessorID = CRM_Utils_Array::value('financial_trxn_id.payment_processor_id', $financialTrxn);
+
+    if ($paymentProcessorID) {
+      return NULL;
+    }
+
+    $financialTrxnId = $financialTrxn['financial_trxn_id'];
+    $trxnparams = array('id' => $financialTrxnId);
+    if (isset($cardType)) {
+      $trxnparams['card_type'] = $cardType;
+    }
+    if (isset($panTruncation)) {
+      $trxnparams['pan_truncation'] = $panTruncation;
+    }
+    civicrm_api3('FinancialTrxn', 'create', $trxnparams);
+  }
+
+  /**
+   * Format Credit Card type.
+   *
+   * @param string|NULL|int $creditCardType
+   *
+   * @return int|NULL
+   */
+  public static function formatCreditCardDetails($creditCardType) {
+    if ($creditCardType && !is_numeric($creditCardType)) {
+      $creditCardType = CRM_Core_PseudoConstant::getKey('CRM_Financial_DAO_FinancialTrxn', 'card_type', $creditCardType);
+    }
+    return $creditCardType;
   }
 
   /**
@@ -768,121 +823,6 @@ WHERE ft.to_financial_account_id != {$toFinancialAccount} AND ft.to_financial_ac
       $params['revenue_recognition_date'] = CRM_Utils_Array::value('receive_date', $params, date('Ymd'));
       $params['membership_id'] = $membershipID;
     }
-  }
-
-  /**
-   * Get Credit Card Details.
-   *
-   * @param int $contributionID
-   *   Contribution ID
-   *
-   * @return array
-   */
-  public static function getCreditCardDetails($contributionID, $viewOnly = TRUE) {
-    $sql = "SELECT card_type, pan_truncation
-      FROM civicrm_financial_trxn cft
-        INNER JOIN civicrm_entity_financial_trxn ceft ON ceft.financial_trxn_id = cft.id
-      WHERE ceft.entity_table = 'civicrm_contribution'
-        AND ceft.entity_id = %1
-        AND cft.is_payment = 1 ORDER BY cft.id DESC LIMIT 1";
-    $mysqlParams = array(1 => array($contributionID, 'Integer'));
-    $dao = CRM_Core_DAO::executeQuery($sql, $mysqlParams);
-    $dao->fetch();
-    $creditCardDetails = array(
-      'credit_card_type' => $dao->card_type,
-      'credit_card_number' => empty($dao->pan_truncation) ? NULL : $viewOnly ? ("**** **** **** " . $dao->pan_truncation) : $dao->pan_truncation,
-    );
-    return $creditCardDetails;
-  }
-
-  /**
-   * Format Credit Card type.
-   *
-   * @param array $params
-   *
-   */
-  public static function formatCreditCardDetails(&$params) {
-    $creditCardType = CRM_Utils_Array::value('credit_card_type', $params);
-    if ($creditCardType) {
-      if (!is_numeric($creditCardType)) {
-        $creditCardTypes = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn',
-          'card_type',
-          array('labelColumn' => 'name')
-        );
-        $params['card_type'] = array_search($creditCardType, $creditCardTypes);
-      }
-      else {
-        $params['card_type'] = $creditCardType;
-      }
-    }
-    $ccNumber = CRM_Utils_Array::value('credit_card_number', $params);
-    if ($ccNumber) {
-      $params['pan_truncation'] = substr($ccNumber, -4);
-    }
-  }
-
-  /**
-   * Check if financial trxn is via payment processor.
-   *
-   * @param int $contributionID
-   *   Contribution ID
-   *
-   * @param string $returnField
-   *
-   * @return int
-   */
-  public static function hasPaymentProcessorTrxn($contributionID, $returnField = 'payment_processor_id') {
-    if (empty(self::$_financialTrxnData[$contributionID])) {
-      $sql = "SELECT payment_processor_id, financial_trxn_id FROM civicrm_financial_trxn cft
-        INNER JOIN civicrm_entity_financial_trxn ceft ON ceft.financial_trxn_id = cft.id
-      WHERE ceft.entity_table = 'civicrm_contribution'
-        AND ceft.entity_id = %1
-        AND cft.is_payment = 1 ORDER BY cft.id DESC LIMIT 1";
-      $mysqlParams = array(1 => array($contributionID, 'Integer'));
-      $result = CRM_Core_DAO::executeQuery($sql, $mysqlParams);
-      if ($result->fetch()) {
-        self::$_financialTrxnData[$contributionID] = array(
-          'payment_processor_id' => $result->payment_processor_id,
-          'financial_trxn_id' => $result->financial_trxn_id,
-        );
-      }
-      else {
-        return NULL;
-      }
-    }
-    return self::$_financialTrxnData[$contributionID][$returnField];
-  }
-
-  /**
-   * Update Credit Card Details.
-   *
-   * @param array $params
-   *   Contribution params
-   *
-   */
-  public static function updateCreditCardDetails($params) {
-    if (self::hasPaymentProcessorTrxn($params['contribution']->id)) {
-      return NULL;
-    }
-    $financialTrxnId = self::hasPaymentProcessorTrxn($params['contribution']->id, 'financial_trxn_id');
-    $queryParams = array(1 => array($financialTrxnId, 'Integer'));
-    $fields = array();
-    if (CRM_Utils_Array::value('card_type', $params)) {
-      $fields[] = 'card_type = %2';
-      $queryParams[2] = array($params['card_type'], 'Integer');
-    }
-    if (CRM_Utils_Array::value('pan_truncation', $params)) {
-      $fields[] = 'pan_truncation = %3';
-      $queryParams[3] = array($params['pan_truncation'], 'String');
-    }
-    if (empty($fields)) {
-      return;
-    }
-    $query = 'UPDATE civicrm_financial_trxn
-      SET ' . implode(', ', $fields)
-      . ' WHERE id = %1
-    ';
-    CRM_Core_DAO::executeQuery($query, $queryParams);
   }
 
 }

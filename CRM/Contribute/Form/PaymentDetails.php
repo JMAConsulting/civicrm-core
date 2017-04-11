@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -59,9 +59,17 @@ class CRM_Contribute_Form_PaymentDetails {
     list($defaults['receive_date'], $defaults['receive_date_time']) = CRM_Utils_Date::setDateDefaults();
 
     if ($contributionId) {
-      $contribution = new CRM_Contribute_DAO_Contribution();
-      $contribution->id = $contributionId;
-      $contribution->find(TRUE);
+      $contribution = civicrm_api3('Contribution', 'getsingle', array(
+        'sequential' => 1,
+        'return' => array(
+          'financial_type_id',
+          'payment_instrument_id',
+          'contribution_status_id',
+          'receive_date',
+          'total_amount',
+        ),
+        'id' => $contributionId,
+      ));
       foreach (array(
         'financial_type_id',
         'payment_instrument_id',
@@ -70,10 +78,10 @@ class CRM_Contribute_Form_PaymentDetails {
         'total_amount',
       ) as $f) {
         if ($f == 'receive_date') {
-          list($defaults['receive_date']) = CRM_Utils_Date::setDateDefaults($contribution->$f);
+          list($defaults['receive_date']) = CRM_Utils_Date::setDateDefaults($contribution[$f]);
         }
         else {
-          $defaults[$f] = $contribution->$f;
+          $defaults[$f] = $contribution[$f];
         }
       }
     }
@@ -102,7 +110,7 @@ class CRM_Contribute_Form_PaymentDetails {
       ts('Payment Method'),
       array('' => ts('- select -')) + CRM_Contribute_PseudoConstant::paymentInstrument()
     );
-    $form->add('text', 'credit_card_number', ts('Card Number'), array(
+    $form->add('text', 'pan_truncation', ts('Card Number'), array(
       'size' => 5,
       'maxlength' => 4,
       'autocomplete' => 'off',
@@ -123,15 +131,8 @@ class CRM_Contribute_Form_PaymentDetails {
       $form->assign('showTransactionId', TRUE);
     }
 
-    $creditCardTypes = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialTrxn',
-      'card_type'
-    );
-    $form->add('select', 'credit_card_type',
-      ts('Card Type'),
-      array('' => 'Select') + $creditCardTypes,
-      FALSE,
-      array('class' => 'crm-select2 eight')
-    );
+    $form->addField('card_type', array('entity' => 'FinancialTrxn', 'context' => 'get', 'action' => 'create'));
+
     $status = CRM_Contribute_PseudoConstant::contributionStatus();
 
     $statusName = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
@@ -175,10 +176,13 @@ class CRM_Contribute_Form_PaymentDetails {
     if (empty($fields['payment_instrument_id'])) {
       $errors['payment_instrument_id'] = ts('Payment Method is a required field.');
     }
-    if (!empty($fields['credit_card_number'])) {
-      if (!is_numeric($fields['credit_card_number']) || strlen($fields['credit_card_number']) != 4) {
-        $errors['credit_card_number'] = ts('Please enter valid last 4 digit card number.');
+    if (!empty($fields['pan_truncation'])) {
+      if (!is_numeric($fields['pan_truncation']) || strlen($fields['pan_truncation']) != 4) {
+        $errors['pan_truncation'] = ts('Please enter valid last 4 digit card number.');
       }
+    }
+    if (CRM_Utils_System::isNull($fields['total_amount'])) {
+      $errors['total_amount'] = ts('Please enter the contribution.');
     }
   }
 
