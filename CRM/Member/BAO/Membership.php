@@ -2413,6 +2413,8 @@ WHERE      civicrm_membership.is_test = 0";
       'contribution_recur_id',
       'pan_truncation',
       'card_type_id',
+      'partial_payment_total',
+      'partial_amount_pay',
     );
     foreach ($recordContribution as $f) {
       $contributionParams[$f] = CRM_Utils_Array::value($f, $params);
