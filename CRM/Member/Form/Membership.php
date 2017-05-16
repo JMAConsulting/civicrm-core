@@ -121,16 +121,12 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
    */
   public static function getSelectedMemberships($priceSet, $params) {
     $memTypeSelected = array();
-    $priceFieldIDS = self::getPriceFieldIDs($params, $priceSet);
+    $priceFieldIDs = self::getPriceFieldIDs($params, $priceSet);
 
-    foreach ($priceFieldIDS as $priceFieldId) {
+    foreach ($priceFieldIDs as $priceFieldId) {
       if ($memTypeID = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceFieldValue', $priceFieldId, 'membership_type_id')) {
         $memTypeSelected[$priceFieldId] = $memTypeID;
       }
-    }
-
-    if (empty($memTypeSelected) && isset($params['membership_type_id']) && !empty($params['membership_type_id'][1])) {
-      $memTypeSelected = array($params['membership_type_id'][1] => $params['membership_type_id'][1]);
     }
 
     return $memTypeSelected;
@@ -772,6 +768,15 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
       if (empty($params['membership_type_id'][1])) {
         $errors['membership_type_id'] = ts('Please select a membership type.');
       }
+      elseif (!empty($params['record_contribution'])) {
+        $partiallyPaidContributionStatusID = CRM_Core_PseudoConstant::getKey('CRM_Contribute_DAO_Contribution', 'contribution_status_id', 'Partially paid');
+        // ensure that total_amount is less than the minimum_fee of selected membership type for partial contribution
+        if ($self->allMembershipTypeDetails[$params['membership_type_id'][1]]['minimum_fee'] >= $params['total_amount'] &&
+          $params['contribution_status_id'] == $partiallyPaidContributionStatusID
+        ) {
+          $errors['total_amount'] = ts('For partially paid contribution, amount must be less then the fee amount of selected membership type.');
+        }
+      }
       $numterms = CRM_Utils_Array::value('num_terms', $params);
       if ($numterms && intval($numterms) != $numterms) {
         $errors['num_terms'] = ts('Please enter an integer for the number of terms.');
@@ -796,18 +801,8 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
       return $errors;
     }
 
-    if (!empty($params['record_contribution'])) {
-      if (empty($params['payment_instrument_id'])) {
-        $errors['payment_instrument_id'] = ts('Payment Method is a required field.');
-      }
-      // CRM-20569 : Right now there is no way to decide the partially paid amount for each membership price field,
-      //  so allowing this scenario will lead to incorrect duplicate financial entries
-      if ((count($selectedMemberships) > 1) &&
-        (CRM_Utils_Array::value('contribution_status_id', $params) ==
-          array_search('Partially paid', CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name')))
-      ) {
-        $errors['_qf_default'] = ts('Please select only one membership for \'Partially paid\' contribution');
-      }
+    if (!empty($params['record_contribution']) && empty($params['payment_instrument_id'])) {
+      $errors['payment_instrument_id'] = ts('Payment Method is a required field.');
     }
 
     if (!empty($params['is_different_contribution_contact'])) {
@@ -1244,7 +1239,7 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
         //first give priority to form values then calDates.
         $date = CRM_Utils_Array::value($d, $formValues);
         if (!$date) {
-          $date = CRM_Utils_Array::value($d, $calcDate[$memType]);
+          $date = CRM_Utils_Array::value($d, $calcDates[$memType]);
         }
 
         $membershipTypeValues[$memType][$d] = CRM_Utils_Date::processDate($date);
@@ -1269,7 +1264,7 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
         // fetch the owed amount from the price field's amount of this selected membership
         $formValues['partial_payment_total'] = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceFieldValue', $priceFieldValueID, 'amount');
         // the actual amount paid
-        $formValues['partial_amount_pay'] = $formValues['total_amount'];
+        $formValues['partial_amount_to_pay'] = $formValues['total_amount'];
       }
     }
 
@@ -1329,7 +1324,7 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
         'card_type_id',
         'pan_truncation',
         'partial_payment_total',
-        'partial_amount_pay',
+        'partial_amount_to_pay',
       );
 
       foreach ($recordContribution as $f) {

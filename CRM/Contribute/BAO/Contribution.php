@@ -3875,7 +3875,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
       $participantId = CRM_Core_DAO::getFieldValue('CRM_Event_DAO_ParticipantPayment', $contributionId, 'participant_id', 'contribution_id');
     }
 
-    // fetch membership IDs registered aginst given contribution ID
+    // fetch membership IDs registered against given contribution ID
     $membershipPayments = civicrm_api3('MembershipPayment', 'Get', array('contribution_id' => $contributionId));
     if ($membershipPayments['count']) {
       $membershipIDs = array();
