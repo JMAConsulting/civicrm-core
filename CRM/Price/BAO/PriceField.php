@@ -814,8 +814,16 @@ WHERE  id IN (" . implode(',', array_keys($priceFields)) . ')';
       list($componentName) = explode(':', $fields['_qf_default']);
       // now we have all selected amount in hand.
       $totalAmount = array_sum($selectedAmounts);
+      $actualTotalAmount = CRM_Utils_Array::value('partial_payment_total', $fields, CRM_Utils_Array::value('total_amount', $fields));
+      $partiallyPaidContributionStatusID = CRM_Core_PseudoConstant::getKey('CRM_Contribute_DAO_Contribution', 'contribution_status_id', 'Partially paid');
       if ($totalAmount < 0) {
         $error['_qf_default'] = ts('%1 amount can not be less than zero. Please select the options accordingly.', array(1 => $componentName));
+      }
+      elseif ($totalAmount > 0 &&
+        $actualTotalAmount >= $totalAmount && // if total amount is equal to all selected amount in hand
+        (CRM_Utils_Array::value('contribution_status_id', $fields) == $partiallyPaidContributionStatusID)
+      ) {
+        $error['total_amount'] = ts('For partially paid contribution, amount must be less then the sum of all selected amount in hand');
       }
     }
     else {
