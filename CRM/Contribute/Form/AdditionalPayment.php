@@ -605,6 +605,9 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
         $this->_owed = $paymentInfo['amount_owed'];
         $this->_paymentType = 'owed';
       }
+      else {
+        $this->_paymentType = 'overpaid';
+      }
     }
 
     if (!empty($params['contact_id'])) {
