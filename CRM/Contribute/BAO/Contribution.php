@@ -3890,11 +3890,75 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
     $params['skipLineItem'] = TRUE;
     $trxnsData['trxn_date'] = !empty($trxnsData['trxn_date']) ? $trxnsData['trxn_date'] : date('YmdHis');
     $arAccountId = CRM_Contribute_PseudoConstant::getRelationalFinancialAccount($contributionDAO->financial_type_id, 'Accounts Receivable Account is');
+    $fiancialItemPaidStatusID = CRM_Core_PseudoConstant::getKey('CRM_Financial_DAO_FinancialItem', 'status_id', 'Paid');
+    if ($paymentType == 'overpaid') {
+      $params['partial_payment_total'] = $contributionDAO->total_amount + CRM_Utils_Array::value('total_amount', $trxnsData, 0.00);
+      $params['partial_amount_pay'] = CRM_Utils_Array::value('total_amount', $trxnsData, 0.00);
+      $params['pan_truncation'] = CRM_Utils_Array::value('pan_truncation', $trxnsData);
+      $params['card_type_id'] = CRM_Utils_Array::value('card_type_id', $trxnsData);
+      $params['check_number'] = CRM_Utils_Array::value('check_number', $trxnsData);
+      $params['financial_type_id'] = $contributionDAO->financial_type_id;
+      $trxnsData['net_amount'] = $contributionDAO->net_amount + CRM_Utils_Array::value('net_amount', $trxnsData, 0.00);
+      $trxnsData['to_financial_account_id'] = CRM_Financial_BAO_FinancialTypeAccount::getInstrumentFinancialAccount($trxnsData['payment_instrument_id']);
 
-    // get the paid status id
-    $paidStatus = CRM_Core_PseudoConstant::getKey('CRM_Financial_DAO_FinancialItem', 'status_id', 'Paid');
+      // add financial trxn for the overpaid amount
+      $financialTrxn = CRM_Contribute_BAO_Contribution::recordFinancialAccounts($params, $trxnsData);
 
-    if ($paymentType == 'owed') {
+      // find line item params which is used later to store the over paid amount
+      $priceSetId = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceSet', 'default_contribution_amount', 'id', 'name');
+      $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($contributionDAO->id);
+      $lineItemID = NULL;
+      // if line item found then lookout for the one which is configured  with contribution
+      //quick config price field, which will later update with overpaid amount.
+      if (!empty($lineItems)) {
+        foreach ($lineItems as $id => $lineItem) {
+          if ($lineItem['price_set_id'] == $priceSetId) {
+            $lineItemID = $id;
+            $lineItemParams = array(
+              'id' => $id,
+              'line_total' => $lineItem['unit_price'] + $trxnsData['total_amount'],
+              'unit_price' => $lineItem['unit_price'] + $trxnsData['total_amount'],
+            );
+            civicrm_api3('LineItem', 'create', $lineItemParams);
+            break;
+          }
+        }
+      }
+      // If lineitem not found then create a new line item referring to default
+      //  quickconfig contribution price field
+      if (!$lineItemID) {
+        CRM_Price_BAO_LineItem::getLineItemArray($params);
+        $lineItemParams = current($params['line_item'][$priceSetId]);
+        $lineItemParams = array_merge($lineItemParams, array(
+          'entity_table' => 'civicrm_contribution',
+          'entity_id' => $contributionDAO->id,
+          'contribution_id' => $contributionDAO->id,
+        ));
+        $lineItemID = CRM_Utils_Array::value('id', civicrm_api3('LineItem', 'create', $lineItemParams));
+      }
+
+      // create financial item for the overpaid amount linking to the
+      //  updated or added line item that store the overpiad amount
+      $accountRelationship = empty($contributionDAO->revenue_recognition_date) ? 'Income Account is' : 'Deferred Revenue Account is';
+      $addFinancialEntry = array(
+        'transaction_date' => $financialTrxn->trxn_date,
+        'contact_id' => $contributionDAO->contact_id,
+        'amount' => $trxnsData['total_amount'],
+        'financial_account_id' => CRM_Contribute_PseudoConstant::getRelationalFinancialAccount($contributionDAO->financial_type_id, $accountRelationship),
+        'status_id' => $fiancialItemPaidStatusID,
+        'entity_id' => $lineItemID,
+        'entity_table' => 'civicrm_line_item',
+      );
+      $trxnIds = array('id' => $financialTrxn->id);
+      CRM_Financial_BAO_FinancialItem::create($addFinancialEntry, NULL, $trxnIds);
+
+      // update contribution
+      $contributionDAO->total_amount = $params['partial_payment_total'];
+      $contributionDAO->fee_amount += CRM_Utils_Array::value('fee_amount', $trxnsData, 0.00);
+      $contributionDAO->net_amount += CRM_Utils_Array::value('net_amount', $trxnsData, 0.00);
+      $contributionDAO->save();
+    }
+    elseif ($paymentType == 'owed') {
       $params['partial_payment_total'] = $contributionDAO->total_amount;
       $params['partial_amount_to_pay'] = $trxnsData['total_amount'];
       $trxnsData['net_amount'] = !empty($trxnsData['net_amount']) ? $trxnsData['net_amount'] : $trxnsData['total_amount'];
@@ -3986,14 +4050,13 @@ WHERE eft.entity_table = 'civicrm_contribution'
             ));
           }
         }
-
         // update financial item statuses
         $baseTrxnId = CRM_Core_BAO_FinancialTrxn::getFinancialTrxnId($contributionId);
         $sqlFinancialItemUpdate = "
 UPDATE civicrm_financial_item fi
   LEFT JOIN civicrm_entity_financial_trxn eft
     ON (eft.entity_id = fi.id AND eft.entity_table = 'civicrm_financial_item')
-SET status_id = {$paidStatus}
+SET status_id = {$fiancialItemPaidStatusID}
 WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
 ";
         CRM_Core_DAO::executeQuery($sqlFinancialItemUpdate);
@@ -4026,8 +4089,7 @@ WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
             'transaction_date' => $financialTrxn->trxn_date,
             'contact_id' => $contributionDAO->contact_id,
             'amount' => round($paid, 2),
-            'currency' => $contributionDAO->currency,
-            'status_id' => $paidStatus,
+            'status_id' => $fiancialItemPaidStatusID,
             'entity_id' => $lineItemId,
             'entity_table' => 'civicrm_line_item',
           );
