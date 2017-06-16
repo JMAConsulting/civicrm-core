@@ -343,6 +343,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
 
     if ($this->_id) {
       $this->_contactID = $defaults['contact_id'];
+      $this->setDefaultPaymentDetails($this->_id, $defaults);
     }
 
     // Set $newCredit variable in template to control whether link to credit card mode is included.
@@ -408,8 +409,8 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       $this->assign('is_pay_later', TRUE);
     }
     $this->assign('contribution_status_id', CRM_Utils_Array::value('contribution_status_id', $defaults));
-    $contributionStatus = CRM_Contribute_PseudoConstant::contributionStatus($defaults['contribution_status_id'], 'name');
     if (!empty($defaults['contribution_status_id'])) {
+      $contributionStatus = CRM_Contribute_PseudoConstant::contributionStatus($defaults['contribution_status_id'], 'name');
       if (in_array(
         $contributionStatus,
         // Historically not 'Cancelled' hence not using CRM_Contribute_BAO_Contribution::isContributionStatusNegative.
@@ -643,13 +644,10 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     if (!$this->_mode) {
       $checkPaymentID = array_search('Check', CRM_Contribute_PseudoConstant::paymentInstrument('name'));
 
-      // since we are showing payments info on edit mode instead of payment details block,
-      //  payment_instrument isn't required field.
-      $required = $this->_id ? FALSE : TRUE;
       $paymentInstrument = $this->add('select', 'payment_instrument_id',
         ts('Payment Method'),
         array('' => ts('- select -')) + CRM_Contribute_PseudoConstant::paymentInstrument(),
-        $required, array('onChange' => "return showHideByValue('payment_instrument_id','{$checkPaymentID}','checkNumber','table-row','select',false);")
+        TRUE, array('onChange' => "return showHideByValue('payment_instrument_id','{$checkPaymentID}','checkNumber','table-row','select',false);")
       );
     }
 
@@ -704,6 +702,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     }
     $this->assign('cancelInfo_show_ids', implode(',', $cancelInfo_show_ids));
 
+    $isPaidByProcessor = FALSE;
     if ($this->_id) {
       $contributionStatus = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $this->_id, 'contribution_status_id');
       $name = CRM_Utils_Array::value($contributionStatus, $statusName);
@@ -741,8 +740,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
           }
           break;
       }
-      $paymentInfo = CRM_Contribute_BAO_Contribution::getPaymentInfo($this->_id, 'contribution', TRUE);
-      $this->assign('payments', $paymentInfo['transaction']);
+      $isPaidByProcessor = CRM_Utils_Array::value('financial_trxn_id.payment_processor_id', CRM_Core_BAO_FinancialTrxn::getLatestFinancialTrxnID($this->_id), FALSE);
     }
     else {
       unset($status[CRM_Utils_Array::key('Refunded', $statusName)]);
@@ -756,7 +754,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     );
 
     $currencyFreeze = FALSE;
-    if (!empty($this->_payNow) && ($this->_action & CRM_Core_Action::UPDATE)) {
+    if ((!empty($this->_payNow) || $isPaidByProcessor) && ($this->_action & CRM_Core_Action::UPDATE)) {
       $statusElement->freeze();
       $currencyFreeze = TRUE;
       $attributes['total_amount']['readonly'] = TRUE;
@@ -905,9 +903,14 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       )
     );
 
-    // if status is Cancelled freeze Amount, Payment Instrument, Check #, Financial Type,
-    // Net and Fee Amounts are frozen in AdditionalInfo::buildAdditionalDetail
-    if ($this->_id && $this->_values['contribution_status_id'] == array_search('Cancelled', $statusName)) {
+    // if status is Cancelled OR payment is made via online contribution page/CreditCard then
+    // freeze Amount, Payment Instrument, Check #, Financial Type, Net and Fee Amounts are
+    // frozen in AdditionalInfo::buildAdditionalDetail
+    if ($this->_id && (
+      $isPaidByProcessor ||
+        $this->_values['contribution_status_id'] == array_search('Cancelled', $statusName)
+      )
+    ) {
       if ($totalAmount) {
         $totalAmount->freeze();
       }
@@ -1513,18 +1516,6 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       }
       if (!empty($this->_payNow)) {
         $this->_params['contribution_id'] = $this->_id;
-      }
-      // since we are hiding the payment details block in edit mode,
-      //  this also means that some payment information won't be there in
-      //  submitted formValues, so fetch those default values in here
-      foreach (array(
-        'payment_instrument_id',
-        'check_number',
-        'receipt_date',
-      ) as $fieldName) {
-        if (empty($submittedValues[$fieldName])) {
-          $submittedValues[$fieldName] = CRM_Utils_Array::value($fieldName, $this->_values);
-        }
       }
     }
 

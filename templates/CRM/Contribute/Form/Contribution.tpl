@@ -82,13 +82,6 @@
     {/if}
     {if $contributionMode}
       <tr class="crm-contribution-form-block-payment_processor_id"><td class="label nowrap">{$form.payment_processor_id.label}<span class="crm-marker"> * </span></td><td>{$form.payment_processor_id.html}</td></tr>
-    {else}
-      <tr class="crm-contribution-form-block-receive_date">
-        <td class="label">{$form.receive_date.label}</td>
-        <td {$valueStyle}>{include file="CRM/common/jcalendar.tpl" elementName=receive_date}<br />
-          <span class="description">{ts}The date this contribution was received.{/ts}</span>
-        </td>
-      </tr>
     {/if}
     <tr class="crm-contribution-form-block-contribution_type_id crm-contribution-form-block-financial_type_id">
       <td class="label">{$form.financial_type_id.label}</td><td{$valueStyle}>{$form.financial_type_id.html}&nbsp;
@@ -232,6 +225,12 @@
         </fieldset>
         </td>
       </tr>
+      <tr class="crm-contribution-form-block-receive_date">
+        <td class="label">{$form.receive_date.label}</td>
+        <td {$valueStyle}>{include file="CRM/common/jcalendar.tpl" elementName=receive_date}<br />
+          <span class="description">{ts}The date this contribution was received.{/ts}</span>
+        </td>
+      </tr>
     {/if}
     {if $form.revenue_recognition_date && !$payNow}
       <tr class="crm-contribution-form-block-revenue_recognition_date">
@@ -247,9 +246,6 @@
           {ts}Payment Details{/ts}
         </div>
         <div class="crm-accordion-body">
-        {if $contribID && $payments}
-          {include file="CRM/Contribute/Form/PaymentInfoBlock.tpl"}
-        {else}
           <table class="form-layout-compressed" >
             <tr class="crm-contribution-form-block-payment_instrument_id">
               <td class="label">{$form.payment_instrument_id.label}</td>
@@ -291,14 +287,11 @@
               <td>{$form.from_email_address.html}</td>
             </tr>
           </table>
-        {/if}
       </div>
     </div>
   {/if}
 
-  {if $contributionMode OR !$payments}
-    {include file='CRM/Core/BillingBlockWrapper.tpl'}
-  {/if}
+  {include file='CRM/Core/BillingBlockWrapper.tpl'}
 
     <!-- start of soft credit -->
     {if !$payNow}

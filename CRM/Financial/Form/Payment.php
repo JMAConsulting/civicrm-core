@@ -51,12 +51,19 @@ class CRM_Financial_Form_Payment extends CRM_Core_Form {
   public $isBackOffice = FALSE;
 
   /**
+   * $var bool
+   */
+  public $freezeCreditCardFields = FALSE;
+
+  /**
    * Set variables up before form is built.
    */
   public function preProcess() {
     parent::preProcess();
 
     $this->_values['financial_trxn_id'] = CRM_Utils_Request::retrieve('financial_trxn_id', 'Integer', $this);
+
+    $this->_paymentProcessorID = CRM_Utils_Request::retrieve('processor_id', 'Integer', CRM_Core_DAO::$_nullObject, TRUE);
 
     if (!empty($this->_values['financial_trxn_id'])) {
       $this->getFinancialInfo($this->_values['financial_trxn_id']);
@@ -65,8 +72,6 @@ class CRM_Financial_Form_Payment extends CRM_Core_Form {
     else {
       $this->_values['custom_pre_id'] = CRM_Utils_Request::retrieve('pre_profile_id', 'Integer', $this);
 
-      $this->_paymentProcessorID = CRM_Utils_Request::retrieve('processor_id', 'Integer', CRM_Core_DAO::$_nullObject,
-        TRUE);
       $this->currency = CRM_Utils_Request::retrieve('currency', 'String', CRM_Core_DAO::$_nullObject,
         TRUE);
 
@@ -148,10 +153,18 @@ class CRM_Financial_Form_Payment extends CRM_Core_Form {
       ->addScript('CRM.config.creditCardTypes = ' . json_encode($creditCardTypes) . ';', '-9999', $region);
   }
 
+  /**
+   * Function to retrieve financial trxn information based on ID
+   *
+   * @param int $financialTrxnID
+   */
   public function getFinancialInfo($financialTrxnID) {
     $financialTrxn = civicrm_api3('FinancialTrxn', 'Getsingle', array('id' => $financialTrxnID));
 
-    $this->_paymentProcessorID = CRM_Utils_Array::value('payment_processor_id', $financialTrxn, 0);
+    if (!empty($financialTrxn['payment_processor_id'])) {
+      $this->freezeCreditCardFields = TRUE;
+    }
+
     $this->currency = $financialTrxn['currency'];
     $this->paymentInstrumentID = $financialTrxn['payment_instrument_id'];;
   }

@@ -128,6 +128,16 @@ class CRM_Core_Payment_Form {
             $field['attributes'],
             FALSE
           );
+          if (!empty($form->freezeCreditCardFields) &&
+            in_array($field['name'],
+              array(
+                'credit_card_type',
+                'pan_truncation',
+              )
+            )
+          ) {
+            $form->freeze($field['name']);
+          }
         }
       }
       // This will cause the fields to be marked as required - but it is up to the payment processor to

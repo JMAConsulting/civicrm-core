@@ -241,6 +241,19 @@ class CRM_Contribute_Form_AbstractEditPayment extends CRM_Contact_Form_Task {
   }
 
   /**
+   * Set default values with latest payment details
+   *
+   * @param int $id
+   * @param array $defaults
+   */
+  public function setDefaultPaymentDetails($id, &$defaults) {
+    // get latest payment indentified by last financial trxn entry ID
+    $latestFinancialTrxn = CRM_Core_BAO_FinancialTrxn::getLatestFinancialTrxnID($this->_id);
+    $this->assign('financialTrxnID', CRM_Utils_Array::value('financial_trxn_id', $latestFinancialTrxn));
+    $defaults['trxn_date'] = CRM_Utils_Array::value('financial_trxn_id.trxn_date', $latestFinancialTrxn);
+  }
+
+  /**
    * @param int $id
    * @param $values
    */

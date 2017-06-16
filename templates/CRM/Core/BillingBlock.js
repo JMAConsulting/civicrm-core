@@ -88,6 +88,9 @@
     });
   }
 
-  civicrm_billingblock_creditcard_helper();
+  // only show credit card icons if selectable and NOT freezed
+  if ($('#credit_card_type').is('select')) {
+    civicrm_billingblock_creditcard_helper();
+  }
 
 })(CRM.$);

@@ -4213,26 +4213,6 @@ WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
           $paidByLabel .= " ({$creditCardType}{$pantruncation})";
         }
 
-        // show payment edit link only for payments done via backoffice form
-        $paymentEditLink = '';
-        if (empty($resultDAO->payment_processor_id) && CRM_Core_Permission::check('edit contributions')) {
-          $links = array(
-            CRM_Core_Action::UPDATE => array(
-              'name' => "<i class='crm-i fa-pencil'></i>",
-              'url' => 'civicrm/payment/edit',
-              'qs' => "reset=1&id=%%id%%",
-              'title' => ts('Edit Payment'),
-            ),
-          );
-          $paymentEditLink = CRM_Core_Action::formLink(
-            $links,
-            CRM_Core_Action::mask(array(CRM_Core_Permission::EDIT)),
-            array(
-              'id' => $resultDAO->id,
-            )
-          );
-        }
-
         $val = array(
           'total_amount' => $resultDAO->total_amount,
           'financial_type' => $resultDAO->financial_account,
@@ -4241,7 +4221,6 @@ WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
           'trxn_id' => $resultDAO->trxn_id,
           'status' => $statuses[$resultDAO->status_id],
           'currency' => $resultDAO->currency,
-          'action' => $paymentEditLink,
         );
         if ($paidByName == 'Check') {
           $val['check_number'] = $resultDAO->check_number;

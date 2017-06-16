@@ -740,6 +740,30 @@ WHERE ft.is_payment = 1
   }
 
   /**
+   * Get latest financial trxn ID based on contribution ID.
+   *
+   * @param int $contributionID
+   *
+   * @return array latest financialTrxn info
+   */
+  public static function getLatestFinancialTrxnID($contributionID) {
+    $financialTrxn = civicrm_api3('EntityFinancialTrxn', 'get', array(
+      'return' => array('financial_trxn_id.payment_processor_id', 'financial_trxn_id', 'financial_trxn_id.trxn_date'),
+      'entity_table' => 'civicrm_contribution',
+      'entity_id' => $contributionID,
+      'financial_trxn_id.is_payment' => TRUE,
+      'options' => array('sort' => 'financial_trxn_id DESC', 'limit' => 1),
+    ));
+
+    if (!$financialTrxn['count']) {
+      return NULL;
+    }
+    else {
+      return $financialTrxn['values'][$financialTrxn['id']];
+    }
+  }
+
+  /**
    * Update Credit Card Details in civicrm_financial_trxn table.
    *
    * @param int $contributionID
@@ -748,21 +772,14 @@ WHERE ft.is_payment = 1
    *
    */
   public static function updateCreditCardDetails($contributionID, $panTruncation, $cardType) {
-    $financialTrxn = civicrm_api3('EntityFinancialTrxn', 'get', array(
-      'return' => array('financial_trxn_id.payment_processor_id', 'financial_trxn_id'),
-      'entity_table' => 'civicrm_contribution',
-      'entity_id' => $contributionID,
-      'financial_trxn_id.is_payment' => TRUE,
-      'options' => array('sort' => 'financial_trxn_id DESC', 'limit' => 1),
-    ));
+    $financialTrxn = self::getLatestFinancialTrxnID($contributionID);
 
     // In case of Contribution status is Pending From Incomplete Transaction or Failed there is no Financial Entries created for Contribution.
     // Above api will return 0 count, in such case we won't update card type and pan truncation field.
-    if (!$financialTrxn['count']) {
+    if (empty($financialTrxn)) {
       return NULL;
     }
 
-    $financialTrxn = $financialTrxn['values'][$financialTrxn['id']];
     $paymentProcessorID = CRM_Utils_Array::value('financial_trxn_id.payment_processor_id', $financialTrxn);
 
     if ($paymentProcessorID) {

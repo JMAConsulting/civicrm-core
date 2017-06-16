@@ -81,7 +81,12 @@
   skipPaymentMethod();
 
   CRM.$(function($) {
-    function buildPaymentBlock(type) {
+    {/literal}{if !$contributionMode && $isBackOffice}{literal}
+      var processor_id = $('#payment_processor_id').val() || 0;
+      buildPaymentBlock(processor_id);
+    {/literal}{/if}{literal}
+
+    function buildPaymentBlock(type, paymentMethodChanged = false) {
       var $form = $('#billing-payment-block').closest('form');
       {/literal}
       {if $contributionPageID}
@@ -107,6 +112,7 @@
 
       {capture assign='isBackOfficePathVar'}&is_back_office={$isBackOffice}&{/capture}
 
+      var financial_trxn_id = '{$financialTrxnID}';
       var payment_instrument_id = $('#payment_instrument_id').val();
 
       var dataUrl = "{crmURL p='civicrm/payment/form' h=0 q="&currency=`$currency`&`$urlPathVar``$isBackOfficePathVar``$profilePathVar``$contributionPageID``$preProfileID`processor_id="}" + type;
@@ -124,17 +130,21 @@
       }
       dataUrl =  dataUrl + "&payment_instrument_id=" + payment_instrument_id;
 
+      if (!paymentMethodChanged && financial_trxn_id != '') {
+        dataUrl =  dataUrl + "&financial_trxn_id=" + financial_trxn_id;
+      }
+
       // Processors like pp-express will hide the form submit buttons, so re-show them when switching
       $('.crm-submit-buttons', $form).show().find('input').prop('disabled', true);
       CRM.loadPage(dataUrl, {target: '#billing-payment-block'});
     }
 
     $('[name=payment_processor_id]').on('change.paymentBlock', function() {
-        buildPaymentBlock($(this).val());
+        buildPaymentBlock($(this).val(), true);
     });
 
     $('#payment_instrument_id').on('change.paymentBlock', function() {
-      buildPaymentBlock(0);
+      buildPaymentBlock(0, true);
     });
 
     $('#billing-payment-block').on('crmLoad', function() {
