@@ -141,24 +141,40 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
    * @return array
    */
   public static function getPriceFieldIDs($params, $priceSet) {
-    $priceFieldIDS = array();
+    $priceFieldIDs = array();
+
+    if (!empty($params['membership_type_id'])) {
+      list($orgID, $selectedMembershipTypeID) = $params['membership_type_id'];
+    }
+
     if (isset($priceSet['fields']) && is_array($priceSet['fields'])) {
       foreach ($priceSet['fields'] as $fieldId => $field) {
         if (!empty($params['price_' . $fieldId])) {
           if (is_array($params['price_' . $fieldId])) {
             foreach ($params['price_' . $fieldId] as $priceFldVal => $isSet) {
               if ($isSet) {
-                $priceFieldIDS[] = $priceFldVal;
+                $priceFieldIDs[] = $priceFldVal;
               }
             }
           }
           elseif (!$field['is_enter_qty']) {
-            $priceFieldIDS[] = $params['price_' . $fieldId];
+            $priceFieldIDs[] = $params['price_' . $fieldId];
+          }
+        }
+        //In case of non-quick config price-set, fetch the
+        //  price field ID of selected membership type ID if any
+        elseif (!empty($selectedMembershipTypeID) && !empty($field['options'])) {
+          foreach ($field['options'] as $priceOptions) {
+            if (CRM_Utils_Array::value('membership_type_id', $priceOptions) == $selectedMembershipTypeID) {
+              $priceFieldIDs[] = $priceOptions['id'];
+              break;
+            }
           }
         }
       }
     }
-    return $priceFieldIDS;
+
+    return $priceFieldIDs;
   }
 
   /**
@@ -771,7 +787,7 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
       elseif (!empty($params['record_contribution'])) {
         $partiallyPaidContributionStatusID = CRM_Core_PseudoConstant::getKey('CRM_Contribute_DAO_Contribution', 'contribution_status_id', 'Partially paid');
         // ensure that total_amount is less than the minimum_fee of selected membership type for partial contribution
-        if ($self->allMembershipTypeDetails[$params['membership_type_id'][1]]['minimum_fee'] >= $params['total_amount'] &&
+        if ($self->allMembershipTypeDetails[$params['membership_type_id'][1]]['minimum_fee'] <= $params['total_amount'] &&
           $params['contribution_status_id'] == $partiallyPaidContributionStatusID
         ) {
           $errors['total_amount'] = ts('For partially paid contribution, amount must be less then the fee amount of selected membership type.');

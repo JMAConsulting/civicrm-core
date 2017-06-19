@@ -105,20 +105,34 @@ class CRM_Member_Form_MembershipTest extends CiviUnitTestCase {
         dirname(__FILE__) . '/dataset/data.xml'
       )
     );
-    $membershipTypeAnnualFixed = $this->callAPISuccess('membership_type', 'create', array(
-      'domain_id' => 1,
-      'name' => "AnnualFixed",
-      'member_of_contact_id' => 23,
-      'duration_unit' => "year",
-      'minimum_fee' => 50,
-      'duration_interval' => 1,
-      'period_type' => "fixed",
-      'fixed_period_start_day' => "101",
-      'fixed_period_rollover_day' => "1231",
-      'relationship_type_id' => 20,
-      'financial_type_id' => 2,
-    ));
-    $this->membershipTypeAnnualFixedID = $membershipTypeAnnualFixed['id'];
+
+    $membershipTypes = array(
+      array(
+        'domain_id' => 1,
+        'name' => "AnnualFixed",
+        'member_of_contact_id' => 23,
+        'duration_unit' => "year",
+        'minimum_fee' => 50,
+        'duration_interval' => 1,
+        'period_type' => "fixed",
+        'fixed_period_start_day' => "101",
+        'fixed_period_rollover_day' => "1231",
+        'relationship_type_id' => 20,
+        'financial_type_id' => 2,
+      ),
+      array(
+        'id' => 20,
+      ),
+      array(
+        'id' => 25,
+      ),
+    );
+    foreach ($membershipTypes as $params) {
+      $result = $this->callAPISuccess('MembershipType', 'create', $params);
+      if (!empty($params['name'])) {
+        $this->membershipTypeAnnualFixedID = $result['id'];
+      }
+    }
 
     $instruments = $this->callAPISuccess('contribution', 'getoptions', array('field' => 'payment_instrument_id'));
     $this->paymentInstruments = $instruments['values'];
@@ -157,7 +171,7 @@ class CRM_Member_Form_MembershipTest extends CiviUnitTestCase {
   public function testFormRuleEmptyContact() {
     $params = array(
       'contact_select_id' => 0,
-      'membership_type_id' => array(1 => NULL),
+      'membership_type_id' => array(17, NULL),
     );
     $files = array();
     $obj = new CRM_Member_Form_Membership();
@@ -165,7 +179,7 @@ class CRM_Member_Form_MembershipTest extends CiviUnitTestCase {
     $this->assertType('array', $rc);
     $this->assertTrue(array_key_exists('membership_type_id', $rc));
 
-    $params['membership_type_id'] = array(1 => 3);
+    $params['membership_type_id'] = array(1, 3);
     $rc = $obj->formRule($params, $files, $obj);
     $this->assertType('array', $rc);
     $this->assertTrue(array_key_exists('join_date', $rc));
@@ -187,7 +201,7 @@ class CRM_Member_Form_MembershipTest extends CiviUnitTestCase {
       'join_date' => $ymdNow,
       'start_date' => $ymdYesterday,
       'end_date' => '',
-      'membership_type_id' => array('23', '15'),
+      'membership_type_id' => array('23', '20'),
     );
     $files = array();
     $obj = new CRM_Member_Form_Membership();
@@ -212,7 +226,7 @@ class CRM_Member_Form_MembershipTest extends CiviUnitTestCase {
       'join_date' => $ymdNow,
       'start_date' => $ymdNow,
       'end_date' => $ymdYesterday,
-      'membership_type_id' => array('23', '15'),
+      'membership_type_id' => array('23', '20'),
     );
     $files = array();
     $obj = new CRM_Member_Form_Membership();
@@ -233,7 +247,7 @@ class CRM_Member_Form_MembershipTest extends CiviUnitTestCase {
       'join_date' => $ymdNow,
       'start_date' => '',
       'end_date' => $ymdYearFromNow,
-      'membership_type_id' => array('23', '15'),
+      'membership_type_id' => array('23', '20'),
     );
     $files = array();
     $obj = new CRM_Member_Form_Membership();
@@ -293,7 +307,7 @@ class CRM_Member_Form_MembershipTest extends CiviUnitTestCase {
       'join_date' => date('m/d/Y', $unix1MFmNow),
       'start_date' => '',
       'end_date' => '',
-      'membership_type_id' => array('23', '15'),
+      'membership_type_id' => array('23', '20'),
     );
     $files = array();
     $obj = new CRM_Member_Form_Membership();
