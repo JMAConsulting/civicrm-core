@@ -394,7 +394,6 @@ AND    refresh_date IS NULL
    *
    */
   public static function clearGroupContactCache($groupID) {
-    $transaction = new CRM_Core_Transaction();
     $query = "
     DELETE  g
       FROM  civicrm_group_contact_cache g
@@ -409,11 +408,18 @@ AND    refresh_date IS NULL
       1 => array($groupID, 'Integer'),
     );
 
-    CRM_Core_DAO::executeQuery($query, $params);
-    // also update the cache_date for these groups
-    CRM_Core_DAO::executeQuery($update, $params);
-
-    $transaction->commit();
+    if (CRM_Core_Transaction::isActive()) {
+      CRM_Core_Transaction::addCallback(CRM_Core_Transaction::PHASE_POST_COMMIT, function () {
+        CRM_Core_DAO::executeQuery($query, $params);
+        // also update the cache_date for these groups
+        CRM_Core_DAO::executeQuery($update, $params);
+      });
+    }
+    else {
+      CRM_Core_DAO::executeQuery($query, $params);
+      // also update the cache_date for these groups
+      CRM_Core_DAO::executeQuery($update, $params);
+    }
   }
 
   /**
