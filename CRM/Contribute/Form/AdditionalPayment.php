@@ -122,6 +122,7 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     $this->_amtPaid = $paymentDetails['paid'];
     $this->_amtTotal = $paymentDetails['total'];
 
+    $paymentAmt = 0;
     if (!empty($paymentInfo['refund_due'])) {
       $paymentAmt = $this->_refund = $paymentInfo['refund_due'];
       $this->_paymentType = 'refund';
