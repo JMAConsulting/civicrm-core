@@ -108,12 +108,7 @@ class CRM_Financial_BAO_FinancialItem extends CRM_Financial_DAO_FinancialItem {
       $accountRelName = 'Sales Tax Account is';
     }
     else {
-      $accountRelName = 'Income Account is';
-      if (property_exists($contribution, 'revenue_recognition_date') &&
-        !CRM_Utils_System::isNull($contribution->revenue_recognition_date)
-      ) {
-        $accountRelName = 'Deferred Revenue Account is';
-      }
+      $accountRelName = CRM_Contribute_BAO_Contribution::getFinancialAccountRelationship($contribution->id);
     }
     if ($lineItem->financial_type_id) {
       $params['financial_account_id'] = CRM_Contribute_PseudoConstant::getRelationalFinancialAccount(

@@ -3333,10 +3333,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
         if (!empty($params['financial_type_id']) &&
           $params['contribution']->financial_type_id != $params['prevContribution']->financial_type_id
         ) {
-          $accountRelationship = 'Income Account is';
-          if (!empty($params['revenue_recognition_date']) || $params['prevContribution']->revenue_recognition_date) {
-            $accountRelationship = 'Deferred Revenue Account is';
-          }
+          $accountRelationship = CRM_Contribute_BAO_Contribution::getFinancialAccountRelationship($params['contribution']->id);
           $oldFinancialAccount = CRM_Contribute_PseudoConstant::getRelationalFinancialAccount($params['prevContribution']->financial_type_id, $accountRelationship);
           $newFinancialAccount = CRM_Contribute_PseudoConstant::getRelationalFinancialAccount($params['financial_type_id'], $accountRelationship);
           if ($oldFinancialAccount != $newFinancialAccount) {
@@ -3909,7 +3906,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
 
       // create financial item for the overpaid amount linking to the
       //  updated or added line item that store the overpiad amount
-      $accountRelationship = empty($contributionDAO->revenue_recognition_date) ? 'Income Account is' : 'Deferred Revenue Account is';
+      $accountRelationship = CRM_Contribute_BAO_Contribution::getFinancialAccountRelationship($contributionDAO->id);
       $addFinancialEntry = array(
         'transaction_date' => $financialTrxn->trxn_date,
         'contact_id' => $contributionDAO->contact_id,
@@ -5785,6 +5782,34 @@ LEFT JOIN  civicrm_contribution on (civicrm_contribution.contact_id = civicrm_co
       $contributionDetails[$result['values'][$result['id']]['contact_id']]['html'] = CRM_Utils_Token::replaceContributionTokens($html, $result, FALSE, $messageToken, FALSE, $escapeSmarty);
     }
     return $contributionDetails;
+  }
+
+  /**
+   * Function to decide account relationship name for financial entries.
+   *
+   * @param integer $contributionId
+   *
+   * @return string
+   */
+  function getFinancialAccountRelationship($contributionId) {
+    $accountRelName = 'Income Account is';
+    $contribution = civicrm_api3('Contribution', 'getSingle', array(
+      'return' => array("revenue_recognition_date", "receive_date"),
+      'id' => $contributionId,
+    ));
+    $date = CRM_Utils_Array::value('receive_date', $contribution);
+    if (!$date) {
+      $date = date('Ymt');
+    }
+    else {
+      $date = date('Ymt', strtotime($date));
+    }
+    if (!empty($contribution['revenue_recognition_date'])
+      && strtotime($contribution['revenue_recognition_date']) > strtotime($date)
+    ) {
+      $accountRelName = 'Deferred Revenue Account is';
+    }
+    return $accountRelName;
   }
 
 }
