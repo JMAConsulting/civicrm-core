@@ -3450,6 +3450,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
       if (!$update) {
         // records finanical trxn and entity financial trxn
         // also make it available as return value
+        self::$_trxnIDs = NULL;
         self::recordAlwaysAccountsReceivable($trxnParams, $params);
         $trxnParams['pan_truncation'] = CRM_Utils_Array::value('pan_truncation', $params);
         $trxnParams['card_type_id'] = CRM_Utils_Array::value('card_type_id', $params);
