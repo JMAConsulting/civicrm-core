@@ -658,7 +658,7 @@ WHERE ft.is_payment = 1
     }
 
     $revenueRecognitionDate = CRM_Utils_Array::value('revenue_recognition_date', $contributionDetails);
-    if (!CRM_Utils_System::isNull($revenueRecognitionDate)) {
+    if (!CRM_Utils_System::isNull($revenueRecognitionDate) && CRM_Contribute_BAO_Contribution::getFinancialAccountRelationship($contributionDetails['id']) == 'Deferred Revenue Account is') {
       $statuses = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
       if (!$update
         && (!(CRM_Utils_Array::value($contributionDetails['contribution_status_id'], $statuses) == 'Completed'
