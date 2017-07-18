@@ -5749,21 +5749,21 @@ LEFT JOIN  civicrm_contribution on (civicrm_contribution.contact_id = civicrm_co
   /**
    * Generate and store invoice_number for contribution.
    *
-   * @param int $contributionId
+   * @param int $contributionID
    *
    * @return string
    */
-  public static function storeInvoiceNumber($contributionId) {
-    $invoiceSettings = Civi::settings()->get('contribution_invoice_settings');
+  public static function storeInvoiceNumber($contributionID) {
     $invoiceNumber = NULL;
-    if (!empty($invoiceSettings['invoicing']) && !empty($invoiceSettings['invoice_prefix'])) {
-      $invoiceNumber = $invoiceSettings['invoice_prefix'] . $contributionId;
+    if ($invoicePrefix = self::checkContributeSettings('invoice_prefix')) {
+      $invoiceNumber = $invoicePrefix . $contributionID;
       $params = array(
-        'id' => $contributionId,
+        'id' => $contributionID,
         'invoice_number' => $invoiceNumber,
       );
       civicrm_api3('Contribution', 'create', $params);
     }
+
     return $invoiceNumber;
   }
 
