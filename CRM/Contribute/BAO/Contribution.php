@@ -3851,6 +3851,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
     $params['skipLineItem'] = TRUE;
     $trxnsData['trxn_date'] = !empty($trxnsData['trxn_date']) ? $trxnsData['trxn_date'] : date('YmdHis');
     $params['payment_instrument_id'] = $trxnsData['payment_instrument_id'];
+    $params['payment_processor'] = CRM_Utils_Array::value('payment_processor_id', $trxnsData);
     $arAccountId = CRM_Contribute_PseudoConstant::getRelationalFinancialAccount($contributionDAO->financial_type_id, 'Accounts Receivable Account is');
     $fiancialItemPaidStatusID = CRM_Core_PseudoConstant::getKey('CRM_Financial_DAO_FinancialItem', 'status_id', 'Paid');
     if ($paymentType == 'overpaid') {
