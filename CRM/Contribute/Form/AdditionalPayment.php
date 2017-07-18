@@ -184,7 +184,7 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     }
 
     if ($this->_refund) {
-      $defaults['total_amount'] = abs($this->_refund);
+      $defaults['total_amount'] = number_format(abs($this->_refund), 2);
     }
     elseif ($this->_owed) {
       $defaults['total_amount'] = number_format($this->_owed, 2);
