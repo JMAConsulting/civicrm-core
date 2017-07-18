@@ -29,7 +29,7 @@
         <tr class="crm-{$formClass}-form-block-receive_date">
           <td class="label">{$form.receive_date.label}</td>
           <td>{include file="CRM/common/jcalendar.tpl" elementName=receive_date}</td>
-        </tr>
+       </tr>
         <tr class="crm-{$formClass}-form-block-financial_type_id">
           <td class="label">{$form.financial_type_id.label}</td>
           <td>{$form.financial_type_id.html}<br/>
@@ -102,3 +102,10 @@
 
   <div class="spacer"></div>
 {/if}
+
+ <tr class="crm-membership-form-block-billing">
+          <td colspan="2">
+            {include file='CRM/Core/BillingBlockWrapper.tpl'}
+          </td>
+        </tr>
+
