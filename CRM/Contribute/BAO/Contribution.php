@@ -3911,7 +3911,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
 
       // create financial item for the overpaid amount linking to the
       //  updated or added line item that store the overpiad amount
-      $accountRelationship = CRM_Contribute_BAO_Contribution::getFinancialAccountRelationship($contributionDAO->id);
+      $accountRelationship = CRM_Contribute_BAO_Contribution::getFinancialAccountRelationship($contributionDAO->id, $lineItemID);
       $addFinancialEntry = array(
         'transaction_date' => $financialTrxn->trxn_date,
         'contact_id' => $contributionDAO->contact_id,
@@ -5791,11 +5791,13 @@ LEFT JOIN  civicrm_contribution on (civicrm_contribution.contact_id = civicrm_co
   /**
    * Function to decide account relationship name for financial entries.
    *
-   * @param integer $contributionId
+   * @param int $contributionId
+   *
+   * @param int $lineItemId
    *
    * @return string
    */
-  function getFinancialAccountRelationship($contributionId) {
+  function getFinancialAccountRelationship($contributionId, $lineItemId = NULL) {
     $accountRelName = 'Income Account is';
     $contribution = civicrm_api3('Contribution', 'getSingle', array(
       'return' => array("revenue_recognition_date", "receive_date"),
@@ -5808,8 +5810,20 @@ LEFT JOIN  civicrm_contribution on (civicrm_contribution.contact_id = civicrm_co
     else {
       $date = date('Ymt', strtotime($date));
     }
+    $isMembership = FALSE;
+    if ($lineItemId) {
+      $result = civicrm_api3('LineItem', 'getsingle', array(
+        'return' => array("price_field_value_id.membership_type_id"),
+        'id' => $lineItemId,
+      ));
+      if (!empty($result['price_field_value_id.membership_type_id'])) {
+        $isMembership = TRUE;
+      }
+    }
     if (!empty($contribution['revenue_recognition_date'])
-      && strtotime($contribution['revenue_recognition_date']) > strtotime($date)
+      && (strtotime($contribution['revenue_recognition_date']) > strtotime($date)
+        || $isMembership
+      )
     ) {
       $accountRelName = 'Deferred Revenue Account is';
     }

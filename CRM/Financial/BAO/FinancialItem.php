@@ -108,7 +108,7 @@ class CRM_Financial_BAO_FinancialItem extends CRM_Financial_DAO_FinancialItem {
       $accountRelName = 'Sales Tax Account is';
     }
     else {
-      $accountRelName = CRM_Contribute_BAO_Contribution::getFinancialAccountRelationship($contribution->id);
+      $accountRelName = CRM_Contribute_BAO_Contribution::getFinancialAccountRelationship($contribution->id, $lineItem->id);
     }
     if ($lineItem->financial_type_id) {
       $params['financial_account_id'] = CRM_Contribute_PseudoConstant::getRelationalFinancialAccount(
