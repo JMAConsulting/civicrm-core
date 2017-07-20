@@ -697,6 +697,7 @@ WHERE ft.is_payment = 1
             array('civicrm_participant', 'civicrm_contribution'))
           ) {
 	    if (CRM_Contribute_BAO_Contribution::getFinancialAccountRelationship($contributionDetails['id']) != 'Deferred Revenue Account is') {
+	      unset($deferredRevenues[$key]);
               continue;
             }
             $deferredRevenues[$key]['revenue'][] = array(
