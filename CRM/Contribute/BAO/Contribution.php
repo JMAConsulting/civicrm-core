@@ -5429,7 +5429,7 @@ LEFT JOIN  civicrm_contribution on (civicrm_contribution.contact_id = civicrm_co
       if ($isARefund) {
         $cancelledTaxAmount = CRM_Utils_Array::value('tax_amount', $params, '0.00');
       }
-      return self::getMultiplier($params['contribution']->contribution_status_id, $context) * ($params['trxnParams']['total_amount'] + $cancelledTaxAmount);
+      return self::getMultiplier($params['contribution']->contribution_status_id, $context) * ($lineItemDetails['line_total'] + $cancelledTaxAmount);
     }
     elseif ($context === NULL) {
       // erm, yes because? but, hey, it's tested.
