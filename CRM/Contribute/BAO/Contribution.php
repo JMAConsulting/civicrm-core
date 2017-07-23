@@ -5658,19 +5658,19 @@ LEFT JOIN  civicrm_contribution on (civicrm_contribution.contact_id = civicrm_co
         AND cfi.entity_table = 'civicrm_line_item' AND cli.id = %1
     ";
     foreach ($lineItems as $key => $value) {
-      if ($value['qty'] == 0) {
-        continue;
-      }
-      $eftParams['entity_id'] = $ftIds[$value['price_field_value_id']];
       $entityParams['line_item_amount'] = $value['line_total'];
       if (!empty($entityParams['is_payment'])) {
         $queryParams = array(1 => array($key, 'Integer'));
         $paidAmount = CRM_Core_DAO::singleValueQuery($query, $queryParams);
         $entityParams['line_item_amount'] -= $paidAmount;
       }
+      elseif ($value['qty'] == 0) {
+        continue;
+      }
       if ($entityParams['line_item_amount'] == 0) {
         continue;
       }
+      $eftParams['entity_id'] = $ftIds[$value['price_field_value_id']];
       self::createProportionalEntry($entityParams, $eftParams);
       if (array_key_exists($value['price_field_value_id'], $taxItems)) {
         $entityParams['line_item_amount'] = $taxItems[$value['price_field_value_id']]['amount'];
