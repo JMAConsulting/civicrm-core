@@ -369,6 +369,12 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     }
 
     $result = CRM_Contribute_BAO_Contribution::recordAdditionalPayment($this->_contributionId, $this->_params, $this->_paymentType, $participantId);
+    if ($this->_contributionId && CRM_Core_Permission::access('CiviMember')) {
+      $membershipPayments = civicrm_api3('MembershipPayment', 'Get', array('contribution_id' => $this->_contributionId));
+      if ($membershipPayments['count'] > 0) {
+        $this->ajaxResponse['updateTabs']['#tab_member'] = CRM_Contact_BAO_Contact::getCountComponent('membership', $this->_contactID);
+      }
+    }
 
     $statusMsg = ts('The payment record has been processed.');
     // send email
