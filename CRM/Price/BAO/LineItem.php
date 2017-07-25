@@ -681,6 +681,7 @@ WHERE li.contribution_id = %1";
         (price_field_value_id = {$priceFieldValueID}) ";
 
         CRM_Core_DAO::executeQuery($updateLineItemSQL, array(1 => array($value['label'], 'String')));
+        $lineItemsToUpdate[$priceFieldValueID]['line_total'] = $value['line_total'] - $lineItems[$value['id']]['line_total'];
       }
     }
 
@@ -722,7 +723,8 @@ WHERE li.contribution_id = %1";
     $contributionCompletedStatusID = CRM_Core_PseudoConstant::getKey('CRM_Contribute_DAO_Contribution', 'contribution_status_id', 'Completed');
     if (!empty($financialItemsArray)) {
       foreach ($financialItemsArray as $updateFinancialItemInfoValues) {
-        $newFinancialItem = CRM_Financial_BAO_FinancialItem::create($updateFinancialItemInfoValues);
+        $trxnId = array('id' => $trxn->id);
+        $newFinancialItem = CRM_Financial_BAO_FinancialItem::create($updateFinancialItemInfoValues, NULL, $trxnId);
         // record reverse transaction only if Contribution is Completed because for pending refund or
         //   partially paid we are already recording the surplus owed or refund amount
         if (!empty($updateFinancialItemInfoValues['financialTrxn']) && ($contributionCompletedStatusID ==
@@ -758,6 +760,16 @@ WHERE li.contribution_id = %1";
       $trxnId['id'] = $trxn->id;
     }
     $lineItemObj->_addLineItemOnChangeFeeSelection($lineItemsToAdd, $entityID, $entityTable, $contributionId, $trxnId, TRUE);
+    $lineItem = new CRM_Price_BAO_LineItem();
+    $fetchCon = array('id' => $contributionId);
+    $updatedContribution = CRM_Contribute_BAO_Contribution::retrieve($fetchCon, CRM_Core_DAO::$_nullArray, CRM_Core_DAO::$_nullArray);
+    foreach ($lineItemsToUpdate as $value) {
+      $lineItem->copyValues($value);
+      CRM_Financial_BAO_FinancialItem::add($lineItem, $updatedContribution, FALSE, $trxnId);
+      if (isset($lineObj->tax_amount)) {
+        CRM_Financial_BAO_FinancialItem::add($lineItem, $updatedContribution, TRUE, $trxnId);
+      }
+    }
 
     // update participant fee_amount column
     $lineItemObj->_updateEntityRecordOnChangeFeeSelection($params, $entityID, $entity);
