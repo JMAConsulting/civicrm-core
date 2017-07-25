@@ -710,6 +710,7 @@ WHERE li.contribution_id = %1";
     else {
       $taxAmount = "NULL";
     }
+    $deferredLineItem = self::getLineItemsByContributionID($contributionId);
     $displayParticipantCount = '';
     if ($totalParticipant > 0) {
       $displayParticipantCount = ' Participant Count -' . $totalParticipant;
@@ -725,6 +726,8 @@ WHERE li.contribution_id = %1";
       foreach ($financialItemsArray as $updateFinancialItemInfoValues) {
         $trxnId = array('id' => $trxn->id);
         $newFinancialItem = CRM_Financial_BAO_FinancialItem::create($updateFinancialItemInfoValues, NULL, $trxnId);
+        $deferredLineItem[$updateFinancialItemInfoValues['entity_id']]['financial_item_id'] = $newFinancialItem->id;
+        $deferredLineItem[$updateFinancialItemInfoValues['entity_id']]['deferred_line_total'] = $updateFinancialItemInfoValues['amount'];
         // record reverse transaction only if Contribution is Completed because for pending refund or
         //   partially paid we are already recording the surplus owed or refund amount
         if (!empty($updateFinancialItemInfoValues['financialTrxn']) && ($contributionCompletedStatusID ==
@@ -759,17 +762,26 @@ WHERE li.contribution_id = %1";
     if (!empty($trxn->id)) {
       $trxnId['id'] = $trxn->id;
     }
-    $lineItemObj->_addLineItemOnChangeFeeSelection($lineItemsToAdd, $entityID, $entityTable, $contributionId, $trxnId, TRUE);
+    $lineItemObj->_addLineItemOnChangeFeeSelection($lineItemsToAdd, $entityID, $entityTable, $contributionId, $trxnId, TRUE, $deferredLineItem);
     $lineItem = new CRM_Price_BAO_LineItem();
     $fetchCon = array('id' => $contributionId);
     $updatedContribution = CRM_Contribute_BAO_Contribution::retrieve($fetchCon, CRM_Core_DAO::$_nullArray, CRM_Core_DAO::$_nullArray);
-    foreach ($lineItemsToUpdate as $value) {
+    foreach ($lineItemsToUpdate as $id => $value) {
       $lineItem->copyValues($value);
-      CRM_Financial_BAO_FinancialItem::add($lineItem, $updatedContribution, FALSE, $trxnId);
+      $financialItem = CRM_Financial_BAO_FinancialItem::add($lineItem, $updatedContribution, FALSE, $trxnId);
+      $deferredLineItem[$value['id']]['financial_item_id'] = $financialItem->id;
+      $deferredLineItem[$value['id']]['deferred_line_total'] = $value['line_total'];
       if (isset($lineObj->tax_amount)) {
         CRM_Financial_BAO_FinancialItem::add($lineItem, $updatedContribution, TRUE, $trxnId);
       }
     }
+    foreach ($deferredLineItem as $id => $v) {
+      if (empty($v['financial_item_id'])) {
+        unset($deferredLineItem[$id]);
+      }
+    }
+    $deferredLineItem = array($contributionId => $deferredLineItem);
+    CRM_Core_BAO_FinancialTrxn::createDeferredTrxn($deferredLineItem, $contributionId, TRUE, 'changeFeeSelection');
 
     // update participant fee_amount column
     $lineItemObj->_updateEntityRecordOnChangeFeeSelection($params, $entityID, $entity);
@@ -963,7 +975,8 @@ WHERE li.contribution_id = %1";
     $entityTable,
     $contributionID,
     $adjustedFinancialTrxnID = NULL,
-    $addFinancialItemOnly = FALSE
+    $addFinancialItemOnly = FALSE,
+    &$deferredLineItem = NULL
   ) {
     // if there is no line item to add, do not proceed
     if (empty($lineItemsToAdd)) {
@@ -1014,7 +1027,8 @@ WHERE li.contribution_id = %1";
         $lineObj = CRM_Price_BAO_LineItem::retrieve($lineParams, CRM_Core_DAO::$_nullArray);
         // insert financial items
         // ensure entity_financial_trxn table has a linking of it.
-        CRM_Financial_BAO_FinancialItem::add($lineObj, $updatedContribution, NULL, $tempFinancialTrxnID);
+        $financialItem = CRM_Financial_BAO_FinancialItem::add($lineObj, $updatedContribution, NULL, $tempFinancialTrxnID);
+        $deferredLineItem[$lineObj->id]['financial_item_id'] = $financialItem->id;
         if (isset($lineObj->tax_amount)) {
           CRM_Financial_BAO_FinancialItem::add($lineObj, $updatedContribution, TRUE, $tempFinancialTrxnID);
         }
