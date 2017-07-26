@@ -81,7 +81,7 @@
   skipPaymentMethod();
 
   CRM.$(function($) {
-    {/literal}{if !$contributionMode && $isBackOffice}{literal}
+    {/literal}{if !$contributionMode && $isBackOffice && $form.formName neq 'UpdateBilling'}{literal}
       var processor_id = $('#payment_processor_id').val() || 0;
       buildPaymentBlock(processor_id);
     {/literal}{/if}{literal}
