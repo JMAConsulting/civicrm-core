@@ -410,8 +410,7 @@ class CRM_Upgrade_Incremental_php_FourSeven extends CRM_Upgrade_Incremental_Base
    * @param string $rev
    */
   public function upgrade_4_7_24($rev) {
-    $invoiceSettings = Civi::settings()->get('contribution_invoice_settings');
-    if (!empty($invoiceSettings['invoicing']) && !empty($invoiceSettings['invoice_prefix'])) {
+    if ($invoicePrefix = CRM_Contribute_BAO_Contribution::checkContributeSettings('invoice_prefix', TRUE)) {
       list($minId, $maxId) = CRM_Core_DAO::executeQuery("SELECT coalesce(min(id),0), coalesce(max(id),0)
         FROM civicrm_contribution ")->getDatabaseResult()->fetchRow();
       for ($startId = $minId; $startId <= $maxId; $startId += self::BATCH_SIZE) {
@@ -421,7 +420,7 @@ class CRM_Upgrade_Incremental_php_FourSeven extends CRM_Upgrade_Incremental_Base
           2 => $startId,
           3 => $endId,
         ));
-        $this->addTask($title, 'updateContributionInvoiceNumber', $startId, $endId, $invoiceSettings['invoice_prefix']);
+        $this->addTask($title, 'updateContributionInvoiceNumber', $startId, $endId, $invoicePrefix);
       }
     }
     $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => $rev)), 'runSql', $rev);

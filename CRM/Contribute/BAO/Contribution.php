@@ -5233,11 +5233,16 @@ LIMIT 1;";
    *
    *
    * @param string $name
+   * @param bool $checkInvoicing
    * @return string
    *
    */
-  public static function checkContributeSettings($name = NULL) {
+  public static function checkContributeSettings($name = NULL, $checkInvoicing = FALSE) {
     $contributeSettings = Civi::settings()->get('contribution_invoice_settings');
+
+    if ($checkInvoicing && !CRM_Utils_Array::value('invoicing', $contributeSettings)) {
+      return NULL;
+    }
 
     if ($name) {
       return CRM_Utils_Array::value($name, $contributeSettings);
@@ -5755,7 +5760,7 @@ LEFT JOIN  civicrm_contribution on (civicrm_contribution.contact_id = civicrm_co
    */
   public static function storeInvoiceNumber($contributionID) {
     $invoiceNumber = NULL;
-    if ($invoicePrefix = self::checkContributeSettings('invoice_prefix')) {
+    if ($invoicePrefix = self::checkContributeSettings('invoice_prefix', TRUE)) {
       $invoiceNumber = $invoicePrefix . $contributionID;
       $params = array(
         'id' => $contributionID,
