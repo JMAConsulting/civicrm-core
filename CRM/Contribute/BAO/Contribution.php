@@ -5751,6 +5751,48 @@ LEFT JOIN  civicrm_contribution on (civicrm_contribution.contact_id = civicrm_co
   }
 
   /**
+   * Function to decide account relationship name for financial entries.
+   *
+   * @param int $contributionId
+   *
+   * @param int $lineItemId
+   *
+   * @return string
+   */
+  function getFinancialAccountRelationship($contributionId, $lineItemId = NULL) {
+    $accountRelName = 'Income Account is';
+    $contribution = civicrm_api3('Contribution', 'getSingle', array(
+      'return' => array("revenue_recognition_date", "receive_date"),
+      'id' => $contributionId,
+    ));
+    $date = CRM_Utils_Array::value('receive_date', $contribution);
+    if (!$date) {
+      $date = date('Ymt');
+    }
+    else {
+      $date = date('Ymt', strtotime($date));
+    }
+    $isMembership = FALSE;
+    if ($lineItemId) {
+      $result = civicrm_api3('LineItem', 'getsingle', array(
+        'return' => array("price_field_value_id.membership_type_id"),
+        'id' => $lineItemId,
+      ));
+      if (!empty($result['price_field_value_id.membership_type_id'])) {
+        $isMembership = TRUE;
+      }
+    }
+    if (!empty($contribution['revenue_recognition_date'])
+      && (date('Ymt', strtotime($contribution['revenue_recognition_date'])) > $date
+        || $isMembership
+      )
+    ) {
+      $accountRelName = 'Deferred Revenue Account is';
+    }
+    return $accountRelName;
+  }
+
+  /**
    * Generate and store invoice_number for contribution.
    *
    * @param int $contributionID
