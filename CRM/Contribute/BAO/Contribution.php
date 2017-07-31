@@ -5809,7 +5809,7 @@ LEFT JOIN  civicrm_contribution on (civicrm_contribution.contact_id = civicrm_co
       }
     }
     if (!empty($contribution['revenue_recognition_date'])
-      && (strtotime($contribution['revenue_recognition_date']) > strtotime($date)
+      && (date('Ymt', strtotime($contribution['revenue_recognition_date'])) > $date
         || $isMembership
       )
     ) {
