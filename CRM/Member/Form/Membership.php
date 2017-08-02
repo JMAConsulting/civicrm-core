@@ -1763,8 +1763,6 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
         return;
       }
 
-      // fetch lineitems by updated membership ID
-      $lineItems = CRM_Price_BAO_LineItem::getLineItems($membership->id, 'membership');
       // retrieve the related contribution ID
       $contributionID = CRM_Core_DAO::getFieldValue(
         'CRM_Member_DAO_MembershipPayment',
@@ -1772,18 +1770,18 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
         'contribution_id',
         'membership_id'
       );
+      if (!$contributionID) {
+        return;
+      }
+
+      // fetch lineitems by updated membership ID
+      $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($contributionID);
       // get price fields of chosen price-set
-      $priceSetDetails = CRM_Utils_Array::value(
-        $this->_priceSetId,
-        CRM_Price_BAO_PriceSet::getSetDetail(
-          $this->_priceSetId,
-          TRUE,
-          TRUE
-        )
-      );
+      $priceSetDetails = $this->_priceSet;
 
       // add price field information in $inputParams
       self::addPriceFieldByMembershipType($inputParams, $priceSetDetails['fields'], $membership->membership_type_id);
+
       // paid amount
       $paidAmount = CRM_Utils_Array::value('paid', CRM_Contribute_BAO_Contribution::getPaymentInfo($membership->id, 'membership'));
       // update related contribution and financial records
