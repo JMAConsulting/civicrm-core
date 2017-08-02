@@ -691,14 +691,14 @@ WHERE li.contribution_id = %1";
     $lineItemObj->_addLineItemOnChangeFeeSelection($lineItemsToAdd, $entityID, $entityTable, $contributionId);
 
     // the recordAdjustedAmt code would execute over here
-    $count = 0;
+    $getTotalFromLineItem = TRUE;
     if ($entity == 'participant') {
       $count = count(CRM_Event_BAO_Participant::getParticipantIds($contributionId));
+      if ($count > 1) {
+        $getTotalFromLineItem = FALSE;
+      }
     }
-    else {
-      $count = CRM_Utils_Array::value('count', civicrm_api3('MembershipPayment', 'getcount', array('contribution_id' => $contributionId)));
-    }
-    if ($count > 1) {
+    if ($getTotalFromLineItem) {
       $updatedAmount = CRM_Price_BAO_LineItem::getLineTotal($contributionId);
     }
     else {
@@ -710,7 +710,6 @@ WHERE li.contribution_id = %1";
     else {
       $taxAmount = "NULL";
     }
-    $deferredLineItem = self::getLineItemsByContributionID($contributionId);
     $displayParticipantCount = '';
     if ($totalParticipant > 0) {
       $displayParticipantCount = ' Participant Count -' . $totalParticipant;
@@ -719,6 +718,7 @@ WHERE li.contribution_id = %1";
     if (!empty($amountLevel)) {
       $updateAmountLevel = CRM_Core_DAO::VALUE_SEPARATOR . implode(CRM_Core_DAO::VALUE_SEPARATOR, $amountLevel) . $displayParticipantCount . CRM_Core_DAO::VALUE_SEPARATOR;
     }
+    $deferredLineItem = self::getLineItemsByContributionID($contributionId);
     $trxn = $lineItemObj->_recordAdjustedAmt($updatedAmount, $paidAmount, $contributionId, $taxAmount, $updateAmountLevel);
 
     $trxnId = array();

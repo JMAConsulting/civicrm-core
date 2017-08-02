@@ -368,10 +368,16 @@ class CRM_Member_Form extends CRM_Contribute_Form_AbstractEditPayment {
         return;
       }
     }
+
+    $totalAmount = NULL;
+    if (!empty($formValues['record_contribution'])) {
+      $totalAmount = $formValues['total_amount'];
+    }
+
     $priceFields = CRM_Member_BAO_Membership::setQuickConfigMembershipParameters(
       $formValues['membership_type_id'][0],
       $formValues['membership_type_id'][1],
-      $formValues['total_amount'],
+      $totalAmount,
       $this->_priceSetId
     );
     $formValues = array_merge($formValues, $priceFields['price_fields']);
