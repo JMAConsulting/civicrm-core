@@ -1059,21 +1059,24 @@ WHERE li.contribution_id = %1";
     }
 
     $contributionStatuses = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
-    $partiallyPaidStatusId = array_search('Partially paid', $contributionStatuses);
-    $pendingRefundStatusId = array_search('Pending refund', $contributionStatuses);
-    $completedStatusId = array_search('Completed', $contributionStatuses);
 
     $updatedContributionDAO = new CRM_Contribute_BAO_Contribution();
     $adjustedTrxn = $skip = FALSE;
     $toFinancialAccount = NULL;
     if ($balanceAmt) {
-      if ($balanceAmt > 0 && $paidAmount != 0) {
-        $contributionStatusVal = $partiallyPaidStatusId;
+      if ($paidAmount <= 0 && $balanceAmt != 0) {
+        $contributionStatusVal = 'Pending';
       }
-      elseif ($balanceAmt < 0 && $paidAmount != 0) {
-        $contributionStatusVal = $pendingRefundStatusId;
+      elseif ($updatedAmount == $paidAmount) {
+        $contributionStatusVal = 'Completed';
       }
-      elseif ($paidAmount == 0) {
+      elseif ($paidAmount && $updatedAmount > $paidAmount) {
+        $contributionStatusVal = 'Partially paid';
+      }
+      elseif ($balanceAmt < $paidAmount) {
+        $contributionStatusVal = 'Pending refund';
+      }
+      elseif ($balanceAmt = $paidAmount) {
         //skip updating the contribution status if no payment is made
         $skip = TRUE;
         $updatedContributionDAO->cancel_date = 'null';
@@ -1083,7 +1086,10 @@ WHERE li.contribution_id = %1";
       // as this is handled in current BAO function used for change selection
       $updatedContributionDAO->id = $contributionId;
       if (!$skip) {
-        $updatedContributionDAO->contribution_status_id = $contributionStatusVal;
+        $updatedContributionDAO->contribution_status_id = array_search($contributionStatusVal, $contributionStatuses);
+        if ($contributionStatusVal == 'Pending') {
+          $updatedContributionDAO->is_pay_later = TRUE;
+        }
       }
       $updatedContributionDAO->total_amount = $updatedContributionDAO->net_amount = $updatedAmount;
       $updatedContributionDAO->fee_amount = 0;
