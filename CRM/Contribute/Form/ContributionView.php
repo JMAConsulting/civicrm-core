@@ -162,11 +162,11 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
       }
       else {
         try {
-          $priceSet = civicrm_api3('PriceSet', 'getsingle', array(
-            'id' => $firstLineItem['price_set_id'],
-            'return' => 'is_quick_config, id',
+          $lineItemCount = civicrm_api3('LineItem', 'getcount', array(
+            'price_field_id.price_set_id.is_quick_config' => 1,
+            'contribution_id' => ($id),
           ));
-          $displayLineItems = !$priceSet['is_quick_config'];
+          $displayLineItems = ($lineItemCount != count($lineItems[0]));
         }
         catch (CiviCRM_API3_Exception $e) {
           throw new CRM_Core_Exception('Cannot find price set by ID');
