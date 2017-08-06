@@ -277,7 +277,14 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         $lineItem = CRM_Price_BAO_LineItem::getLineItems($this->_compId);
       }
       else {
-        $lineItem = CRM_Price_BAO_LineItem::getLineItems($this->_id, 'contribution', 1, TRUE, TRUE);
+        $lineItem = CRM_Price_BAO_LineItem::getLineItemsByContributionID($this->_id);
+        $lineItemCount = civicrm_api3('LineItem', 'getcount', array(
+          'price_field_id.price_set_id.is_quick_config' => 1,
+          'contribution_id' => $this->_id,
+        ));
+        if ($lineItemCount == count($lineItem)) {
+          $lineItem = NULL;
+        }
       }
       // wtf?
       empty($lineItem) ? NULL : $this->_lineItems[] = $lineItem;
