@@ -164,7 +164,7 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
         try {
           $lineItemCount = civicrm_api3('LineItem', 'getcount', array(
             'price_field_id.price_set_id.is_quick_config' => 1,
-            'contribution_id' => ($id),
+            'contribution_id' => $id,
           ));
           $displayLineItems = ($lineItemCount != count($lineItems[0]));
         }
