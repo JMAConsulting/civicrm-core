@@ -3857,83 +3857,8 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
     $params['payment_processor'] = CRM_Utils_Array::value('payment_processor_id', $trxnsData);
     $arAccountId = CRM_Contribute_PseudoConstant::getRelationalFinancialAccount($contributionDAO->financial_type_id, 'Accounts Receivable Account is');
     $fiancialItemPaidStatusID = CRM_Core_PseudoConstant::getKey('CRM_Financial_DAO_FinancialItem', 'status_id', 'Paid');
-    if ($paymentType == 'overpaid') {
-      $params['partial_payment_total'] = $contributionDAO->total_amount + CRM_Utils_Array::value('total_amount', $trxnsData, 0.00);
-      $params['partial_amount_pay'] = CRM_Utils_Array::value('total_amount', $trxnsData, 0.00);
-      $params['pan_truncation'] = CRM_Utils_Array::value('pan_truncation', $trxnsData);
-      $params['card_type_id'] = CRM_Utils_Array::value('card_type_id', $trxnsData);
-      $params['check_number'] = CRM_Utils_Array::value('check_number', $trxnsData);
-      $params['financial_type_id'] = $contributionDAO->financial_type_id;
-      $trxnsData['net_amount'] = !empty($trxnsData['net_amount']) ? $trxnsData['net_amount'] : $trxnsData['total_amount'];
-      $trxnsData['to_financial_account_id'] = CRM_Financial_BAO_FinancialTypeAccount::getInstrumentFinancialAccount($trxnsData['payment_instrument_id']);
+    if ($paymentType == 'more than owed') {
 
-      // add financial trxn for the overpaid amount
-      $financialTrxn = CRM_Contribute_BAO_Contribution::recordFinancialAccounts($params, $trxnsData);
-
-      $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($contributionDAO->id);
-      $lineItemID = NULL;
-      // if line item found then lookout for the one which is configured  with contribution
-      // quick config price field, whose line_total will be updated with overpaid amount.
-      if (!empty($lineItems)) {
-        // find line item params which is used later to store the over paid amount
-        $priceSetId = CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceSet', 'default_contribution_amount', 'id', 'name');
-        foreach ($lineItems as $id => $lineItem) {
-          if ($lineItem['price_set_id'] == $priceSetId) {
-            $lineItemID = $id;
-            $lineItemParams = array(
-              'id' => $id,
-               // update both line_total and unit_price with additional overpaid amount
-              'line_total' => $lineItem['line_total'] + $trxnsData['total_amount'],
-              'unit_price' => $lineItem['unit_price'] + $trxnsData['total_amount'],
-            );
-            civicrm_api3('LineItem', 'create', $lineItemParams);
-            break;
-          }
-        }
-      }
-      // If lineitem not found then create a new line item referring to default
-      //  quickconfig contribution price field
-      if (!$lineItemID) {
-        $priceSetDetails = CRM_Price_BAO_PriceSet::getDefaultPriceSet('contribution');
-        foreach ($priceSetDetails as $values) {
-          $lineItemParams = array(
-            'qty' => 1,
-            'unit_price' => $trxnsData['total_amount'],
-            'line_total' => $trxnsData['total_amount'],
-            'financial_type_id' => $contributionDAO->financial_type_id,
-            'entity_table' => 'civicrm_contribution',
-            'entity_id' => $contributionDAO->id,
-            'contribution_id' => $contributionDAO->id,
-            'price_field_id' => $values['priceFieldID'],
-            'price_field_value_id' => $values['priceFieldValueID'],
-            'label' => $values['label'],
-          );
-          // add new line item entry and fetch its ID, later used for adding new financial item
-          $lineItemID = CRM_Utils_Array::value('id', civicrm_api3('LineItem', 'create', $lineItemParams));
-          break;
-        }
-      }
-
-      // create financial item for the overpaid amount linking to the
-      //  updated or added line item that store the overpiad amount
-      $accountRelationship = CRM_Contribute_BAO_Contribution::getFinancialAccountRelationship($contributionDAO->id, $lineItemID);
-      $addFinancialEntry = array(
-        'transaction_date' => $financialTrxn->trxn_date,
-        'contact_id' => $contributionDAO->contact_id,
-        'amount' => $trxnsData['total_amount'],
-        'financial_account_id' => CRM_Contribute_PseudoConstant::getRelationalFinancialAccount($contributionDAO->financial_type_id, $accountRelationship),
-        'status_id' => $fiancialItemPaidStatusID,
-        'entity_id' => $lineItemID,
-        'entity_table' => 'civicrm_line_item',
-      );
-      $trxnIds = array('id' => $financialTrxn->id);
-      CRM_Financial_BAO_FinancialItem::create($addFinancialEntry, NULL, $trxnIds);
-
-      // update contribution
-      $contributionDAO->total_amount += $trxnsData['total_amount'];
-      $contributionDAO->fee_amount += CRM_Utils_Array::value('fee_amount', $trxnsData, 0.00);
-      $contributionDAO->net_amount += $trxnsData['net_amount'];
-      $contributionDAO->save();
     }
     elseif ($paymentType == 'owed') {
       $params['partial_payment_total'] = $contributionDAO->total_amount;
