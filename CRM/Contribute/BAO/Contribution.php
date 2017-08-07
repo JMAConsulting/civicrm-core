@@ -3856,17 +3856,23 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
     $params['skipLineItem'] = TRUE;
     $trxnsData['trxn_date'] = !empty($trxnsData['trxn_date']) ? $trxnsData['trxn_date'] : date('YmdHis');
     $arAccountId = CRM_Contribute_PseudoConstant::getRelationalFinancialAccount($contributionDAO->financial_type_id, 'Accounts Receivable Account is');
-    $fiancialItemPaidStatusID = CRM_Core_PseudoConstant::getKey('CRM_Financial_DAO_FinancialItem', 'status_id', 'Paid');
-    if ($paymentType == 'more than owed') {
-
-    }
-    elseif ($paymentType == 'owed') {
+    $financialItemPaidStatusID = CRM_Core_PseudoConstant::getKey('CRM_Financial_DAO_FinancialItem', 'status_id', 'Paid');
+    $params['pan_truncation'] = CRM_Utils_Array::value('pan_truncation', $trxnsData);
+    $params['card_type_id'] = CRM_Utils_Array::value('card_type_id', $trxnsData);
+    if ($paymentType == 'owed') {
       $params['partial_payment_total'] = $contributionDAO->total_amount;
       $params['partial_amount_to_pay'] = $trxnsData['total_amount'];
-      $trxnsData['net_amount'] = !empty($trxnsData['net_amount']) ? $trxnsData['net_amount'] : $trxnsData['total_amount'];
-      $params['pan_truncation'] = CRM_Utils_Array::value('pan_truncation', $trxnsData);
-      $params['card_type_id'] = CRM_Utils_Array::value('card_type_id', $trxnsData);
+      $trxnsData['fee_amount'] = !empty($trxnsData['fee_amount']) ? $trxnsData['fee_amount'] : 0;
+      $trxnsData['net_amount'] = !empty($trxnsData['net_amount']) ? $trxnsData['net_amount'] : $trxnsData['total_amount'] - $trxnsData['fee_amount'];
 
+      if (!empty($trxnsData['is_over_payment'])) {
+        $params['contribution']->contribution_status_id = CRM_Core_PseudoConstant::getKey(
+          'CRM_Contribute_BAO_Contribution',
+          'contribution_status_id',
+          'Partially paid'
+        );
+        $params['contribution_status_id'] = $params['contribution']->contribution_status_id;
+      }
       // record the entry
       $financialTrxn = CRM_Contribute_BAO_Contribution::recordFinancialAccounts($params, $trxnsData);
       $toFinancialAccount = $arAccountId;
@@ -3962,6 +3968,22 @@ SET status_id = {$financialItemPaidStatusID}
 WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
 ";
         CRM_Core_DAO::executeQuery($sqlFinancialItemUpdate);
+      }
+      elseif (!empty($trxnsData['is_over_payment'])) {
+        $contributionDAO->contribution_status_id = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending refund');
+        $contributionDAO->save();
+
+        if (CRM_Utils_Array::value('owed', $trxnsData) == 0) {
+          // store financial item Proportionaly.
+          $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($contributionDAO->id);
+          list($ftIds, $taxItems) = self::getLastFinancialItemIds($contributionDAO->id);
+          $entityParams = array(
+            'trxn_total_amount' => $financialTrxn->total_amount,
+            'contribution_total_amount' => $contributionDAO->total_amount,
+            'trxn_id' => $financialTrxn->id,
+          );
+          self::createProportionalFinancialEntries($entityParams, $lineItems, $ftIds, $taxItems);
+        }
       }
     }
     elseif ($paymentType == 'refund') {
