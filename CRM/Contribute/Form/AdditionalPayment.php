@@ -127,12 +127,9 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
       $paymentAmt = $this->_refund = $paymentInfo['refund_due'];
       $this->_paymentType = 'refund';
     }
-    elseif (!empty($paymentInfo['amount_owed'])) {
-      $paymentAmt = $this->_owed = $paymentInfo['amount_owed'];
+    elseif (CRM_Utils_Array::value('amount_owed', $paymentInfo, 0) >= 0) {
+      $paymentAmt = $this->_owed = CRM_Utils_Array::value('amount_owed', $paymentInfo, 0);
       $this->_paymentType = 'owed';
-    }
-    else {
-      $this->_paymentType = 'overpaid';
     }
 
     if (!empty($this->_mode) && $this->_paymentType == 'refund') {
@@ -300,9 +297,6 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
    */
   public static function formRule($fields, $files, $self) {
     $errors = array();
-    if ($self->_paymentType == 'owed' && $fields['total_amount'] > $self->_owed) {
-      $errors['total_amount'] = ts('Payment amount cannot be greater than owed amount');
-    }
     if ($self->_paymentType == 'refund' && $fields['total_amount'] != abs($self->_refund)) {
       $errors['total_amount'] = ts('Refund amount must equal refund due amount.');
     }
@@ -368,6 +362,10 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
       $this->processCreditCard();
     }
 
+    if ($this->_owed == 0 || $this->_params['total_amount'] > $this->_owed) {
+      $this->_params['is_over_payment'] = TRUE;
+      $this->_params['owed'] = $this->_owed;
+    }
     $result = CRM_Contribute_BAO_Contribution::recordAdditionalPayment($this->_contributionId, $this->_params, $this->_paymentType, $participantId);
     if ($this->_contributionId && CRM_Core_Permission::access('CiviMember')) {
       $membershipPayments = civicrm_api3('MembershipPayment', 'Get', array('contribution_id' => $this->_contributionId));
@@ -608,12 +606,9 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
         $this->_refund = $paymentInfo['refund_due'];
         $this->_paymentType = 'refund';
       }
-      elseif (!empty($paymentInfo['amount_owed'])) {
+      elseif (CRM_Utils_Array::value('amount_owed', $paymentInfo) >= 0) {
         $this->_owed = $paymentInfo['amount_owed'];
         $this->_paymentType = 'owed';
-      }
-      else {
-        $this->_paymentType = 'overpaid';
       }
     }
 
