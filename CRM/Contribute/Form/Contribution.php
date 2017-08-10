@@ -642,10 +642,14 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     $paymentInstrument = FALSE;
     if (!$this->_mode) {
       $checkPaymentID = array_search('Check', CRM_Contribute_PseudoConstant::paymentInstrument('name'));
+
+      // Since we are showing payments info on edit mode instead of payment details block,
+      // payment_instrument isn't required in edit.
+      $required = $this->_id ? FALSE : TRUE;
       $paymentInstrument = $this->add('select', 'payment_instrument_id',
         ts('Payment Method'),
         array('' => ts('- select -')) + CRM_Contribute_PseudoConstant::paymentInstrument(),
-        TRUE, array('onChange' => "return showHideByValue('payment_instrument_id','{$checkPaymentID}','checkNumber','table-row','select',false);")
+        $required, array('onChange' => "return showHideByValue('payment_instrument_id','{$checkPaymentID}','checkNumber','table-row','select',false);")
       );
     }
 
@@ -659,6 +663,13 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     $isUpdate = FALSE;
     $component = 'contribution';
     if ($this->_id) {
+      $contributionStatusId = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $this->_id, 'contribution_status_id');
+      if ($contributionStatusId ==  CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending')
+      ) {
+        $this->assign('isPending', TRUE);
+      }
+      $paymentInfo = CRM_Contribute_BAO_Contribution::getPaymentInfo($this->_id, 'contribution', TRUE);
+      $this->assign('payments', $paymentInfo['transaction']);
       $isUpdate = TRUE;
       $componentDetails = CRM_Contribute_BAO_Contribution::getComponentDetails($this->_id);
       if (CRM_Utils_Array::value('membership', $componentDetails)) {
@@ -681,7 +692,6 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       }
     }
     $this->assign('cancelInfo_show_ids', implode(',', $cancelInfo_show_ids));
-
     $statusElement = $this->add('select', 'contribution_status_id',
       ts('Contribution Status'),
       $status,
@@ -1461,6 +1471,19 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       }
       if (!empty($this->_payNow)) {
         $this->_params['contribution_id'] = $this->_id;
+      }
+      // Since we are hiding the payment details block in edit mode,
+      // this also means that some payment information won't be there in
+      // submitted formValues. Since the BAO code does wrangling based on these
+      // it's important to ensure they are set. (ideally the BAO would cope
+      // with them being missing.
+      foreach (array(
+        'payment_instrument_id',
+        'check_number',
+      ) as $fieldName) {
+        if (empty($submittedValues[$fieldName])) {
+          $submittedValues[$fieldName] = CRM_Utils_Array::value($fieldName, $this->_values);
+        }
       }
     }
 
