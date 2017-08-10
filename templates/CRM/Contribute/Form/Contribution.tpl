@@ -160,12 +160,6 @@
         <td>{$form.contribution_status_id.html}
         {if $contribution_status_id eq 2}{if $is_pay_later }: {ts}Pay Later{/ts} {else}: {ts}Incomplete Transaction{/ts}{/if}{/if}
         </td>
-        <td>
-        {if $contactId && $contribID && $contributionMode EQ null && $contribution_status_id eq 2}
-          {capture assign=payNowLink}{crmURL p='civicrm/contact/view/contribution' q="reset=1&action=update&id=`$contribID`&cid=`$contactId`&context=`$context`&mode=live"}{/capture}
-          <a class="open-inline action-item crm-hover-button" href="{$payNowLink}">&raquo; {ts}Pay with Credit Card{/ts}</a>
-        {/if}
-      </td>
       </tr>
     {/if}
 
@@ -245,28 +239,34 @@
   </table>
 
   {if !$contributionMode}
-    <fieldset class="payment-details_group">
-      <legend>
-        {ts}Payment Details{/ts}
-      </legend>
-        <table class="form-layout-compressed" >
-          <tr class="crm-contribution-form-block-payment_instrument_id">
-            <td class="label">{$form.payment_instrument_id.label}</td>
-            <td {$valueStyle}>{$form.payment_instrument_id.html} {help id="payment_instrument_id"}</td>
-            </td>
-          </tr>
-          {if $showCheckNumber || !$isOnline}
-            <tr id="checkNumber" class="crm-contribution-form-block-check_number">
-              <td class="label">{$form.check_number.label}</td>
-              <td>{$form.check_number.html}</td>
+      <div class="crm-accordion-wrapper crm-accordion_title-accordion crm-accordion-processed payment-details_group">
+        <div class="crm-accordion-header">
+          {ts}Payment Details{/ts}
+        </div>
+        <div class="crm-accordion-body">
+        {if $contribID && ($payments || $isPending)}
+          {include file="CRM/Contribute/Form/PaymentInfoBlock.tpl"}
+        {else}
+          <table class="form-layout-compressed" >
+            <tr class="crm-contribution-form-block-payment_instrument_id">
+              <td class="label">{$form.payment_instrument_id.label}</td>
+              <td {$valueStyle}>{$form.payment_instrument_id.html} {help id="payment_instrument_id"}</td>
+              </td>
             </tr>
-          {/if}
-          <tr class="crm-contribution-form-block-trxn_id">
-            <td class="label">{$form.trxn_id.label}</td>
-            <td {$valueStyle}>{$form.trxn_id.html} {help id="id-trans_id"}</td>
-          </tr>
-        </table>
-      </fieldset>
+            {if $showCheckNumber || !$isOnline}
+              <tr id="checkNumber" class="crm-contribution-form-block-check_number">
+                <td class="label">{$form.check_number.label}</td>
+                <td>{$form.check_number.html}</td>
+              </tr>
+            {/if}
+            <tr class="crm-contribution-form-block-trxn_id">
+              <td class="label">{$form.trxn_id.label}</td>
+              <td {$valueStyle}>{$form.trxn_id.html} {help id="id-trans_id"}</td>
+            </tr>
+          </table>
+        {/if}
+      </div>
+    </div>
   {/if}
 
   {include file='CRM/Core/BillingBlockWrapper.tpl'}

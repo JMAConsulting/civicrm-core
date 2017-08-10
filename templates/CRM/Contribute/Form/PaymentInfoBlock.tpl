@@ -53,6 +53,14 @@
    {else}
      {assign var='entity' value=$component}
    {/if}
-   {ts 1=$entity}No payments found for this %1 record{/ts}
+   <div class="odd-row">
+     &nbsp;&nbsp;&nbsp;{ts 1=$entity}No payments found for this %1 record.{/ts}
+     {if $isPending}
+       {capture assign=payNowLive}{crmURL p='civicrm/contact/view/contribution' q="reset=1&action=update&id=`$contribID`&cid=`$contactId`&context=`$context`&mode=live"}{/capture}
+       {capture assign=payNowOffline}{crmURL p='civicrm/payment' q="reset=1&id=`$contribID`&cid=`$contactId`&action=add&component=contribution"}{/capture}
+       <a class="open-inline action-item crm-hover-button" href="{$payNowLive}">&raquo; {ts}Pay with Credit Card{/ts}</a> OR
+       <a class="open-inline action-item crm-hover-button" href="{$payNowOffline}">&raquo; {ts}Pay Offline{/ts}</a>
+     {/if}
+   </div>
 {/if}
 {/crmRegion}

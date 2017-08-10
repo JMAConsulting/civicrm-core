@@ -637,10 +637,14 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     $paymentInstrument = FALSE;
     if (!$this->_mode) {
       $checkPaymentID = array_search('Check', CRM_Contribute_PseudoConstant::paymentInstrument('name'));
+
+      // Since we are showing payments info on edit mode instead of payment details block,
+      // payment_instrument isn't required in edit.
+      $required = $this->_id ? FALSE : TRUE;
       $paymentInstrument = $this->add('select', 'payment_instrument_id',
         ts('Payment Method'),
         array('' => ts('- select -')) + CRM_Contribute_PseudoConstant::paymentInstrument(),
-        TRUE, array('onChange' => "return showHideByValue('payment_instrument_id','{$checkPaymentID}','checkNumber','table-row','select',false);")
+        $required, array('onChange' => "return showHideByValue('payment_instrument_id','{$checkPaymentID}','checkNumber','table-row','select',false);")
       );
     }
 
@@ -697,6 +701,10 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     if ($this->_id) {
       $contributionStatus = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $this->_id, 'contribution_status_id');
       $name = CRM_Utils_Array::value($contributionStatus, $statusName);
+
+      if ($name == 'Pending') {
+        $this->assign('isPending', TRUE);
+      }
       switch ($name) {
         case 'Completed':
           // [CRM-17498] Removing unsupported status change options.
@@ -731,6 +739,8 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
           }
           break;
       }
+      $paymentInfo = CRM_Contribute_BAO_Contribution::getPaymentInfo($this->_id, 'contribution', TRUE);
+      $this->assign('payments', $paymentInfo['transaction']);
     }
     else {
       unset($status[CRM_Utils_Array::key('Refunded', $statusName)]);
@@ -1512,6 +1522,19 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       }
       if (!empty($this->_payNow)) {
         $this->_params['contribution_id'] = $this->_id;
+      }
+      // Since we are hiding the payment details block in edit mode,
+      // this also means that some payment information won't be there in
+      // submitted formValues. Since the BAO code does wrangling based on these
+      // it's important to ensure they are set. (ideally the BAO would cope
+      // with them being missing.
+      foreach (array(
+        'payment_instrument_id',
+        'check_number',
+      ) as $fieldName) {
+        if (empty($submittedValues[$fieldName])) {
+          $submittedValues[$fieldName] = CRM_Utils_Array::value($fieldName, $this->_values);
+        }
       }
     }
 
