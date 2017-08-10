@@ -237,26 +237,36 @@
       <tr class="crm-contribution-form-block-payment_processor_id"><td class="label nowrap">{$form.payment_processor_id.label}<span class="crm-marker"> * </span></td><td>{$form.payment_processor_id.html}</td></tr>
     {/if}
   </table>
-
   {if !$contributionMode}
-    <fieldset class="payment-details_group">
-      <legend>
-        {ts}Payment Details{/ts}
-      </legend>
-        <table class="form-layout-compressed" >
-          <tr class="crm-contribution-form-block-payment_instrument_id">
-            <td class="label">{$form.payment_instrument_id.label}</td>
-            <td {$valueStyle}>{$form.payment_instrument_id.html} {help id="payment_instrument_id"}</td>
-            </td>
-          </tr>
-          <tr class="crm-contribution-form-block-trxn_id">
-            <td class="label">{$form.trxn_id.label}</td>
-            <td {$valueStyle}>{$form.trxn_id.html} {help id="id-trans_id"}</td>
-          </tr>
-        </table>
-      </fieldset>
-  {/if}
-
+      <div class="crm-accordion-wrapper crm-accordion_title-accordion crm-accordion-processed payment-details_group">
+        <div class="crm-accordion-header">
+          {ts}Payment Details{/ts}
+        </div>
+        <div class="crm-accordion-body">
+        {if $contribID && ($payments || $isPending)}
+          {include file="CRM/Contribute/Form/PaymentInfoBlock.tpl"}
+        {else}
+          <table class="form-layout-compressed" >
+            <tr class="crm-contribution-form-block-payment_instrument_id">
+              <td class="label">{$form.payment_instrument_id.label}</td>
+              <td {$valueStyle}>{$form.payment_instrument_id.html} {help id="payment_instrument_id"}</td>
+              </td>
+            </tr>
+            {if $showCheckNumber || !$isOnline}
+              <tr id="checkNumber" class="crm-contribution-form-block-check_number">
+                <td class="label">{$form.check_number.label}</td>
+                <td>{$form.check_number.html}</td>
+              </tr>
+            {/if}
+            <tr class="crm-contribution-form-block-trxn_id">
+              <td class="label">{$form.trxn_id.label}</td>
+              <td {$valueStyle}>{$form.trxn_id.html} {help id="id-trans_id"}</td>
+            </tr>
+          </table>
+        {/if}
+      </div>
+    </div>
+{/if}
   {include file='CRM/Core/BillingBlockWrapper.tpl'}
 
     <!-- start of soft credit -->

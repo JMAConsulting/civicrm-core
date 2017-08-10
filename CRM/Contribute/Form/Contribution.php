@@ -663,6 +663,13 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     $isUpdate = FALSE;
     $component = 'contribution';
     if ($this->_id) {
+      $contributionStatusId = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $this->_id, 'contribution_status_id');
+      if ($contributionStatusId ==  CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Pending')
+      ) {
+        $this->assign('isPending', TRUE);
+      }
+      $paymentInfo = CRM_Contribute_BAO_Contribution::getPaymentInfo($this->_id, 'contribution', TRUE);
+      $this->assign('payments', $paymentInfo['transaction']);
       $isUpdate = TRUE;
       $componentDetails = CRM_Contribute_BAO_Contribution::getComponentDetails($this->_id);
       if (CRM_Utils_Array::value('membership', $componentDetails)) {
