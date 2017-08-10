@@ -267,7 +267,7 @@
       </div>
     </div>
 {/if}
-{if !$payments}
+{if !$isPending && !$payments}
  {include file='CRM/Core/BillingBlockWrapper.tpl'}
 {/if}
     <!-- start of soft credit -->
