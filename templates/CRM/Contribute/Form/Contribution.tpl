@@ -267,8 +267,9 @@
       </div>
     </div>
 {/if}
-  {include file='CRM/Core/BillingBlockWrapper.tpl'}
-
+{if !$payments}
+ {include file='CRM/Core/BillingBlockWrapper.tpl'}
+{/if}
     <!-- start of soft credit -->
     {if !$payNow}
       <div class="crm-accordion-wrapper crm-accordion_title-accordion crm-accordion-processed {if $noSoftCredit}collapsed{/if}" id="softCredit">
