@@ -4203,7 +4203,7 @@ WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
         if ($paidByName == 'Check') {
           $val['check_number'] = $resultDAO->check_number;
         }
-        $rows[] = $val;
+        $rows[$resultDAO->id] = $val;
       }
       $info['transaction'] = $rows;
     }
