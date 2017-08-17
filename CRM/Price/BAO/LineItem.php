@@ -91,7 +91,7 @@ class CRM_Price_BAO_LineItem extends CRM_Price_DAO_LineItem {
     $lineItemBAO->copyValues($params);
 
     $return = $lineItemBAO->save();
-    if ($lineItemBAO->entity_table == 'civicrm_membership' && $lineItemBAO->contribution_id && $lineItemBAO->entity_id) {
+    if ($lineItemBAO->entity_table == 'civicrm_membership' && $lineItemBAO->contribution_id && $lineItemBAO->entity_id && 0) {
       $membershipPaymentParams = array(
         'membership_id' => $lineItemBAO->entity_id,
         'contribution_id' => $lineItemBAO->contribution_id,
