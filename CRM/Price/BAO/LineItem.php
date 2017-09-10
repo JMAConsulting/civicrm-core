@@ -651,7 +651,8 @@ WHERE li.contribution_id = %1";
       $entityID,
       $entityTable,
       $contributionId,
-      $submittedPriceFieldValueIDs
+      $submittedPriceFieldValueIDs,
+      $lineItemsToUpdate
     );
 
     // update line item with changed line total and other information
@@ -720,7 +721,7 @@ WHERE li.contribution_id = %1";
 
     $contributionCompletedStatusID = CRM_Core_PseudoConstant::getKey('CRM_Contribute_DAO_Contribution', 'contribution_status_id', 'Completed');
     if (!empty($financialItemsArray)) {
-      foreach ($financialItemsArray as $updateFinancialItemInfoValues) {
+      foreach ($financialItemsArray as $key => $updateFinancialItemInfoValues) {
         $newFinancialItem = CRM_Financial_BAO_FinancialItem::create($updateFinancialItemInfoValues);
         // record reverse transaction only if Contribution is Completed because for pending refund or
         //   partially paid we are already recording the surplus owed or refund amount
@@ -798,17 +799,22 @@ WHERE li.contribution_id = %1";
   }
 
   /**
-   * Function to retrieve formatted financial items that need to be recorded as result of changed fee
+   * When a fee is changed or updated, then in order to adjust financial items we either:
+   *   a) Create new financial item to record the surplus or deducted amount
+   *   b) Update existing financial item if related price option is updated (as qty of text field is changed)
+   *   c) Create new financial item if financial type is changed
+   * This function provide formated parameters as a result of this three scenarios, later used to create/update financial item(s).
    *
    * @param int $entityID
    * @param string $entityTable
    * @param int $contributionID
    * @param array $submittedPriceFieldValueIDs
+   * @param array $lineItemsToUpdate
    *
    * @return array
    *      List of formatted Financial Items to be recorded
    */
-  protected function _getFinancialItemsToRecord($entityID, $entityTable, $contributionID, $submittedPriceFieldValueIDs) {
+  protected function _getFinancialItemsToRecord($entityID, $entityTable, $contributionID, $submittedPriceFieldValueIDs, $lineItemsToUpdate) {
     $previousLineItems = CRM_Price_BAO_LineItem::getLineItems($entityID, str_replace('civicrm_', '', $entityTable));
 
     $financialItemsArray = array();
@@ -819,57 +825,104 @@ WHERE li.contribution_id = %1";
 
     // gathering necessary info to record negative (deselected) financial_item
     $updateFinancialItem = "
-  SELECT fi.*, SUM(fi.amount) as differenceAmt, price_field_value_id, financial_type_id, tax_amount
+  SELECT fi.*, price_field_value_id, financial_type_id, tax_amount
     FROM civicrm_financial_item fi LEFT JOIN civicrm_line_item li ON (li.id = fi.entity_id AND fi.entity_table = 'civicrm_line_item')
   WHERE (li.entity_table = '{$entityTable}' AND li.entity_id = {$entityID})
   GROUP BY li.entity_table, li.entity_id, price_field_value_id, fi.id
     ";
     $updateFinancialItemInfoDAO = CRM_Core_DAO::executeQuery($updateFinancialItem);
 
-    $invoiceSettings = Civi::settings()->get('contribution_invoice_settings');
-    $taxTerm = CRM_Utils_Array::value('tax_term', $invoiceSettings);
-    $updateFinancialItemInfoValues = array();
-    while ($updateFinancialItemInfoDAO->fetch()) {
-      $updateFinancialItemInfoValues = (array) $updateFinancialItemInfoDAO;
+    $financialItemResult = $updateFinancialItemInfoDAO->fetchAll();
+    foreach ($financialItemResult as $updateFinancialItemInfoValues) {
       $updateFinancialItemInfoValues['transaction_date'] = date('YmdHis');
-      // the below params are not needed
+
+      // the below params are not needed as we are creating new financial item
       $previousFinancialItemID = $updateFinancialItemInfoValues['id'];
+      $totalFinancialAmount = $this->_checkFinancialItemTotalAmountByLineItemID($updateFinancialItemInfoValues['entity_id']);
       unset($updateFinancialItemInfoValues['id']);
       unset($updateFinancialItemInfoValues['created_date']);
+
       // if not submitted and difference is not 0 make it negative
-      if (!in_array($updateFinancialItemInfoValues['price_field_value_id'], $submittedPriceFieldValueIDs) && $updateFinancialItemInfoValues['differenceAmt'] != 0) {
+      if (!in_array($updateFinancialItemInfoValues['price_field_value_id'], $submittedPriceFieldValueIDs) &&
+        $updateFinancialItemInfoValues['amount'] > 0 &&
+        $totalFinancialAmount == $updateFinancialItemInfoValues['amount']
+      ) {
         // INSERT negative financial_items
         $updateFinancialItemInfoValues['amount'] = -$updateFinancialItemInfoValues['amount'];
         // reverse the related financial trxn too
         $updateFinancialItemInfoValues['financialTrxn'] = $this->_getRelatedCancelFinancialTrxn($previousFinancialItemID);
         if ($previousLineItems[$updateFinancialItemInfoValues['entity_id']]['tax_amount']) {
-          $updateFinancialItemInfoValues['tax']['amount'] = -($previousLineItems[$updateFinancialItemInfoValues['entity_id']]['tax_amount']);
-          $updateFinancialItemInfoValues['tax']['description'] = $taxTerm;
-          if ($updateFinancialItemInfoValues['financial_type_id']) {
-            $updateFinancialItemInfoValues['tax']['financial_account_id'] = CRM_Contribute_BAO_Contribution::getFinancialAccountId($updateFinancialItemInfoValues['financial_type_id']);
-          }
+          $updateFinancialItemInfoValues['tax'] = $this->_getSalesTaxFinancialItem($previousLineItems[$updateFinancialItemInfoValues['entity_id']]);
+          $updateFinancialItemInfoValues['tax']['amount'] = -($updateFinancialItemInfoValues['tax']['amount']);
         }
+        // ensure that we are not creating duplicate entries
+        $params = array(
+          'amount' => $updateFinancialItemInfoValues['amount'],
+          'entity_table' => 'civicrm_line_item',
+          'entity_id' => $updateFinancialItemInfoValues['entity_id'],
+        );
         // INSERT negative financial_items for tax amount
-        $financialItemsArray[] = $updateFinancialItemInfoValues;
+        $financialItemsArray[$updateFinancialItemInfoValues['entity_id']] = $updateFinancialItemInfoValues;
       }
-      // if submitted and difference is 0 add a positive entry again
-      elseif (in_array($updateFinancialItemInfoValues['price_field_value_id'], $submittedPriceFieldValueIDs) && $updateFinancialItemInfoValues['differenceAmt'] == 0) {
-        $updateFinancialItemInfoValues['amount'] = $updateFinancialItemInfoValues['amount'];
-        // INSERT financial_items for tax amount
-        if ($updateFinancialItemInfoValues['entity_id'] == $lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]['id'] &&
-          isset($lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]['tax_amount'])
-        ) {
-          $updateFinancialItemInfoValues['tax']['amount'] = $lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]['tax_amount'];
-          $updateFinancialItemInfoValues['tax']['description'] = $taxTerm;
-          if ($lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]['financial_type_id']) {
-            $updateFinancialItemInfoValues['tax']['financial_account_id'] = CRM_Contribute_BAO_Contribution::getFinancialAccountId($lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]['financial_type_id']);
-          }
+      // if fee is changed to higher amount then update the existing financial item, this condition will hit ONLY when no payment has been made yet.
+      elseif (!empty($lineItemsToUpdate) &&
+        in_array($updateFinancialItemInfoValues['price_field_value_id'], $submittedPriceFieldValueIDs) &&
+        $updateFinancialItemInfoValues['entity_id'] == $lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]['id'] &&
+        $updateFinancialItemInfoValues['amount'] > 0 && //escape if the financial item represent cancelling line-item
+        $lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]['line_total'] != $updateFinancialItemInfoValues['amount']
+      ) {
+        $updateFinancialItemInfoValues['id'] = $previousFinancialItemID;
+        $updateFinancialItemInfoValues['amount'] = $lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]['line_total'];
+        $updatedQty = $lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]['qty'];
+        $updateFinancialItemInfoValues['description'] = ($updatedQty > 1 ? $updatedQty . ' of ' : '')  . $lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]['label'];
+        if (!empty($lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]['tax_amount'])) {
+          $updateFinancialItemInfoValues['tax'] = $this->_getSalesTaxFinancialItem($lineItemsToUpdate[$updateFinancialItemInfoValues['price_field_value_id']]);
         }
-        $financialItemsArray[] = $updateFinancialItemInfoValues;
+
+        $financialItemsArray[$updateFinancialItemInfoValues['entity_id']] = $updateFinancialItemInfoValues;
       }
     }
 
     return $financialItemsArray;
+  }
+
+  /**
+   * Helper function to return sum of financial item's amount related to a line-item
+   * @param array $lineItemID
+   *
+   * @return float $financialItem
+   */
+  protected function _checkFinancialItemTotalAmountByLineItemID($lineItemID) {
+    return CRM_Core_DAO::singleValueQuery("
+      SELECT SUM(amount)
+      FROM civicrm_financial_item
+      WHERE entity_table = 'civicrm_line_item' AND entity_id = {$lineItemID}
+    ");
+  }
+
+  /**
+   * Helper function to return financial item related to Sales Tax
+   * @param array $lineItemInfo
+   *
+   * @return array $financialItem
+   */
+  protected function _getSalesTaxFinancialItem($lineItemInfo) {
+    static $taxTerm;
+    $financialItem = array();
+
+    if (!$taxTerm) {
+      $taxTerm = CRM_Utils_Array::value('tax_term', Civi::settings()->get('contribution_invoice_settings'));
+    }
+
+    if (!empty($lineItemInfo['tax_amount'])) {
+      $financialItem['amount'] = $lineItemInfo['tax_amount'];
+      $financialItem['description'] = $taxTerm;
+      if (!empty($lineItemInfo['financial_type_id'])) {
+        $financialItem['financial_account_id'] = CRM_Contribute_BAO_Contribution::getFinancialAccountId($lineItemInfo['financial_type_id']);
+      }
+    }
+
+    return $financialItem;
   }
 
   /**
