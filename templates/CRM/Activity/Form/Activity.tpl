@@ -231,10 +231,10 @@
             $('[name=target_contact_id]', $form).each(toggleMultiActivityCheckbox).change(toggleMultiActivityCheckbox);
             $('#swap_target_assignee').click(function(e) {
               e.preventDefault();
-              var assignees = $('#assignee_contact_id', $form).select2("data");
-              var targets = $('#target_contact_id', $form).select2("data");
-              $('#assignee_contact_id', $form).select2("data", targets);
-              $('#target_contact_id', $form).select2("data", assignees).change();
+              var assignees = $('#assignee_contact_id', $form).selectWoo("data");
+              var targets = $('#target_contact_id', $form).selectWoo("data");
+              $('#assignee_contact_id', $form).selectWoo("data", targets);
+              $('#target_contact_id', $form).selectWoo("data", assignees).change();
             });
           });
         </script>

@@ -457,6 +457,65 @@ if (!CRM.vars) CRM.vars = {};
   };
 
   /**
+   * Wrapper for selectWoo initialization function; supplies defaults
+   * @param options object
+   */
+  $.fn.crmSelectWoo = function(options) {
+    if (options === 'destroy') {
+      return $(this).each(function() {
+        $(this)
+          .removeClass('crm-ajax-select')
+          .selectWoo('destroy');
+      });
+    }
+    return $(this).each(function () {
+      var
+        $el = $(this),
+        iconClass,
+        settings = {
+          allowClear: !$el.hasClass('required'),
+          formatResult: formatCrmSelect2,
+          formatSelection: formatCrmSelect2
+        };
+      // quickform doesn't support optgroups so here's a hack :(
+      $('option[value^=crm_optgroup]', this).each(function () {
+        $(this).nextUntil('option[value^=crm_optgroup]').wrapAll('<optgroup label="' + $(this).text() + '" />');
+        $(this).remove();
+      });
+
+      // quickform does not support disabled option, so yet another hack to
+      // add disabled property for option values
+      $('option[value^=crm_disabled_opt]', this).attr('disabled', 'disabled');
+
+      // Placeholder icon - total hack hikacking the escapeMarkup function but select2 3.5 dosn't have any other callbacks for this :(
+      if ($el.is('[class*=fa-]')) {
+        settings.escapeMarkup = function (m) {
+          var out = _.escape(m),
+            placeholder = settings.placeholder || $el.data('placeholder') || $el.attr('placeholder') || $('option[value=""]', $el).text();
+          if (m.length && placeholder === m) {
+            iconClass = $el.attr('class').match(/(fa-\S*)/)[1];
+            out = '<i class="crm-i ' + iconClass + '"></i> ' + out;
+          }
+          return out;
+        };
+      }
+
+      // Defaults for single-selects
+      if ($el.is('select:not([multiple])')) {
+        settings.minimumResultsForSearch = 10;
+        if ($('option:first', this).val() === '') {
+          settings.placeholderOption = 'first';
+        }
+      }
+      $.extend(settings, $el.data('select-params') || {}, options || {});
+      if (settings.ajax) {
+        $el.addClass('crm-ajax-select');
+      }
+      $el.selectWoo(settings);
+    });
+  };
+
+  /**
    * @see CRM_Core_Form::addEntityRef for docs
    * @param options object
    */
@@ -1033,6 +1092,8 @@ if (!CRM.vars) CRM.vars = {};
         $("input:radio[name=radio_ts]").prop("checked", true);
       }
       $('.crm-select2:not(.select2-offscreen, .select2-container)', e.target).crmSelect2();
+      // $('.crm-select2:not(.select2-offscreen, .select2-container)', e.target).crmSelectWoo(); if you want to replace entire selec2(..) call with selectWoo(..)
+      $('.crm-select-woo', e.target).crmSelectWoo();
       $('.crm-form-entityref:not(.select2-offscreen, .select2-container)', e.target).crmEntityRef();
       $('select.crm-chain-select-control', e.target).off('.chainSelect').on('change.chainSelect', chainSelect);
       $('.crm-form-text[data-crm-datepicker]', e.target).each(function() {

@@ -713,6 +713,8 @@ class CRM_Core_Resources {
       "packages/jquery/plugins/jquery.mousewheel.min.js",
       "bower_components/select2/select2.min.js",
       "bower_components/select2/select2.min.css",
+      "bower_components/wooselect/dist/css/select2.min.css",
+      "bower_components/wooselect/dist/js/select2.min.js",
       "bower_components/font-awesome/css/font-awesome.min.css",
       "packages/jquery/plugins/jquery.form.min.js",
       "packages/jquery/plugins/jquery.timeentry.min.js",
