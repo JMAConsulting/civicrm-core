@@ -721,7 +721,7 @@ WHERE li.contribution_id = %1";
 
     $contributionCompletedStatusID = CRM_Core_PseudoConstant::getKey('CRM_Contribute_DAO_Contribution', 'contribution_status_id', 'Completed');
     if (!empty($financialItemsArray)) {
-      foreach ($financialItemsArray as $key => $updateFinancialItemInfoValues) {
+      foreach ($financialItemsArray as $updateFinancialItemInfoValues) {
         $newFinancialItem = CRM_Financial_BAO_FinancialItem::create($updateFinancialItemInfoValues);
         // record reverse transaction only if Contribution is Completed because for pending refund or
         //   partially paid we are already recording the surplus owed or refund amount
@@ -855,12 +855,6 @@ WHERE li.contribution_id = %1";
           $updateFinancialItemInfoValues['tax'] = $this->_getSalesTaxFinancialItem($previousLineItems[$updateFinancialItemInfoValues['entity_id']]);
           $updateFinancialItemInfoValues['tax']['amount'] = -($updateFinancialItemInfoValues['tax']['amount']);
         }
-        // ensure that we are not creating duplicate entries
-        $params = array(
-          'amount' => $updateFinancialItemInfoValues['amount'],
-          'entity_table' => 'civicrm_line_item',
-          'entity_id' => $updateFinancialItemInfoValues['entity_id'],
-        );
         // INSERT negative financial_items for tax amount
         $financialItemsArray[$updateFinancialItemInfoValues['entity_id']] = $updateFinancialItemInfoValues;
       }
@@ -907,16 +901,15 @@ WHERE li.contribution_id = %1";
    * @return array $financialItem
    */
   protected function _getSalesTaxFinancialItem($lineItemInfo) {
-    static $taxTerm;
     $financialItem = array();
 
-    if (!$taxTerm) {
-      $taxTerm = CRM_Utils_Array::value('tax_term', Civi::settings()->get('contribution_invoice_settings'));
+    if (!isset(\Civi::$statics[__CLASS__]['tax_term'])) {
+      \Civi::$statics[__CLASS__]['tax_term'] = CRM_Contribute_BAO_Contribution::checkContributeSettings('tax_term');
     }
 
     if (!empty($lineItemInfo['tax_amount'])) {
       $financialItem['amount'] = $lineItemInfo['tax_amount'];
-      $financialItem['description'] = $taxTerm;
+      $financialItem['description'] = \Civi::$statics[__CLASS__]['tax_term'];
       if (!empty($lineItemInfo['financial_type_id'])) {
         $financialItem['financial_account_id'] = CRM_Contribute_BAO_Contribution::getFinancialAccountId($lineItemInfo['financial_type_id']);
       }
