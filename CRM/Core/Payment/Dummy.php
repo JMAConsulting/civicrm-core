@@ -65,6 +65,31 @@ class CRM_Core_Payment_Dummy extends CRM_Core_Payment {
     $this->_processorName = ts('Dummy Processor');
   }
 
+  protected function supportsRefund() {
+    return TRUE;
+  }
+
+  public function doRefundPayment(&$params) {
+    if ($this->_mode == 'test') {
+      $query = "SELECT MAX(trxn_id) FROM civicrm_contribution WHERE trxn_id LIKE 'test\\_%'";
+      $p = array();
+      $trxn_id = strval(CRM_Core_Dao::singleValueQuery($query, $p));
+      $trxn_id = str_replace('test_', '', $trxn_id);
+      $trxn_id = intval($trxn_id) + 1;
+      $params['trxn_id'] = 'test_' . $trxn_id . '_' . uniqid();
+    }
+    else {
+      $query = "SELECT MAX(trxn_id) FROM civicrm_contribution WHERE trxn_id LIKE 'live_%'";
+      $p = array();
+      $trxn_id = strval(CRM_Core_Dao::singleValueQuery($query, $p));
+      $trxn_id = str_replace('live_', '', $trxn_id);
+      $trxn_id = intval($trxn_id) + 1;
+      $params['trxn_id'] = 'live_' . $trxn_id . '_' . uniqid();
+    }
+
+    return $params;
+  }
+
   /**
    * Submit a payment using Advanced Integration Method.
    *

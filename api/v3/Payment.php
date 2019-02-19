@@ -140,6 +140,57 @@ function civicrm_api3_payment_create(&$params) {
 }
 
 /**
+ * Add a refund payment for a Contribution.
+ *
+ * @param array $params
+ *   Input parameters.
+ *
+ * @throws API_Exception
+ * @return array
+ *   Api result array
+ */
+function civicrm_api3_payment_refund(&$params) {
+  $trxn = CRM_Financial_BAO_Payment::refund($params);
+
+  $values = array();
+  _civicrm_api3_object_to_array_unique_fields($trxn, $values[$trxn->id]);
+  return civicrm_api3_create_success($values, $params, 'Payment', 'create', $trxn);
+}
+
+/**
+ * Adjust Metadata for Refund action.
+ *
+ * The metadata is used for setting defaults, documentation & validation.
+ *
+ * @param array $params
+ *   Array of parameters.
+ */
+function _civicrm_api3_payment_refund_spec(&$params) {
+  $params = array(
+    'contribution_id' => array(
+      'api.required' => 1 ,
+      'title' => 'Contribution ID',
+      'type' => CRM_Utils_Type::T_INT,
+    ),
+    'amount' => array(
+      'api.required' => 1 ,
+      'title' => 'Refunded Amount',
+      'type' => CRM_Utils_Type::T_FLOAT,
+    ),
+    'payment_processor_id' => array(
+      'title' => 'Payment Processor ID',
+      'type' => CRM_Utils_Type::T_INT,
+      'description' => ts('Payment processor ID - required for payment processor refunds'),
+    ),
+    'id' => array(
+      'title' => 'Payment ID',
+      'type' => CRM_Utils_Type::T_INT,
+      'api.aliases' => array('payment_id'),
+    ),
+  );
+}
+
+/**
  * Adjust Metadata for Create action.
  *
  * The metadata is used for setting defaults, documentation & validation.

@@ -500,4 +500,9 @@ WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
     return ($cmp == 0 || $cmp == 1);
   }
 
+  public static function refund($params) {
+    $contribution = civicrm_api3('Contribution', 'getsingle', ['id' => $params['contribution_id']]);
+    //TODO
+  }
+
 }

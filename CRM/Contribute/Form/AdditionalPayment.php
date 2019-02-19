@@ -121,10 +121,6 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
       CRM_Core_Error::fatal(ts('No payment information found for this record'));
     }
 
-    if (!empty($this->_mode) && $this->_paymentType == 'refund') {
-      CRM_Core_Error::fatal(ts('Credit card payment is not for Refund payments use'));
-    }
-
     list($this->_contributorDisplayName, $this->_contributorEmail) = CRM_Contact_BAO_Contact_Location::getEmailDetails($this->_contactID);
 
     $this->assign('contributionMode', $this->_mode);
@@ -352,9 +348,14 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     }
 
     if ($this->_mode) {
-      // process credit card
-      $this->assign('contributeMode', 'direct');
-      $this->processCreditCard();
+      if ($this->_paymentType == 'refund') {
+        $this->processRefundPayment();
+      }
+      else {
+        // process credit card
+        $this->assign('contributeMode', 'direct');
+        $this->processCreditCard();
+      }
     }
 
     $defaults = array();
@@ -391,6 +392,45 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     }
 
     CRM_Core_Session::setStatus($statusMsg, ts('Saved'), 'success');
+  }
+
+  public function processRefundPayment() {
+    $this->formatParamsForPaymentProcessor($this->_params);
+
+    $this->_params['amount'] = $this->_params['total_amount'];
+
+    // @todo - stop setting amount level in this function & call the CRM_Price_BAO_PriceSet::getAmountLevel
+    // function to get correct amount level consistently. Remove setting of the amount level in
+    // CRM_Price_BAO_PriceSet::processAmount. Extend the unit tests in CRM_Price_BAO_PriceSetTest
+    // to cover all variants.
+    $this->_params['amount_level'] = 0;
+    $this->_params['currencyID'] = CRM_Utils_Array::value('currency',
+      $this->_params,
+      $config->defaultCurrency
+    );
+
+    if (!empty($this->_params['trxn_date'])) {
+      $this->_params['receive_date'] = $this->_params['trxn_date'];
+    }
+
+    //Add common data to formatted params
+    $params = $this->_params;
+    CRM_Contribute_Form_AdditionalInfo::postProcessCommon($params, $this->_params, $this);
+    // at this point we've created a contact and stored its address etc
+    // all the payment processors expect the name and address to be in the
+    // so we copy stuff over to first_name etc.
+    $paymentParams = $this->_params;
+
+    try {
+      $payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
+      $result = $payment->doRefund($paymentParams);
+    }
+    catch (\Civi\Payment\Exception\PaymentProcessorException $e) {
+      Civi::log()->error('Payment processor exception: ' . $e->getMessage());
+      $urlParams = "action=add&cid={$this->_contactId}&id={$this->_contributionId}&component={$this->_component}&mode={$this->_mode}";
+      CRM_Core_Error::statusBounce(CRM_Utils_System::url($e->getMessage(), 'civicrm/payment/add', $urlParams));
+    }
+
   }
 
   public function processCreditCard() {
