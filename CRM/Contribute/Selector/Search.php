@@ -444,6 +444,14 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
         $buttonName = ts('Record Payment');
         if ($row['contribution_status_name'] == 'Pending refund') {
           $buttonName = ts('Record Refund');
+          $paymentProcessorID = CRM_Utils_Array::value('payment_processor_id', CRM_Core_BAO_FinancialTrxn::getPaidTransactionDetails($result->contribution_id));
+          if ($paymentProcessorID && CRM_Contribute_BAO_Contribution::supportRefundByProcessorID($paymentProcessorID)) {
+            $links[CRM_Core_Action::BASIC] = array(
+              'name' => ts('Submit refund using %1', [1 => CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_PaymentProcessor', $paymentProcessorID, 'name')]),
+              'url' => 'civicrm/payment/add',
+              'qs' => 'reset=1&id=%%id%%&cid=%%cid%%&action=add&component=contribution&mode=live',
+            );
+          }
         }
         elseif (CRM_Core_Config::isEnabledBackOfficeCreditCardPayments()) {
           $links[CRM_Core_Action::BASIC] = array(

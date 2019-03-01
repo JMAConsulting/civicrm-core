@@ -65,26 +65,32 @@ class CRM_Core_Payment_Dummy extends CRM_Core_Payment {
     $this->_processorName = ts('Dummy Processor');
   }
 
-  protected function supportsRefund() {
+  /**
+   * Does this payment processor support refund?
+   *
+   * @return bool
+   */
+  public function supportsRefund() {
     return TRUE;
   }
 
+  /**
+   * Submit a refund payment using Advanced Integration Method.
+   *
+   * @param array $params
+   *   Assoc array of input parameters for this transaction.
+   *
+   * @return array
+   *   the result in a nice formatted array (or an error object)
+   */
   public function doRefundPayment(&$params) {
-    if ($this->_mode == 'test') {
-      $query = "SELECT MAX(trxn_id) FROM civicrm_contribution WHERE trxn_id LIKE 'test\\_%'";
-      $p = array();
-      $trxn_id = strval(CRM_Core_Dao::singleValueQuery($query, $p));
-      $trxn_id = str_replace('test_', '', $trxn_id);
-      $trxn_id = intval($trxn_id) + 1;
-      $params['trxn_id'] = 'test_' . $trxn_id . '_' . uniqid();
+    if (empty($params['trxn_id'])) {
+      $error = new CRM_Core_Error(ts('Refund failed'));
+      return $error;
     }
     else {
-      $query = "SELECT MAX(trxn_id) FROM civicrm_contribution WHERE trxn_id LIKE 'live_%'";
-      $p = array();
-      $trxn_id = strval(CRM_Core_Dao::singleValueQuery($query, $p));
-      $trxn_id = str_replace('live_', '', $trxn_id);
-      $trxn_id = intval($trxn_id) + 1;
-      $params['trxn_id'] = 'live_' . $trxn_id . '_' . uniqid();
+      $params['payment_status_id'] = CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Refunded');
+      $params['trxn_date'] = date('YmdHis');
     }
 
     return $params;

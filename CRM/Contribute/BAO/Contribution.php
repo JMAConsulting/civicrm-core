@@ -3957,10 +3957,7 @@ INNER JOIN civicrm_activity ON civicrm_activity_contact.activity_id = civicrm_ac
     if ($getTrxnInfo && $baseTrxnId) {
       // Need to exclude fee trxn rows so filter out rows where TO FINANCIAL ACCOUNT is expense account
       $sql = "
-        SELECT GROUP_CONCAT(fa.`name`) as financial_account,
-          ft.total_amount,
-          ft.payment_instrument_id,
-          ft.trxn_date, ft.trxn_id, ft.status_id, ft.check_number, ft.currency, ft.pan_truncation, ft.card_type_id, ft.id
+        SELECT GROUP_CONCAT(fa.`name`) as financial_account, ft.*
 
         FROM civicrm_contribution con
           LEFT JOIN civicrm_entity_financial_trxn eft ON (eft.entity_id = con.id AND eft.entity_table = 'civicrm_contribution')
@@ -5347,8 +5344,31 @@ LIMIT 1;";
         )),
         'title' => ts('Record Refund'),
       );
+      $paymentProcessorID = CRM_Utils_Array::value('payment_processor_id', CRM_Core_BAO_FinancialTrxn::getPaidTransactionDetails($id));
+      if ($paymentProcessorID && self::supportRefundByProcessorID($paymentProcessorID)) {
+        $actionLinks[] = array(
+          'url' => CRM_Utils_System::url('civicrm/payment', array(
+            'action' => 'add',
+            'reset' => 1,
+            'id' => $id,
+          )),
+          'title' => ts('Submit refund using %1', [1 => CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_PaymentProcessor', $paymentProcessorID, 'name')]),
+        );
+      }
     }
     return $actionLinks;
+  }
+
+  /**
+   * Check if the configured Payment processor identified by $paymentProcessorID support refund payment or not
+   *
+   * @param integer $paymentProcessorID
+   *
+   * @return boolean
+   */
+  public static function supportRefundByProcessorID($paymentProcessorID) {
+    $payment = Civi\Payment\System::singleton()->getByProcessor(CRM_Financial_BAO_PaymentProcessor::getPayment($paymentProcessorID));
+    return $payment->supportsRefund();
   }
 
   /**

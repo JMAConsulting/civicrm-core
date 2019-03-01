@@ -121,6 +121,10 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
       CRM_Core_Error::fatal(ts('No payment information found for this record'));
     }
 
+    if ($this->_mode && $this->_paymentType == 'refund') {
+      $this->_defaults = CRM_Core_BAO_FinancialTrxn::getPaidTransactionDetails($this->_id);
+    }
+
     list($this->_contributorDisplayName, $this->_contributorEmail) = CRM_Contact_BAO_Contact_Location::getEmailDetails($this->_contactID);
 
     $this->assign('contributionMode', $this->_mode);
@@ -158,7 +162,9 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     }
     $defaults = array();
     if ($this->_mode) {
-      CRM_Core_Payment_Form::setDefaultValues($this, $this->_contactId);
+      if ($this->_paymentType != 'refund') {
+        CRM_Core_Payment_Form::setDefaultValues($this, $this->_contactId);
+      }
       $defaults = array_merge($defaults, $this->_defaults);
     }
 
@@ -196,6 +202,9 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     }
 
     CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE, TRUE, CRM_Utils_Request::retrieve('payment_instrument_id', 'Integer'));
+    if ($paymentProcessorID = CRM_Utils_Array::value('payment_processor_id', $this->_defaults)) {
+      $this->_processors = [$paymentProcessorID => $this->_processors[$paymentProcessorID]];
+    }
     $this->add('select', 'payment_processor_id', ts('Payment Processor'), $this->_processors, NULL);
 
     $attributes = CRM_Core_DAO::getAttribute('CRM_Financial_DAO_FinancialTrxn');
@@ -254,6 +263,9 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
         $attributes['net_amount']
       );
       $this->addRule('net_amount', ts('Please enter a valid monetary value for Net Amount.'), 'money');
+    }
+    elseif ($this->_paymentType == 'refund') {
+      $this->add('text', 'trxn_id', ts('Transaction ID'), array('class' => 'twelve', 'readonly' => TRUE) + $attributes['trxn_id']);
     }
 
     $buttonName = $this->_refund ? 'Record Refund' : 'Record Payment';
@@ -413,17 +425,15 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
       $this->_params['receive_date'] = $this->_params['trxn_date'];
     }
 
+    $this->_params['contactID'] = $this->_contactId;
+
     //Add common data to formatted params
     $params = $this->_params;
     CRM_Contribute_Form_AdditionalInfo::postProcessCommon($params, $this->_params, $this);
-    // at this point we've created a contact and stored its address etc
-    // all the payment processors expect the name and address to be in the
-    // so we copy stuff over to first_name etc.
-    $paymentParams = $this->_params;
 
     try {
       $payment = Civi\Payment\System::singleton()->getByProcessor($this->_paymentProcessor);
-      $result = $payment->doRefund($paymentParams);
+      $result = $payment->doRefund($this->_params);
     }
     catch (\Civi\Payment\Exception\PaymentProcessorException $e) {
       Civi::log()->error('Payment processor exception: ' . $e->getMessage());
@@ -431,6 +441,11 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
       CRM_Core_Error::statusBounce(CRM_Utils_System::url($e->getMessage(), 'civicrm/payment/add', $urlParams));
     }
 
+    if (!empty($result)) {
+      $this->_params = array_merge($this->_params, $result);
+    }
+
+    $this->set('params', $this->_params);
   }
 
   public function processCreditCard() {

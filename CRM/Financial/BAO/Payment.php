@@ -499,10 +499,34 @@ WHERE eft.financial_trxn_id IN ({$trxnId}, {$baseTrxnId['financialTrxnId']})
     $cmp = bccomp($paymentAmount, $outstandingBalance, 5);
     return ($cmp == 0 || $cmp == 1);
   }
-
+  /**
+   * This function is responsible to refund payment using backoffice form or payment processor and
+   *  eventually adjust the financial records using Payment.cancel API
+   *
+   * @param array $params
+   *
+   * @return array
+   */
   public static function refund($params) {
     $contribution = civicrm_api3('Contribution', 'getsingle', ['id' => $params['contribution_id']]);
-    //TODO
+    if (!empty($params['payment_processor_id'])) {
+      $processor = CRM_Financial_BAO_PaymentProcessor::getPayment($params['payment_processor_id']);
+      try {
+        $payment = Civi\Payment\System::singleton()->getByProcessor($processor);
+        $result = $payment->doRefund($params);
+      }
+      catch (\Civi\Payment\Exception\PaymentProcessorException $e) {
+        Civi::log()->error('Payment processor exception: ' . $e->getMessage());
+        $urlParams = sprintf("action=add&cid=%d&id=%d&component=%s&mode=live", $contribution['id'], $contribution['contact_id'], CRM_Utils_Array::value('component', $params, 'contribute'));
+        CRM_Core_Error::statusBounce(CRM_Utils_System::url($e->getMessage(), 'civicrm/payment/add', $urlParams));
+      }
+    }
+
+    if (!empty($result)) {
+      $params = array_merge($params, $result);
+    }
+
+    return civicrm_api3('Payment', 'cancel', $params);
   }
 
 }

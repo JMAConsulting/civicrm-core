@@ -403,7 +403,12 @@ abstract class CRM_Core_Payment {
     return FALSE;
   }
 
-  protected function  supportsRefund() {
+  /**
+   * Does this payment processor support refund?
+   *
+   * @return bool
+   */
+  public function supportsRefund() {
     return FALSE;
   }
 
@@ -1171,7 +1176,7 @@ abstract class CRM_Core_Payment {
     return $params;
   }
 
-  protected function doRefundPayment($params) {
+  protected function doRefundPayment(&$params) {
     return $params;
   }
 
