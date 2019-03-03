@@ -114,8 +114,27 @@
             <span class="description">{ts}Net value of the payment (Total Amount minus Fee).{/ts}</span></td></tr>
         </table>
       </div>
+      {elseif $paymentType EQ 'refund'}
+        <div class="crm-accordion-header">
+          {ts}Refund Details{/ts}
+        </div>
+        <div class="crm-accordion-body">
+          <table class="form-layout-compressed" >
+            <tr class="crm-payment-form-block-trxn_date">
+              <td class="label">{$form.trxn_date.label}</td>
+              <td>{$form.trxn_date.html}<br />
+                <span class="description">{ts}The date this payment was received.{/ts}</span>
+              </td>
+            </tr>
+            <tr class="crm-payment-form-block-trxn_id">
+              <td class="label">{$form.trxn_id.label}</td>
+              <td>{$form.trxn_id.html}</td>
+            </tr>
+          </table>
+        </div>
+      {else}
+        {include file='CRM/Core/BillingBlockWrapper.tpl'}
       {/if}
-      {include file='CRM/Core/BillingBlockWrapper.tpl'}
     </div>
 
     {literal}

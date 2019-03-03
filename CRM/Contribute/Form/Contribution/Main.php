@@ -1313,6 +1313,12 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
       CRM_Core_Error::statusBounce(ts("Returning since there is no contact attached to this contribution id."));
     }
 
+    $contribution = civicrm_api3('Contribution', 'getsingle', array('id' => $this->_ccid));
+
+    if ($contribution['contribution_status'] == 'Pending refund') {
+      $this->set('isRefundPayment', TRUE);
+    }
+
     $paymentBalance = CRM_Contribute_BAO_Contribution::getContributionBalance($this->_ccid);
     //bounce if the contribution is not pending.
     if ((int) $paymentBalance <= 0) {

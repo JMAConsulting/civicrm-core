@@ -752,4 +752,39 @@ WHERE ceft.entity_id = %1";
     return TRUE;
   }
 
+  /**
+   * @param int $contributionID
+   *
+   * @return array
+   */
+  public static function getPaidTransactionDetails($contributionID) {
+    return CRM_Core_DAO::executeQuery("SELECT ft.* FROM civicrm_financial_trxn ft
+      INNER JOIN civicrm_entity_financial_trxn eft ON (eft.financial_trxn_id = ft.id AND eft.entity_table = 'civicrm_contribution')
+        WHERE eft.entity_id = %1 AND ft.is_payment = 1 AND ft.status_id = %2
+        LIMIT 1
+      ", [
+        1 => [$contributionID, 'Integer'],
+        2 => [CRM_Core_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed'), 'Integer'],
+      ])->fetchAll()[0];
+  }
+  /**
+   * Function records partial payment, complete's contribution if payment is fully paid
+   * and returns latest payment ie financial trxn
+   *
+   * @param array $contribution
+   * @param array $params
+   *
+   * @return \CRM_Financial_DAO_FinancialTrxn
+   */
+  public static function getPartialPaymentTrxn($contribution, $params) {
+    $trxn = CRM_Contribute_BAO_Contribution::recordPartialPayment($contribution, $params);
+    $paid = CRM_Core_BAO_FinancialTrxn::getTotalPayments($params['contribution_id']);
+    $total = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Contribution', $params['contribution_id'], 'total_amount');
+    $cmp = bccomp($total, $paid, 5);
+    if ($cmp == 0 || $cmp == -1) {// If paid amount is greater or equal to total amount
+      civicrm_api3('Contribution', 'completetransaction', array('id' => $contribution['id']));
+    }
+    return $trxn;
+  }
+
 }

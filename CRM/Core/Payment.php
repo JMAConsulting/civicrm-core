@@ -404,6 +404,15 @@ abstract class CRM_Core_Payment {
   }
 
   /**
+   * Does this payment processor support refund?
+   *
+   * @return bool
+   */
+  public function supportsRefund() {
+    return FALSE;
+  }
+
+  /**
    * Function to action pre-approval if supported
    *
    * @param array $params
@@ -1164,6 +1173,32 @@ abstract class CRM_Core_Payment {
    */
   protected function doDirectPayment(&$params) {
     return $params;
+  }
+
+  protected function doRefundPayment(&$params) {
+    return $params;
+  }
+
+  public function doRefund(&$params, $component = 'contribute') {
+    $this->_component = $component;
+    $statuses = CRM_Contribute_BAO_Contribution::buildOptions('contribution_status_id', 'validate');
+
+    if ($this->supportsRefund()) {
+      $result = $this->doRefundPayment($params, $component);
+      if (is_array($result) && !isset($result['payment_status_id'])) {
+        if (!empty($params['is_recur'])) {
+          // See comment block.
+          $result['payment_status_id'] = array_search('Pending', $statuses);
+        }
+        else {
+          $result['payment_status_id'] = array_search('Refunded', $statuses);
+        }
+      }
+    }
+    if (is_a($result, 'CRM_Core_Error')) {
+      throw new PaymentProcessorException(CRM_Core_Error::getMessages($result));
+    }
+    return $result;
   }
 
   /**
