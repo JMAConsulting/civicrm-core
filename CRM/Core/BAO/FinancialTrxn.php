@@ -758,8 +758,9 @@ WHERE ceft.entity_id = %1";
    * @return array
    */
   public static function getPaidTransactionDetails($contributionID) {
-    return CRM_Core_DAO::executeQuery("SELECT ft.* FROM civicrm_financial_trxn ft
+    return CRM_Core_DAO::executeQuery("SELECT ft.*, cc.contact_id FROM civicrm_financial_trxn ft
       INNER JOIN civicrm_entity_financial_trxn eft ON (eft.financial_trxn_id = ft.id AND eft.entity_table = 'civicrm_contribution')
+      INNER JOIN civicrm_contribution cc ON cc.id = eft.entity_id
         WHERE eft.entity_id = %1 AND ft.is_payment = 1 AND ft.status_id = %2
         LIMIT 1
       ", [

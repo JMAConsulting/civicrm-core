@@ -5613,13 +5613,16 @@ LIMIT 1;";
         )),
         'title' => ts('Record Refund'),
       );
-      $paymentProcessorID = CRM_Utils_Array::value('payment_processor_id', CRM_Core_BAO_FinancialTrxn::getPaidTransactionDetails($id));
+      $transactionDetails = CRM_Core_BAO_FinancialTrxn::getPaidTransactionDetails($id);
+      $paymentProcessorID = CRM_Utils_Array::value('payment_processor_id', $transactionDetails);
       if ($paymentProcessorID && self::supportRefundByProcessorID($paymentProcessorID)) {
         $actionLinks[] = array(
           'url' => CRM_Utils_System::url('civicrm/payment', array(
             'action' => 'add',
             'reset' => 1,
             'id' => $id,
+            'cid' => $transactionDetails['contact_id'],
+            'mode' => 'live',
           )),
           'title' => ts('Submit refund using %1', [1 => CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_PaymentProcessor', $paymentProcessorID, 'name')]),
         );

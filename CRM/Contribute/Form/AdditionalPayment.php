@@ -432,7 +432,7 @@ class CRM_Contribute_Form_AdditionalPayment extends CRM_Contribute_Form_Abstract
     $this->_params['contactID'] = $this->_contactId;
 
     //Add common data to formatted params
-    $params = $this->_params;
+    $params = array_merge($this->_params, civicrm_api3('Contribution', 'getsingle', ['id' => $this->_contributionId]));
     CRM_Contribute_Form_AdditionalInfo::postProcessCommon($params, $this->_params, $this);
 
     try {
