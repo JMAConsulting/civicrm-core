@@ -274,6 +274,62 @@ class CRM_Contact_BAO_QueryTest extends CiviUnitTestCase {
     }
   }
 
+  public function testSearchPrimaryAddressFields() {
+    $contactID = $this->individualCreate();
+    civicrm_api3('Email', 'get', [
+      'contact_id' => $contactID,
+      'api.Email.delete' => [
+        'id' => "\$value.id",
+      ],
+    ]);
+    $params = [
+      'contact_id' => $contactID,
+      'email' => 'non-primary@example.com',
+      'is_primary' => FALSE,
+    ];
+    $this->callAPISuccess('email', 'create', $params);
+
+    $params = [
+      'contact_id' => $contactID,
+      'email' => 'primary@example.com',
+      'is_primary' => TRUE,
+    ];
+    $this->callAPISuccess('email', 'create', $params);
+    $params = [
+      0 => [
+        0 => 'contact_id',
+        1 => '=',
+        2 => $contactID,
+        3 => 0,
+        4 => 1,
+      ],
+    ];
+    $returnProperties = [
+      'contact_type' => 1,
+      'contact_sub_type' => 1,
+      'sort_name' => 1,
+      'email' => 1,
+    ];
+
+    $expectedArray = [
+      'searchPrimaryDetailsOnlyDisabled' => [
+        'totalCount' => 2,
+        'expectedFirstEmail' => 'primary@example.com',
+      ],
+      'searchPrimaryDetailsOnlyEnabled' => [
+        'totalCount' => 1,
+        'expectedFirstEmail' => 'primary@example.com',
+      ],
+    ];
+    foreach (['searchPrimaryDetailsOnlyDisabled', 'searchPrimaryDetailsOnlyEnabled'] as $value => $type) {
+      Civi::settings()->set('searchPrimaryDetailsOnly', $value);
+      $queryObj = new CRM_Contact_BAO_Query($params, $returnProperties);
+      $result = $queryObj->searchQuery()->fetchAll();
+      $this->assertEquals(count($result), $expectedArray[$type]['totalCount']);
+      $this->assertEquals($result[0]['email'], $expectedArray[$type]['expectedFirstEmail']);
+    }
+  }
+
   /**
    * Test searchPrimaryDetailsOnly setting.
    *

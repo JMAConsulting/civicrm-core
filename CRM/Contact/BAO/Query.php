@@ -2678,11 +2678,17 @@ class CRM_Contact_BAO_Query {
    * @return string
    */
   protected static function getEntitySpecificJoins($name, $mode, $side, $primaryLocation) {
-    $limitToPrimaryClause = $primaryLocation ? "AND {$name}.is_primary = 1" : '';
+    $clause = $primaryLocation ? " $side JOIN $name ON (contact_a.id = $name.contact_id AND {$name}.is_primary = 1)" :
+      "$side JOIN (SELECT * FROM $name GROUP BY id ORDER BY is_primary DESC) $name ON $name.contact_id = contact_a.id ";
+
     switch ($name) {
+      case 'civicrm_phone':
+      case 'civicrm_email':
+      case 'civicrm_im':
+      case 'civicrm_openid':
       case 'civicrm_address':
         //CRM-14263 further handling of address joins further down...
-        return " $side JOIN civicrm_address ON ( contact_a.id = civicrm_address.contact_id {$limitToPrimaryClause} )";
+        return $clause;
 
       case 'civicrm_state_province':
         // This is encountered when doing an export after having applied a 'sort' - it pretty much implies primary
@@ -2696,23 +2702,11 @@ class CRM_Contact_BAO_Query {
         // test cover in testContactIDQuery
         return " $side JOIN civicrm_country ON ( civicrm_address.country_id = civicrm_country.id )";
 
-      case 'civicrm_phone':
-        return " $side JOIN civicrm_phone ON (contact_a.id = civicrm_phone.contact_id {$limitToPrimaryClause}) ";
-
-      case 'civicrm_email':
-        return " $side JOIN civicrm_email ON (contact_a.id = civicrm_email.contact_id {$limitToPrimaryClause})";
-
-      case 'civicrm_im':
-        return " $side JOIN civicrm_im ON (contact_a.id = civicrm_im.contact_id {$limitToPrimaryClause}) ";
-
       case 'im_provider':
         $from = " $side JOIN civicrm_im ON (contact_a.id = civicrm_im.contact_id) ";
         $from .= " $side JOIN civicrm_option_group option_group_imProvider ON option_group_imProvider.name = 'instant_messenger_service'";
         $from .= " $side JOIN civicrm_option_value im_provider ON (civicrm_im.provider_id = im_provider.value AND option_group_imProvider.id = im_provider.option_group_id)";
         return $from;
-
-      case 'civicrm_openid':
-        return " $side JOIN civicrm_openid ON ( civicrm_openid.contact_id = contact_a.id {$limitToPrimaryClause} )";
 
       case 'civicrm_worldregion':
         // We can be sure from the calling function that country will already be joined in.
