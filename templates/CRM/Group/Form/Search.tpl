@@ -111,6 +111,7 @@
     // also to handle search filtering for initial load of same page.
     var parentsOnly = 1
     var ZeroRecordText = {/literal}'{ts escape="js"}<div class="status messages">None found.{/ts}</div>'{literal};
+    var smartGroupText = {/literal}'<span>({ts escape="js"}Smart Group{/ts})</span>'{literal};
     $('table.crm-group-selector').data({
       "ajax": {
         "url": {/literal}'{crmURL p="civicrm/ajax/grouplist" h=0 q="snippet=4"}'{literal},
@@ -163,6 +164,10 @@
               $(this).find('td:first')
                 .prepend('{/literal}<span class="collapsed show-children" title="{ts}show child groups{/ts}"/></span>{literal}')
                 .find('div').css({'display': 'inline'});
+            });
+            $('tbody tr.crm-smart-group', settings.nTable).each(function () {
+              $(this).find('td:first')
+                .append(smartGroupText);
             });
           });
         }
