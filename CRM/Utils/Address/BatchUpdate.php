@@ -230,6 +230,10 @@ class CRM_Utils_Address_BatchUpdate {
         // when we should found street_number and street_name
         if (empty($parsedFields['street_name']) || empty($parsedFields['street_number'])) {
           $success = FALSE;
+          // If an address has failed in the geocoding scheduled job i.e. no lat/long is fetched, we will update the manual_geocode field to 1.
+          $addressParams['manual_geo_code'] = TRUE;
+          $addressParams['geo_code_1'] = 0;
+          $addressParams['geo_code_2'] = 0;
         }
 
         // do check for all elements.
@@ -285,7 +289,7 @@ class CRM_Utils_Address_BatchUpdate {
     }
     foreach ($unparsedContactIds as $eachContactId) {
       /**
-       * If an address has failed in the geocoding scheduled job i.e. no lat/long is fetched, we will update the manual_geocode field to 1. 
+       * If an address has failed in the geocoding scheduled job i.e. no lat/long is fetched, we will update the manual_geocode field to 1.
       */
       $results = \Civi\Api4\Address::update()
         ->addValue('manual_geo_code', true)
@@ -294,7 +298,7 @@ class CRM_Utils_Address_BatchUpdate {
         ->addWhere('contact_id', '=', $eachContactId)
         ->execute();
     }
-    foreach ($parsedContactIds as $eachContactId) { 
+    foreach ($parsedContactIds as $eachContactId) {
       /**
        * When an address is updated, if manual_geocode is already set to 1, we get rid of that flag so that it can be geocoded again.
       */
