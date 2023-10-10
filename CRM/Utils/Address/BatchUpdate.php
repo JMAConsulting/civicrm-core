@@ -220,6 +220,12 @@ class CRM_Utils_Address_BatchUpdate {
           $totalGeocoded++;
           $addressParams = $params;
         }
+        else {
+          // If an address has failed in the geocoding scheduled job i.e. no lat/long is fetched, we will update the manual_geocode field to 1.
+          $addressParams['manual_geo_code'] = TRUE;
+          $addressParams['geo_code_1'] = 0;
+          $addressParams['geo_code_2'] = 0;
+        }
       }
 
       // parse street address
@@ -235,7 +241,6 @@ class CRM_Utils_Address_BatchUpdate {
           $addressParams['geo_code_1'] = 0;
           $addressParams['geo_code_2'] = 0;
         }
-
         // do check for all elements.
         if ($success) {
           $totalAddressParsed++;
