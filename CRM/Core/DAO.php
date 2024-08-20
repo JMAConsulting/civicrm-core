@@ -1091,6 +1091,26 @@ class CRM_Core_DAO extends DB_DataObject {
   }
 
   /**
+   * Validate a record from supplied params.
+   *
+   * @param array $record
+   * @return array
+   * @throws CRM_Core_Exception
+   */
+  public static function validateRecord(array $record, $action == 'get'): array {
+    $className = CRM_Core_DAO_AllCoreTables::getCanonicalClassName(static::class);
+    if ($className === 'CRM_Core_DAO') {
+      throw new CRM_Core_Exception('Function validateRecord must be called on a subclass of CRM_Core_DAO');
+    }
+    $entityName = CRM_Core_DAO_AllCoreTables::getEntityNameForClass($className);
+    $errors = [];
+
+    CRM_Utils_Hook::validate($entityName, $record, $errors);
+
+    return $errors;
+  }
+
+  /**
    * Delete a record from supplied params.
    *
    * @param array $record
