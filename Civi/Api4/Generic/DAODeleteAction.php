@@ -15,6 +15,7 @@ namespace Civi\Api4\Generic;
 use Civi\API\Exception\UnauthorizedException;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Api4\Utils\ReflectionUtils;
+use Civi\Schema\EntityProvider;
 
 /**
  * Delete one or more $ENTITIES.
@@ -56,29 +57,7 @@ class DAODeleteAction extends AbstractBatchAction {
    * @throws \CRM_Core_Exception
    */
   protected function deleteObjects($items) {
-    $idField = CoreUtil::getIdFieldName($this->getEntityName());
-    $result = [];
-    $baoName = $this->getBaoName();
-
-    // Use BAO::del() method if it is not deprecated
-    if (method_exists($baoName, 'del') && !ReflectionUtils::isMethodDeprecated($baoName, 'del')) {
-      foreach ($items as $item) {
-        $args = [$item[$idField]];
-        $bao = call_user_func_array([$baoName, 'del'], $args);
-        if ($bao !== FALSE) {
-          $result[] = [$idField => $item[$idField]];
-        }
-        else {
-          throw new \CRM_Core_Exception("Could not delete {$this->getEntityName()} $idField {$item[$idField]}");
-        }
-      }
-    }
-    else {
-      foreach ($baoName::deleteRecords($items) as $instance) {
-        $result[] = [$idField => $instance->$idField];
-      }
-    }
-    return $result;
+    return new EntityProvider($this->getEntityName())->deleteRecords($items);
   }
 
 }

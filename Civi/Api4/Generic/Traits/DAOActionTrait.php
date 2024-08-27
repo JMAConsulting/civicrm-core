@@ -15,6 +15,7 @@ namespace Civi\Api4\Generic\Traits;
 use Civi\Api4\Utils\FormattingUtil;
 use Civi\Api4\Utils\CoreUtil;
 use Civi\Api4\Utils\ReflectionUtils;
+use Civi\Schema\EntityProvider;
 
 /**
  * Common properties and helper-methods used for DB-oriented actions.
@@ -160,20 +161,7 @@ trait DAOActionTrait {
    *   Array of saved DAO records
    */
   protected function write(array $items) {
-    $saved = [];
-    $baoName = $this->getBaoName();
-
-    $method = method_exists($baoName, 'create') ? 'create' : (method_exists($baoName, 'add') ? 'add' : NULL);
-    // Use BAO create or add method if not deprecated
-    if ($method && !ReflectionUtils::isMethodDeprecated($baoName, $method)) {
-      foreach ($items as $item) {
-        $saved[] = $baoName::$method($item);
-      }
-    }
-    else {
-      $saved = $baoName::writeRecords($items);
-    }
-    return $saved;
+    return new EntityProvider($this->getEntityName())->writeRecords($items);
   }
 
   /**

@@ -16,5 +16,7 @@ interface EntityStorageInterface {
   public function writeRecords(array $records): array;
 
   public function deleteRecords(array $records): array;
+  
+  public function validateRecords(array $records): array;
 
 }

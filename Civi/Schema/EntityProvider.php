@@ -80,6 +80,10 @@ final class EntityProvider {
   public function deleteRecords(array $records): array {
     return $this->getStorageProvider()->deleteRecords($records);
   }
+  
+  public function validateRecords(array $records, string $action): array {
+    return $this->getStorageProvider()->validateRecords($records, $action);
+  }
 
   private function getMetaProvider(): EntityMetadataInterface {
     if (!isset($this->meta)) {

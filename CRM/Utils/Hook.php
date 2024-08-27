@@ -537,6 +537,24 @@ abstract class CRM_Utils_Hook {
       ->invoke(['formName', 'fields', 'files', 'form', 'errors'],
         $formName, $fields, $files, $form, $errors, $null, 'civicrm_validateForm');
   }
+  
+  /**
+   * This hook is invoked during all CiviCRM entity validate. An array of errors
+   * detected is returned. Else we assume validation succeeded.
+   *
+   * @param string $entityName
+   * @param array &$params
+   * @param string $action
+   * @param array &$errors the array of errors.
+   *
+   * @return array an array of error messages
+   */
+  public static function validate($formName, &$fields, &$files, &$form, &$errors) {
+    $null = NULL;
+    return self::singleton()
+      ->invoke(['entity', 'record', 'action' 'errors'],
+        $entity, $record, $action, $errors, $null, $null, 'civicrm_validate');
+  }
 
   /**
    * This hook is called after a db write on a custom table.
