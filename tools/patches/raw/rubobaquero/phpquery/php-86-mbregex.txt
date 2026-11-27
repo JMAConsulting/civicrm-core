@@ -1,0 +1,1 @@
+Replace deprecated mb_ereg* calls with preg_* (u modifier) for PHP 8.6 compatibility

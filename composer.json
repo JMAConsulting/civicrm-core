@@ -304,6 +304,9 @@
       "phpmyadmin/motranslator": {
         "Disable global function wrappers in src/functions.php to prevent __() collision with WordPress": "https://download.civicrm.org/patches/9f4d8eb72bbdef1a6cf6fe7093339ebfaf276ea9825e749837c18bec40b1977e/halt-functions.patch"
       },
+      "rubobaquero/phpquery": {
+        "Replace deprecated mb_ereg* calls with preg_* for PHP 8.6 compatibility": "https://download.civicrm.org/patches/ee4d31f8a81833e2a667ee07cf352e3f87286200867275a0e81991787f18e487/php-86-mbregex.patch"
+      },
       "zetacomponents/mail": {
         "CiviCRM Custom Patches for ZetaCompoents mail": "https://download.civicrm.org/patches/6e4bd36dd432a1e62830b0c757a3bac9645ea1cfc551db39798a88c06d66aaf3/100-filename.patch",
         "CiviCRM Custom patch to fix a php8.1 issue found in CiviCRM unit tests": "https://download.civicrm.org/patches/d187bcd1100b99529705cdd61193efa683951f6cfbc97ecaa69bc6cd601d2e5f/200-php-81.patch",

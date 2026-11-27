@@ -1,0 +1,58 @@
+--- a/phpQuery/phpQuery/phpQueryObject.php
++++ b/phpQuery/phpQuery/phpQueryObject.php
+@@ -301,9 +301,7 @@
+ 	 * @access private
+ 	 */
+ 	protected function isChar($char) {
+-		return extension_loaded('mbstring') && phpQuery::$mbstringSupport
+-			? mb_eregi('\w', $char)
+-			: preg_match('@\w@', $char);
++		return preg_match('@\w@u', $char);
+ 	}
+ 	/**
+ 	 * @access private
+@@ -714,9 +712,7 @@
+ 			$delimiterBefore = false;
+ 			foreach($selector as $s) {
+ 				// TAG
+-				$isTag = extension_loaded('mbstring') && phpQuery::$mbstringSupport
+-					? mb_ereg_match('^[\w|\||-]+$', $s) || $s == '*'
+-					: preg_match('@^[\w|\||-]+$@', $s) || $s == '*';
++				$isTag = preg_match('@^[\w|\||-]+$@u', $s) || $s == '*';
+ 				if ($isTag) {
+ 					if ($this->isXML()) {
+ 						// namespace support
+@@ -1235,9 +1231,7 @@
+ 									if ($val != $node->nodeType)
+ 										$break = true;
+ 								} else if ($this->isRegexp($attr)) {
+-									$val = extension_loaded('mbstring') && phpQuery::$mbstringSupport
+-										? quotemeta(trim($val, '"\''))
+-										: preg_quote(trim($val, '"\''), '@');
++									$val = preg_quote(trim($val, '"\''), '@');
+ 									// switch last character
+ 									switch( substr($attr, -1)) {
+ 										// quotemeta used insted of preg_quote
+@@ -1254,9 +1248,7 @@
+ 									}
+ 									// cut last character
+ 									$attr = substr($attr, 0, -1);
+-									$isMatch = extension_loaded('mbstring') && phpQuery::$mbstringSupport
+-										? mb_ereg_match($pattern, $node->getAttribute($attr))
+-										: preg_match("@{$pattern}@", $node->getAttribute($attr));
++									$isMatch = preg_match("@{$pattern}@us", $node->getAttribute($attr));
+ 									if (! $isMatch)
+ 										$break = true;
+ 								} else if ($node->getAttribute($attr) != $val)
+@@ -1335,10 +1327,7 @@
+ 		}
+ 		if (mb_strpos($url, ' ') !== false) {
+ 			$matches = null;
+-			if (extension_loaded('mbstring') && phpQuery::$mbstringSupport)
+-				mb_ereg('^([^ ]+) (.*)$', $url, $matches);
+-			else
+-				preg_match('@^([^ ]+) (.*)$@', $url, $matches);
++			preg_match('@^([^ ]+) (.*)$@us', $url, $matches);
+ 			$url = $matches[1];
+ 			$selector = $matches[2];
+ 			// FIXME this sucks, pass as callback param
